@@ -9,14 +9,32 @@ import {
 import { useFormik } from "formik";
 import * as Yup from "yup";
 
-function ClubForm() {
+interface ClubFormValues {
+  districtName: string;
+  clubHeadName: string;
+  email: string;
+  phoneNo: string;
+  officials: string;
+}
+
+interface ClubFormProps {
+  initialData?: Partial<Omit<ClubFormValues, "officials">> & {
+    officials?: string[] | string;
+  };
+  isEdit?: boolean;
+  onSubmit?: (values: ClubFormValues) => void;
+}
+
+function ClubForm({ initialData, isEdit = false, onSubmit }: ClubFormProps) {
   const formik = useFormik({
     initialValues: {
-      districtName: "",
-      clubHeadName: "",
-      email: "",
-      phoneNo: "",
-      officials: "",
+      districtName: initialData?.districtName ?? "",
+      clubHeadName: initialData?.clubHeadName ?? "",
+      email: initialData?.email ?? "",
+      phoneNo: initialData?.phoneNo ?? "",
+      officials: Array.isArray(initialData?.officials)
+        ? initialData.officials.join(", ")
+        : (initialData?.officials ?? ""),
     },
     validationSchema: Yup.object({
       districtName: Yup.string().required("District Name is required"),
@@ -30,6 +48,10 @@ function ClubForm() {
       officials: Yup.string().required("Officials is required"),
     }),
     onSubmit: (values) => {
+      if (onSubmit) {
+        onSubmit(values);
+        return;
+      }
       console.log("Club Data:", values);
     },
   });
@@ -137,7 +159,7 @@ function ClubForm() {
 
           {/* Submit */}
           <Button type="submit" variant="contained">
-            Submit
+            {isEdit ? "Update Club" : "Create Club"}
           </Button>
         </Box>
       </form>

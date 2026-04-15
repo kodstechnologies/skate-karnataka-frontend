@@ -1,4 +1,4 @@
-import React from "react";
+
 import { Box, Typography, Paper } from "@mui/material";
 
 function DistrictDetails() {

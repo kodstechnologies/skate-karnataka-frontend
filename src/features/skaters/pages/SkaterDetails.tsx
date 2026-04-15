@@ -1,7 +1,6 @@
 import EnhancedTable from '../../../components/ui/Table';
 import { rows } from '../../../../data';
-import { IconButton, Tooltip, Stack, Typography, Box, Button } from '@mui/material';
-import { Pencil, Trash2, Eye } from "lucide-react";
+import { Typography, Box, Button } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 
 function SkaterDetails() {
@@ -46,36 +45,36 @@ function SkaterDetails() {
   };
 
   // ✅ Correct Actions UI
-  const renderActions = (row: any) => (
-    <Stack direction="row" spacing={1} justifyContent="center">
+  // const renderActions = (row: any) => (
+  //   <Stack direction="row" spacing={1} justifyContent="center">
 
-      {/* View */}
-      <Tooltip title="View Details">
-        <IconButton size="small" onClick={() => handleView(row)} color="info">
-          <Eye size={18} />
-        </IconButton>
-      </Tooltip>
+  //     {/* View */}
+  //     <Tooltip title="View Details">
+  //       <IconButton size="small" onClick={() => handleView(row)} color="info">
+  //         <Eye size={18} />
+  //       </IconButton>
+  //     </Tooltip>
 
-      {/* Edit */}
-      <Tooltip title="Edit">
-        <IconButton size="small" onClick={() => handleEdit(row)} color="primary">
-          <Pencil size={18} />
-        </IconButton>
-      </Tooltip>
+  //     {/* Edit */}
+  //     <Tooltip title="Edit">
+  //       <IconButton size="small" onClick={() => handleEdit(row)} color="primary">
+  //         <Pencil size={18} />
+  //       </IconButton>
+  //     </Tooltip>
 
-      {/* Delete */}
-      <Tooltip title="Delete">
-        <IconButton
-          size="small"
-          onClick={() => handleDelete([row.id || row.krsaid])}
-          color="error"
-        >
-          <Trash2 size={18} />
-        </IconButton>
-      </Tooltip>
+  //     {/* Delete */}
+  //     <Tooltip title="Delete">
+  //       <IconButton
+  //         size="small"
+  //         onClick={() => handleDelete([row.id || row.krsaid])}
+  //         color="error"
+  //       >
+  //         <Trash2 size={18} />
+  //       </IconButton>
+  //     </Tooltip>
 
-    </Stack>
-  );
+  //   </Stack>
+  // );
 
   return (
     <div>

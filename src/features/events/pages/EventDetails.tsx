@@ -48,7 +48,7 @@ function EventDetails() {
     {
       id: "status",
       label: "Status",
-      renderCell: (row: any) => (
+      render: (_value: any, row: any) => (
         <Chip
           label={row.status}
           color={
@@ -147,7 +147,7 @@ function EventDetails() {
         getRowId={(row) => row.id}
         enableSelection={true}
         rowsPerPageOptions={[5, 10, 25, 50]}
-        renderActions={renderActions}
+        customActions={renderActions}
       />
     </Box>
   );

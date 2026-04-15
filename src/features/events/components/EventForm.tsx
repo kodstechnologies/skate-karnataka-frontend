@@ -1,11 +1,11 @@
 import { Box, Button, TextField, MenuItem } from "@mui/material";
 import { useFormik } from "formik";
 import * as Yup from "yup";
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 export interface EventFormValues {
   header: string;
-  image: File | null;
+  image: File | string | null;
   date: string;
   text: string;
   address: string;
@@ -14,11 +14,16 @@ export interface EventFormValues {
   status: string;
 }
 
-function EventForm() {
-  const [preview, setPreview] = useState<string | null>(null);
+interface EventFormProps {
+  initialValues?: Partial<EventFormValues>;
+  onSubmit?: (values: EventFormValues) => void;
+  isEdit?: boolean;
+}
 
-  const formik = useFormik<EventFormValues>({
-    initialValues: {
+function EventForm({ initialValues, onSubmit, isEdit = false }: EventFormProps) {
+  const [preview, setPreview] = useState<string | null>(null);
+  const defaultValues: EventFormValues = useMemo(
+    () => ({
       header: "",
       image: null,
       date: "",
@@ -27,7 +32,17 @@ function EventForm() {
       eventType: "",
       eventFor: "",
       status: "",
-    },
+    }),
+    []
+  );
+  const resolvedInitialValues: EventFormValues = useMemo(
+    () => ({ ...defaultValues, ...initialValues }),
+    [defaultValues, initialValues]
+  );
+
+  const formik = useFormik<EventFormValues>({
+    initialValues: resolvedInitialValues,
+    enableReinitialize: true,
 
     validationSchema: Yup.object({
       header: Yup.string().required("Header is required"),
@@ -37,6 +52,11 @@ function EventForm() {
     }),
 
     onSubmit: (values) => {
+      if (onSubmit) {
+        onSubmit(values);
+        return;
+      }
+
       const formData = new FormData();
 
       formData.append("header", values.header);
@@ -47,7 +67,7 @@ function EventForm() {
       formData.append("eventFor", values.eventFor);
       formData.append("status", values.status);
 
-      if (values.image) {
+      if (values.image instanceof File) {
         formData.append("image", values.image);
       }
 
@@ -65,6 +85,12 @@ function EventForm() {
         });
     },
   });
+
+  useEffect(() => {
+    if (typeof resolvedInitialValues.image === "string") {
+      setPreview(resolvedInitialValues.image);
+    }
+  }, [resolvedInitialValues.image]);
 
   return (
     <Box maxWidth={600} mx="auto" mt={4}>
@@ -179,7 +205,7 @@ function EventForm() {
 
           {/* Submit */}
           <Button type="submit" variant="contained">
-            Create Event
+            {isEdit ? "Update Event" : "Create Event"}
           </Button>
 
         </Box>

@@ -83,7 +83,6 @@ const ClubDetails: React.FC = () => {
         columns={columns}
         title="" // remove default title
         enableSelection={true}
-        enableActions={true}
         onView={handleView}
         onEdit={handleEdit}
         onDelete={handleDelete}
