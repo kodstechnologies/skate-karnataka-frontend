@@ -1,0 +1,70 @@
+name: Deploy Frontend to EC2
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      # 1️⃣ Checkout the repo
+      - name: Checkout Code
+        uses: actions/checkout@v3
+
+      # 2️⃣ Setup Node.js 22
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 22
+          cache: 'npm'
+
+      # 3️⃣ Install dependencies
+      - name: Install Dependencies
+        run: npm install
+
+      # 4️⃣ Create .env file from secrets
+      - name: Create .env File
+        run: echo "${{ secrets.ENV_FILE }}" > .env
+
+      # 5️⃣ Build project with absolute imports (NODE_PATH)
+      - name: Build Project
+        run: |
+          export NODE_PATH=src
+          npm run build
+
+      # 6️⃣ Ensure firebase-messaging-sw.js exists (prevents warnings)
+      - name: Ensure Firebase SW exists
+        run: touch dist/firebase-messaging-sw.js || true
+
+      # 7️⃣ Clean old build on EC2
+      - name: Clean old build on EC2
+        uses: appleboy/ssh-action@v1.0.0
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_KEY }}
+          script: |
+            rm -rf /home/ubuntu/skate-karnataka-frontend/*
+
+      # 8️⃣ Copy new build to EC2 (copy contents, not nested folder)
+      - name: Copy new build to EC2
+        uses: appleboy/scp-action@v0.1.4
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_KEY }}
+          source: "dist/*"
+          target: "/home/ubuntu/skate-karnataka-frontend"
+
+      # 9️⃣ Restart Nginx to serve new frontend
+      - name: Restart Nginx
+        uses: appleboy/ssh-action@v1.0.0
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_KEY }}
+          script: |
+            sudo systemctl restart nginx
