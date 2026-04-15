@@ -2,7 +2,7 @@
 function Dashboard() {
   return (
     <div>
-      Dashboard
+      Dashboard 123
     </div>
   )
 }
