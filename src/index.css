@@ -1,0 +1,66 @@
+:root {
+  /* 🧱 Sidebar  ============================================= */
+  --sidebar-bg: #F9FAFB;
+  /* light background */
+  --sidebar-text: #6B7280;
+  /* normal text */
+  --sidebar-hover-bg: #F3F4F6;
+  /* light hover */
+  --sidebar-hover-text: #111827;
+
+  --sidebar-active-bg: #E5E7EB;
+  /* selected item */
+  --sidebar-active-text: #111827;
+
+  --sidebar-border: #020e27;
+  /* ============================================== */
+
+  :root {
+    --footer-bg: #F9FAFB;
+    /* soft light grey */
+    --footer-text: #6B7280;
+    /* subtle text */
+    --footer-border: #E5E7EB;
+    /* divider */
+  }
+
+  /* =============================================== */
+  /* 🎨 Brand Colors */
+  --primary: #6366F1;
+  /* Indigo (modern & professional) */
+  --primary-light: #E0E7FF;
+
+  --secondary: #0EA5E9;
+  /* Sky Blue */
+  --secondary-light: #E0F2FE;
+
+  --accent: #F59E0B;
+  /* Amber highlight */
+
+  /* 🧱 Backgrounds */
+  --background: #F9FAFB;
+  /* App background */
+  --surface: #FFFFFF;
+  /* Cards / containers */
+
+  /* 📝 Text */
+  --text: #111827;
+  /* Main text */
+  --text-light: #6B7280;
+  /* Secondary text */
+
+  /* 🔲 Borders */
+  --border: #E5E7EB;
+
+  /* 🌈 Optional Soft Colors (from your palette refined) */
+  --soft-pink: #FFDEFB;
+  --soft-orange: #FFEED4;
+  --soft-blue: #D8EDFF;
+  --soft-green: #D7EFAE;
+}
+
+/* Prevent white flash */
+body {
+  background-color: var(--background);
+  color: var(--text);
+}
