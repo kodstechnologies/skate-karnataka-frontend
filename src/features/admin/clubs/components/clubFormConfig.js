@@ -1,0 +1,70 @@
+export const initialClubFormValues = {
+  clubLogin: "",
+  clubName: "",
+  district: "",
+  krsaClubId: "",
+  rosNumber: "",
+  registrationAddress: "",
+  rosCertificate: null,
+  clubPresidentName: "",
+  clubPresidentPhone: "",
+  clubSecretaryName: "",
+  clubSecretaryPhone: "",
+  tenacitySkatersCount: "",
+  recreationalSkatersCount: "",
+  quadSkatersCount: "",
+  proInlineSkatersCount: "",
+  trackAddress: "",
+  trackMeasurements: "",
+  trainersCount: "",
+  coachesAvailable: "",
+  documents: null
+};
+
+export const coachAvailabilityOptions = ["yes", "no"];
+
+export const clubFieldLabels = {
+  clubLogin: "Club login",
+  clubName: "Name of club",
+  district: "District",
+  krsaClubId: "KRSA club ID",
+  rosNumber: "ROS number",
+  registrationAddress: "Registration address",
+  rosCertificate: "ROS certificate",
+  clubPresidentName: "Club president name",
+  clubPresidentPhone: "Club president number",
+  clubSecretaryName: "Club secretary name",
+  clubSecretaryPhone: "Club secretary number",
+  tenacitySkatersCount: "Tenacity skaters",
+  recreationalSkatersCount: "Recreational skaters",
+  quadSkatersCount: "Quad skaters",
+  proInlineSkatersCount: "Pro inline skaters",
+  trackAddress: "Track address",
+  trackMeasurements: "Track measurements",
+  trainersCount: "No of trainers",
+  coachesAvailable: "Trainers / coaches available",
+  documents: "Documents"
+};
+
+export const createClubFormValues = (club = {}) => ({
+  clubLogin: club.clubLogin ?? "",
+  clubName: club.clubName ?? "",
+  district: club.district ?? "",
+  krsaClubId: club.krsaClubId ?? "",
+  rosNumber: club.rosNumber ?? "",
+  registrationAddress: club.registrationAddress ?? "",
+  rosCertificate: club.rosCertificate ?? null,
+  clubPresidentName: club.clubPresidentName ?? "",
+  clubPresidentPhone: club.clubPresidentPhone ?? "",
+  clubSecretaryName: club.clubSecretaryName ?? "",
+  clubSecretaryPhone: club.clubSecretaryPhone ?? "",
+  tenacitySkatersCount: club.tenacitySkatersCount ?? "",
+  recreationalSkatersCount: club.recreationalSkatersCount ?? "",
+  quadSkatersCount: club.quadSkatersCount ?? "",
+  proInlineSkatersCount: club.proInlineSkatersCount ?? "",
+  trackAddress: club.trackAddress ?? "",
+  trackMeasurements: club.trackMeasurements ?? "",
+  trainersCount: club.trainersCount ?? "",
+  coachesAvailable: club.coachesAvailable ?? "",
+  documents: club.documents ?? null
+});
