@@ -24,7 +24,7 @@ const inputStyles = {
 
 const SectionCard = ({ icon, title, description, children }) => (
   <Paper elevation={0} sx={sectionCardStyles}>
-    <Stack direction="row" spacing={1.5} alignItems="flex-start" sx={{ mb: 2.5 }}>
+    <Stack direction="row" spacing={1.5} sx={{ mb: 2.5, alignItems: "flex-start" }}>
       <Box
         sx={{
           width: 48,

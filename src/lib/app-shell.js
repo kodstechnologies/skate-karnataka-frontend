@@ -3,7 +3,10 @@ import Groups2Icon from "@mui/icons-material/Groups2";
 import EventIcon from "@mui/icons-material/Event";
 import LocationCityIcon from "@mui/icons-material/LocationCity";
 import PublicIcon from "@mui/icons-material/Public";
-import { LayoutDashboard } from "lucide-react";
+import SchoolIcon from "@mui/icons-material/School";
+import WorkspacePremiumIcon from "@mui/icons-material/WorkspacePremium";
+import BusinessIcon from "@mui/icons-material/Business";
+import { LayoutDashboard, Megaphone, Inbox } from "lucide-react";
 
 export const navigationGroups = [
   {
@@ -17,7 +20,29 @@ export const navigationGroups = [
       { slug: "districts", to: "/districts", label: "Districts", icon: LocationCityIcon },
       { slug: "clubs", to: "/clubs", label: "Clubs", icon: Groups2Icon },
       { slug: "skaters", to: "/skaters", label: "Skaters", icon: RollerSkatingIcon },
-      { slug: "events", to: "/events", label: "Events", icon: EventIcon }
+      { slug: "events", to: "/events", label: "Events", icon: EventIcon },
+      { slug: "circulars", to: "/circulars", label: "Circulars", icon: Megaphone },
+      {
+        slug: "requests",
+        to: "/requests/school",
+        label: "Requests",
+        icon: Inbox,
+        children: [
+          { slug: "school-requests", to: "/requests/school", label: "School", icon: SchoolIcon },
+          {
+            slug: "official-requests",
+            to: "/requests/official",
+            label: "Official",
+            icon: WorkspacePremiumIcon
+          },
+          {
+            slug: "academy-requests",
+            to: "/requests/academy",
+            label: "Academy",
+            icon: BusinessIcon
+          }
+        ]
+      }
     ]
   }
 ];

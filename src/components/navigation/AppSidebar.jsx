@@ -1,5 +1,5 @@
 import { ChevronRight, LogOut, X } from "lucide-react";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { NavLink, useLocation } from "react-router-dom";
 import logo from "@/assets/karnataka-roller-skating-logo.png";
 import { navigationGroups } from "@/lib/app-shell";
@@ -10,10 +10,18 @@ export const AppSidebar = () => {
   const mobileSidebarOpen = useUiStore((state) => state.mobileSidebarOpen);
   const closeMobileSidebar = useUiStore((state) => state.closeMobileSidebar);
   const location = useLocation();
+  const [expandedParentItems, setExpandedParentItems] = useState({});
 
   useEffect(() => {
     closeMobileSidebar();
   }, [closeMobileSidebar, location.pathname]);
+
+  const toggleParentItem = (itemSlug) => {
+    setExpandedParentItems((previous) => ({
+      ...previous,
+      [itemSlug]: !previous[itemSlug]
+    }));
+  };
 
   return (
     <>
@@ -63,47 +71,132 @@ export const AppSidebar = () => {
               <div className="space-y-0.5">
                 {group.items.map((item) => {
                   const Icon = item.icon;
+                  const hasChildren = Array.isArray(item.children) && item.children.length > 0;
+                  const isChildActive = hasChildren
+                    ? item.children.some((child) => location.pathname.startsWith(child.to))
+                    : false;
+                  const isExpanded = Boolean(expandedParentItems[item.slug]);
+
+                  if (hasChildren) {
+                    return (
+                      <div key={item.slug} className="group relative">
+                        <button
+                          type="button"
+                          onClick={() => toggleParentItem(item.slug)}
+                          className={`flex w-full items-center rounded-2xl px-3 py-2.5 text-sm transition ${
+                            sidebarOpen ? "justify-between" : "lg:justify-center"
+                          } ${
+                            isChildActive
+                              ? "bg-[#fef0ea] text-[#f6765e] shadow-[0_8px_24px_rgba(246,118,94,0.12)]"
+                              : "text-[#7f7270] hover:bg-white hover:text-[#2f2829]"
+                          }`}
+                        >
+                          <div
+                            className={`flex items-center ${
+                              sidebarOpen ? "gap-3" : "lg:justify-center"
+                            }`}
+                          >
+                            <span
+                              className={`flex h-10 w-10 items-center justify-center rounded-2xl ${
+                                isChildActive
+                                  ? "bg-[#f6765e] text-white"
+                                  : "bg-white text-[#8f817e]"
+                              }`}
+                            >
+                              <Icon className="h-[18px] w-[18px]" />
+                            </span>
+                            <span className={`${sidebarOpen ? "block" : "lg:hidden"} font-medium`}>
+                              {item.label}
+                            </span>
+                          </div>
+
+                          {sidebarOpen && (
+                            <ChevronRight
+                              size={16}
+                              className={`text-[#d59583] transition-transform ${isExpanded ? "rotate-90" : ""}`}
+                            />
+                          )}
+                        </button>
+
+                        {isExpanded && sidebarOpen && (
+                          <div className="mt-1 ml-12 space-y-1">
+                            {item.children.map((child) => {
+                              const ChildIcon = child.icon;
+                              return (
+                                <NavLink
+                                  key={child.to}
+                                  to={child.to}
+                                  className={({ isActive }) =>
+                                    `flex items-center gap-2 rounded-xl px-2.5 py-2 text-sm transition ${
+                                      isActive
+                                        ? "bg-[#fff1eb] text-[#f6765e] font-semibold"
+                                        : "text-[#8a7d7a] hover:bg-white hover:text-[#2f2829]"
+                                    }`
+                                  }
+                                >
+                                  <ChildIcon className="h-4 w-4" />
+                                  <span>{child.label}</span>
+                                </NavLink>
+                              );
+                            })}
+                          </div>
+                        )}
+
+                        {!sidebarOpen && (
+                          <div className="pointer-events-none absolute left-full top-1/2 z-50 ml-3 hidden -translate-y-1/2 rounded-xl bg-[#2f2829] px-3 py-2 text-xs font-medium text-white opacity-0 shadow-lg transition group-hover:opacity-100 lg:block">
+                            {item.label}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  }
 
                   return (
                     <div key={item.to} className="group relative">
                       <NavLink
                         to={item.to}
-                        className={({ isActive }) =>
-                          `flex items-center rounded-2xl px-3 py-2.5 text-sm transition ${
+                        className={({ isActive }) => {
+                          const activeState = isActive || isChildActive;
+                          return `flex items-center rounded-2xl px-3 py-2.5 text-sm transition ${
                             sidebarOpen ? "justify-between" : "lg:justify-center"
                           } ${
-                            isActive
+                            activeState
                               ? "bg-[#fef0ea] text-[#f6765e] shadow-[0_8px_24px_rgba(246,118,94,0.12)]"
                               : "text-[#7f7270] hover:bg-white hover:text-[#2f2829]"
-                          }`
-                        }
+                          }`;
+                        }}
                       >
-                        {({ isActive }) => (
-                          <>
-                            <div
-                              className={`flex items-center ${
-                                sidebarOpen ? "gap-3" : "lg:justify-center"
-                              }`}
-                            >
-                              <span
-                                className={`flex h-10 w-10 items-center justify-center rounded-2xl ${
-                                  isActive ? "bg-[#f6765e] text-white" : "bg-white text-[#8f817e]"
+                        {({ isActive }) => {
+                          const activeState = isActive || isChildActive;
+                          return (
+                            <>
+                              <div
+                                className={`flex items-center ${
+                                  sidebarOpen ? "gap-3" : "lg:justify-center"
                                 }`}
                               >
-                                <Icon className="h-[18px] w-[18px]" />
-                              </span>
-                              <span
-                                className={`${sidebarOpen ? "block" : "lg:hidden"} font-medium`}
-                              >
-                                {item.label}
-                              </span>
-                            </div>
+                                <span
+                                  className={`flex h-10 w-10 items-center justify-center rounded-2xl ${
+                                    activeState
+                                      ? "bg-[#f6765e] text-white"
+                                      : "bg-white text-[#8f817e]"
+                                  }`}
+                                >
+                                  <Icon className="h-[18px] w-[18px]" />
+                                </span>
+                                <span
+                                  className={`${sidebarOpen ? "block" : "lg:hidden"} font-medium`}
+                                >
+                                  {item.label}
+                                </span>
+                              </div>
 
-                            {sidebarOpen && isActive && (
-                              <ChevronRight size={16} className="text-[#d59583]" />
-                            )}
-                          </>
-                        )}
+                              {sidebarOpen && activeState && (
+                                <ChevronRight size={16} className="text-[#d59583]" />
+                              )}
+                            </>
+                          );
+                        }}
                       </NavLink>
 
                       {!sidebarOpen && (

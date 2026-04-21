@@ -32,7 +32,7 @@ const SummaryCard = ({ icon, label, value, accent }) => (
       boxShadow: "0 22px 60px rgba(55, 33, 26, 0.06)"
     }}
   >
-    <Stack direction="row" spacing={1.5} alignItems="center">
+    <Stack direction="row" spacing={1.5} sx={{ alignItems: "center" }}>
       <Box
         sx={{
           width: 48,
@@ -479,7 +479,7 @@ export const ClubDetailsPage = () => {
                 background: "linear-gradient(180deg, #fff8f5 0%, #fffdfb 100%)"
               }}
             >
-              <Stack direction="row" spacing={1.5} alignItems="center">
+              <Stack direction="row" spacing={1.5} sx={{ alignItems: "center" }}>
                 <DescriptionOutlinedIcon sx={{ color: "#f6765e" }} />
                 <Typography sx={{ color: "#7f7270", lineHeight: 1.7 }}>
                   Use the edit page whenever you want to update the uploaded files or replace old

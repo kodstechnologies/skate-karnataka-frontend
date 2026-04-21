@@ -313,7 +313,7 @@ export const EventsPage = () => {
                       {event.description || "No description provided."}
                     </Typography>
 
-                    <Stack direction="row" spacing={1} alignItems="center">
+                    <Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
                       <FmdGoodOutlinedIcon sx={{ fontSize: 18, color: "#f6765e", flexShrink: 0 }} />
                       <Typography
                         sx={{
@@ -327,7 +327,7 @@ export const EventsPage = () => {
                         {event.address || "-"}
                       </Typography>
                     </Stack>
-                    <Stack direction="row" spacing={1} alignItems="center">
+                    <Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
                       <EventAvailableOutlinedIcon
                         sx={{ fontSize: 18, color: "#f6765e", flexShrink: 0 }}
                       />
@@ -335,7 +335,7 @@ export const EventsPage = () => {
                         {formatScope(event.eventType)}: {event.eventFor || "-"}
                       </Typography>
                     </Stack>
-                    <Stack direction="row" spacing={1} alignItems="center">
+                    <Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
                       <AccessTimeOutlinedIcon sx={{ fontSize: 18, color: "#f6765e" }} />
                       <Typography sx={{ color: "#5f5552" }}>
                         {formatDateTime(event.registrationStartDateTime)} -{" "}
@@ -345,11 +345,9 @@ export const EventsPage = () => {
 
                     <Stack
                       direction="row"
-                      justifyContent="space-between"
-                      alignItems="center"
-                      sx={{ pt: 0.75 }}
+                      sx={{ pt: 0.75, justifyContent: "space-between", alignItems: "center" }}
                     >
-                      <Stack direction="row" spacing={1} alignItems="center">
+                      <Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
                         <PaidOutlinedIcon sx={{ fontSize: 18, color: "#f6765e" }} />
                         <Typography sx={{ color: "#2f2829", fontWeight: 700 }}>
                           {formatCurrency(event.price)}

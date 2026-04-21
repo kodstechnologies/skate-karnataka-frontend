@@ -59,7 +59,7 @@ const SummaryCard = ({ icon, label, value, accent }) => (
       boxShadow: "0 22px 60px rgba(55, 33, 26, 0.06)"
     }}
   >
-    <Stack direction="row" spacing={1.5} alignItems="center">
+    <Stack direction="row" spacing={1.5} sx={{ alignItems: "center" }}>
       <Box
         sx={{
           width: 48,
