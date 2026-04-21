@@ -16,7 +16,7 @@ export const navigationGroups = [
   {
     label: "Management",
     items: [
-      { slug: "states", to: "/states", label: "States", icon: PublicIcon },
+      { slug: "states", to: "/states", label: "State Officials", icon: PublicIcon },
       { slug: "districts", to: "/districts", label: "Districts", icon: LocationCityIcon },
       { slug: "clubs", to: "/clubs", label: "Clubs", icon: Groups2Icon },
       { slug: "skaters", to: "/skaters", label: "Skaters", icon: RollerSkatingIcon },

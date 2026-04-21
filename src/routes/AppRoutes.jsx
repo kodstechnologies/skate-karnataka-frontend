@@ -19,14 +19,16 @@ import { SkaterDetailsPage } from "@/features/admin/skaters/pages/SkaterDetailsP
 import { SkatersPage } from "@/features/admin/skaters/pages/SkatersPage";
 import { StateFormPage } from "@/features/admin/states/pages/StateFormPage";
 import { StatesPage } from "@/features/admin/states/pages/StatesPage";
+import { LoginPage } from "@/features/auth/pages/LoginPage";
 import { MainLayout } from "@/layouts/MainLayout";
 import { NotFoundPage } from "@/pages/NotFoundPage";
 
 export const AppRoutes = () => {
   return (
     <Routes>
+      <Route path="/login" element={<LoginPage />} />
+      <Route path="/" element={<Navigate to="/login" replace />} />
       <Route element={<MainLayout />}>
-        <Route path="/" element={<Navigate to="/dashboard" replace />} />
         <Route path="/dashboard" element={<AdminDashboard />} />
         <Route path="/skaters" element={<SkatersPage />} />
         <Route path="/skaters/:skaterId" element={<SkaterDetailsPage />} />

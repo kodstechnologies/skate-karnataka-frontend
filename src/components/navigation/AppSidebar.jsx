@@ -1,11 +1,12 @@
 import { ChevronRight, LogOut, X } from "lucide-react";
 import { useEffect, useState } from "react";
-import { NavLink, useLocation } from "react-router-dom";
+import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import logo from "@/assets/karnataka-roller-skating-logo.png";
 import { navigationGroups } from "@/lib/app-shell";
 import { useUiStore } from "@/store/ui-store";
 
 export const AppSidebar = () => {
+  const navigate = useNavigate();
   const sidebarOpen = useUiStore((state) => state.sidebarOpen);
   const mobileSidebarOpen = useUiStore((state) => state.mobileSidebarOpen);
   const closeMobileSidebar = useUiStore((state) => state.closeMobileSidebar);
@@ -231,6 +232,7 @@ export const AppSidebar = () => {
               </div>
               <button
                 type="button"
+                onClick={() => navigate("/login")}
                 className="rounded-full p-2 text-[#9b8d88] transition hover:bg-[#faf4f1] hover:text-[#2f2829]"
                 aria-label="Logout"
               >
