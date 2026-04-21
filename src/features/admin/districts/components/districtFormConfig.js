@@ -6,7 +6,7 @@ export const districtStatusOptions = [
 export const initialDistrictFormValues = {
   districtName: "",
   districtCode: "",
-  stateName: "",
+  stateName: "Karnataka",
   officeAddress: "",
   coordinatorName: "",
   coordinatorPhone: "",

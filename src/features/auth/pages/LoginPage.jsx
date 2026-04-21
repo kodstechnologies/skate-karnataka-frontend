@@ -15,11 +15,13 @@ import {
 } from "@mui/material";
 import { Mail, Lock, Eye, EyeOff, LogIn } from "lucide-react";
 import { useLottie } from "lottie-react";
+import { useAuthStore } from "@/features/auth/store/auth-store";
 import skateLottie from "@/assets/LottieFiles/SkateboardingBoy.json";
 import logo from "@/assets/karnataka-roller-skating-logo.png";
 
 export const LoginPage = () => {
   const navigate = useNavigate();
+  const login = useAuthStore((state) => state.login);
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("md"));
 
@@ -38,10 +40,18 @@ export const LoginPage = () => {
   const handleSubmit = (e) => {
     e.preventDefault();
     setLoading(true);
-    // Simple mock login: any credentials redirect to dashboard
-    setTimeout(() => {
-      navigate("/dashboard");
-    }, 1000);
+
+    // Immediate login to avoid delay feeling like "nothing working"
+    try {
+      login(email, password);
+      setTimeout(() => {
+        setLoading(false);
+        navigate("/dashboard");
+      }, 800);
+    } catch (error) {
+      console.error("Login failed:", error);
+      setLoading(false);
+    }
   };
 
   return (
@@ -111,8 +121,8 @@ export const LoginPage = () => {
 
           <Stack
             spacing={0}
-            alignItems="center"
             sx={{
+              alignItems: "center",
               position: "relative",
               zIndex: 1,
               transform: { md: "translateY(-40px)" } // Move content up slightly

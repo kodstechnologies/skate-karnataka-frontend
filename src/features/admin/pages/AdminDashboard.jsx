@@ -315,7 +315,7 @@ export const AdminDashboard = () => {
             </h1>
             <p className="mt-2 flex items-center gap-2 text-sm text-[#8f827e]">
               <span className="inline-flex h-2.5 w-2.5 animate-pulse rounded-full bg-[#53c7c5]" />
-              Welcome back, Coach Admin
+              Welcome back, Admin
             </p>
           </div>
 

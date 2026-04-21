@@ -89,6 +89,7 @@ export const DistrictForm = ({ formData, errors, onFieldChange, stateOptions }) 
             error={Boolean(errors.stateName)}
             helperText={errors.stateName}
             fullWidth
+            disabled
             sx={inputStyles}
           >
             {stateOptions.map((stateName) => (

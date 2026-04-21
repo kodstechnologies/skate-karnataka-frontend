@@ -9,6 +9,9 @@ import { DistrictsPage } from "@/features/admin/districts/pages/DistrictsPage";
 import { EventFormPage } from "@/features/admin/events/pages/EventFormPage";
 import { EventsPage } from "@/features/admin/events/pages/EventsPage";
 import { AdminDashboard } from "@/features/admin/pages/AdminDashboard";
+import { OfficialsPage } from "@/features/admin/officials/pages/OfficialsPage";
+import { OfficialFormPage } from "@/features/admin/officials/pages/OfficialFormPage";
+import { SubAdminLogsPage } from "@/features/admin/officials/pages/SubAdminLogsPage";
 import { AcademyRequestDetailsPage } from "@/features/admin/requests/pages/AcademyRequestDetailsPage";
 import { AcademyRequestsPage } from "@/features/admin/requests/pages/AcademyRequestsPage";
 import { OfficialRequestDetailsPage } from "@/features/admin/requests/pages/OfficialRequestDetailsPage";
@@ -17,8 +20,6 @@ import { SchoolRequestDetailsPage } from "@/features/admin/requests/pages/School
 import { SchoolRequestsPage } from "@/features/admin/requests/pages/SchoolRequestsPage";
 import { SkaterDetailsPage } from "@/features/admin/skaters/pages/SkaterDetailsPage";
 import { SkatersPage } from "@/features/admin/skaters/pages/SkatersPage";
-import { StateFormPage } from "@/features/admin/states/pages/StateFormPage";
-import { StatesPage } from "@/features/admin/states/pages/StatesPage";
 import { LoginPage } from "@/features/auth/pages/LoginPage";
 import { MainLayout } from "@/layouts/MainLayout";
 import { NotFoundPage } from "@/pages/NotFoundPage";
@@ -30,6 +31,10 @@ export const AppRoutes = () => {
       <Route path="/" element={<Navigate to="/login" replace />} />
       <Route element={<MainLayout />}>
         <Route path="/dashboard" element={<AdminDashboard />} />
+        <Route path="/officials" element={<OfficialsPage />} />
+        <Route path="/officials/create" element={<OfficialFormPage />} />
+        <Route path="/officials/:officialId/edit" element={<OfficialFormPage />} />
+        <Route path="/officials/:officialId/logs" element={<SubAdminLogsPage />} />
         <Route path="/skaters" element={<SkatersPage />} />
         <Route path="/skaters/:skaterId" element={<SkaterDetailsPage />} />
         <Route path="/clubs" element={<ClubsPage />} />
@@ -42,9 +47,6 @@ export const AppRoutes = () => {
         <Route path="/circulars" element={<CircularsPage />} />
         <Route path="/circulars/create" element={<CircularFormPage />} />
         <Route path="/circulars/:circularId/edit" element={<CircularFormPage />} />
-        <Route path="/states" element={<StatesPage />} />
-        <Route path="/states/create" element={<StateFormPage />} />
-        <Route path="/states/:stateId/edit" element={<StateFormPage />} />
         <Route path="/districts" element={<DistrictsPage />} />
         <Route path="/districts/create" element={<DistrictFormPage />} />
         <Route path="/districts/:districtId/edit" element={<DistrictFormPage />} />

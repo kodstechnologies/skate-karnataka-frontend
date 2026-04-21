@@ -6,6 +6,7 @@ import PublicIcon from "@mui/icons-material/Public";
 import SchoolIcon from "@mui/icons-material/School";
 import WorkspacePremiumIcon from "@mui/icons-material/WorkspacePremium";
 import BusinessIcon from "@mui/icons-material/Business";
+import AdminPanelSettingsIcon from "@mui/icons-material/AdminPanelSettings";
 import { LayoutDashboard, Megaphone, Inbox } from "lucide-react";
 
 export const navigationGroups = [
@@ -14,9 +15,19 @@ export const navigationGroups = [
     items: [{ slug: "dashboard", to: "/dashboard", label: "Dashboard", icon: LayoutDashboard }]
   },
   {
+    label: "Admin Controls",
+    items: [
+      {
+        slug: "officials",
+        to: "/officials",
+        label: "State Officials",
+        icon: AdminPanelSettingsIcon
+      }
+    ]
+  },
+  {
     label: "Management",
     items: [
-      { slug: "states", to: "/states", label: "State Officials", icon: PublicIcon },
       { slug: "districts", to: "/districts", label: "Districts", icon: LocationCityIcon },
       { slug: "clubs", to: "/clubs", label: "Clubs", icon: Groups2Icon },
       { slug: "skaters", to: "/skaters", label: "Skaters", icon: RollerSkatingIcon },

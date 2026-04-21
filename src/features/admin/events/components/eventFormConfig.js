@@ -9,14 +9,7 @@ export const eventStatusOptions = [
   { value: "public", label: "Public" }
 ];
 
-export const stateOptions = [
-  "Karnataka",
-  "Tamil Nadu",
-  "Kerala",
-  "Maharashtra",
-  "Goa",
-  "Telangana"
-];
+export const stateOptions = ["Karnataka"];
 
 export const districtOptions = [
   "Bengaluru Urban",

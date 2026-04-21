@@ -44,23 +44,6 @@ const seedStates = [
     totalClubs: "48",
     status: "active",
     notes: "Lead state association."
-  },
-  {
-    id: createId(),
-    stateName: "Tamil Nadu",
-    stateCode: "TN",
-    headquartersAddress: "Chennai",
-    associationName: "Tamil Nadu Skating Federation",
-    presidentName: "Arun Prakash",
-    presidentPhone: "9123456789",
-    secretaryName: "Meena Devi",
-    secretaryPhone: "9001122334",
-    email: "office@tnsf.in",
-    website: "",
-    totalDistricts: "38",
-    totalClubs: "33",
-    status: "active",
-    notes: ""
   }
 ].map(withDefaultFields);
 

@@ -6,33 +6,17 @@ import circularHero from "@/assets/Circular_header.jpg";
 import { useCircularsStore } from "@/features/admin/circulars/store/circulars-store";
 
 const targetOptions = ["State", "District", "Club"];
-const states = ["Karnataka", "Tamil Nadu", "Kerala", "Maharashtra", "Telangana"];
+const states = ["Karnataka"];
 
 const districtsByState = {
-  Karnataka: ["Bengaluru Urban", "Mysuru", "Mangaluru", "Belagavi"],
-  "Tamil Nadu": ["Chennai", "Coimbatore", "Madurai"],
-  Kerala: ["Kochi", "Thiruvananthapuram", "Kozhikode"],
-  Maharashtra: ["Pune", "Mumbai", "Nagpur"],
-  Telangana: ["Hyderabad", "Warangal", "Nizamabad"]
+  Karnataka: ["Bengaluru Urban", "Mysuru", "Mangaluru", "Belagavi"]
 };
 
 const clubsByDistrict = {
   "Bengaluru Urban": ["Velocity Blades Club", "Skyline Rollers", "Indiranagar Inline Club"],
   Mysuru: ["Mysuru Aero Wheels", "Royal Rink Club"],
   Mangaluru: ["Coastal Glide Club", "Portline Skaters"],
-  Belagavi: ["Belagavi Blitz Club"],
-  Chennai: ["Marina Sprint Club", "Chennai Champions Skate"],
-  Coimbatore: ["CBE Velocity Club"],
-  Madurai: ["Temple City Rollers"],
-  Kochi: ["Kochi Bay Skaters"],
-  Thiruvananthapuram: ["Capital Wheels Club"],
-  Kozhikode: ["Malabar Motion Club"],
-  Pune: ["Pune Nitro Skaters"],
-  Mumbai: ["Mumbai Metro Skate Club"],
-  Nagpur: ["Orange City Gliders"],
-  Hyderabad: ["Hyderabad Hawks Skate Club"],
-  Warangal: ["Warangal Roll Arena"],
-  Nizamabad: ["Nizam Speed Wheels"]
+  Belagavi: ["Belagavi Blitz Club"]
 };
 
 const readFileAsDataUrl = (file) =>
@@ -56,7 +40,9 @@ export const CircularFormPage = () => {
   );
 
   const [targetType, setTargetType] = useState(existingCircular?.targetType ?? "State");
-  const [selectedState, setSelectedState] = useState(existingCircular?.selectedState ?? "");
+  const [selectedState, setSelectedState] = useState(
+    existingCircular?.selectedState ?? "Karnataka"
+  );
   const [selectedDistrict, setSelectedDistrict] = useState(
     existingCircular?.selectedDistrict ?? ""
   );
@@ -451,7 +437,8 @@ export const CircularFormPage = () => {
                 setSelectedDistrict("");
                 setSelectedClub("");
               }}
-              className="w-full rounded-xl border border-[#f0ddd5] bg-white px-3 py-2.5 text-sm text-[#2f2829] outline-none focus:border-[#f6765e]"
+              disabled
+              className="w-full rounded-xl border border-[#f0ddd5] bg-[#f6f1ef] px-3 py-2.5 text-sm text-[#2f2829] outline-none"
             >
               <option value="">Choose state</option>
               {states.map((state) => (

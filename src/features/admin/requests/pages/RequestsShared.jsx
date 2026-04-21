@@ -19,9 +19,8 @@ import {
   TextField,
   Typography
 } from "@mui/material";
-import { Check, ChevronRight, Search, Trash2 } from "lucide-react";
+import { ChevronRight, Search } from "lucide-react";
 import { useMemo, useState } from "react";
-import toast from "react-hot-toast";
 import { Link as RouterLink, useNavigate, useParams } from "react-router-dom";
 import circularHero from "@/assets/Circular_header.jpg";
 
@@ -94,15 +93,6 @@ export const RequestListPage = ({ config }) => {
     return filteredRequests.slice(start, start + rowsPerPage);
   }, [filteredRequests, page, rowsPerPage]);
 
-  const handleApprove = (id) => {
-    config.approve(id);
-    toast.success(`${config.label} request approved`);
-  };
-
-  const handleReject = (id) => {
-    config.reject(id);
-    toast.error(`${config.label} request rejected and removed`);
-  };
   const heroImage = config.heroImage ?? circularHero;
 
   return (
@@ -146,7 +136,7 @@ export const RequestListPage = ({ config }) => {
             {config.label} Requests
           </Typography>
           <Typography sx={{ color: "rgba(255,255,255,0.86)" }}>
-            Review pending requests, open complete details, and approve or reject directly.
+            Review pending requests and open complete details.
           </Typography>
         </Stack>
       </Paper>
@@ -221,27 +211,6 @@ export const RequestListPage = ({ config }) => {
                         >
                           <VisibilityOutlinedIcon sx={{ fontSize: 18 }} />
                         </IconButton>
-                        <Button
-                          size="small"
-                          variant="outlined"
-                          startIcon={<Check size={14} />}
-                          onClick={() => handleApprove(item.id)}
-                          disabled={item.status === "approved"}
-                        >
-                          Approve
-                        </Button>
-                        <Button
-                          size="small"
-                          variant="contained"
-                          startIcon={<Trash2 size={14} />}
-                          onClick={() => handleReject(item.id)}
-                          sx={{
-                            backgroundColor: "#f6765e",
-                            "&:hover": { backgroundColor: "#ea6b54" }
-                          }}
-                        >
-                          Reject
-                        </Button>
                       </Stack>
                     </TableCell>
                   </TableRow>
@@ -285,22 +254,6 @@ export const RequestDetailsPage = ({ config }) => {
     [requests, requestId]
   );
 
-  const handleApprove = () => {
-    if (!request) {
-      return;
-    }
-    config.approve(request.id);
-    toast.success(`${config.label} request approved`);
-  };
-
-  const handleReject = () => {
-    if (!request) {
-      return;
-    }
-    config.reject(request.id);
-    toast.error(`${config.label} request rejected and removed`);
-    navigate(config.basePath);
-  };
   const heroImage = config.heroImage ?? circularHero;
 
   if (!request) {
@@ -386,8 +339,7 @@ export const RequestDetailsPage = ({ config }) => {
             <Typography
               sx={{ mt: 1.25, maxWidth: 620, color: "rgba(255,255,255,0.86)", lineHeight: 1.7 }}
             >
-              Review all submitted information, then approve the request or reject and remove it
-              from the queue.
+              Review all submitted information for this request.
             </Typography>
           </Box>
           <Stack direction="row" spacing={1.2} useFlexGap sx={{ mt: 2, flexWrap: "wrap" }}>
@@ -429,22 +381,6 @@ export const RequestDetailsPage = ({ config }) => {
           <Stack direction={{ xs: "column", sm: "row" }} spacing={1}>
             <Button variant="outlined" onClick={() => navigate(config.basePath)}>
               Back to list
-            </Button>
-            <Button
-              variant="outlined"
-              startIcon={<Check size={16} />}
-              onClick={handleApprove}
-              disabled={request.status === "approved"}
-            >
-              Approve
-            </Button>
-            <Button
-              variant="contained"
-              startIcon={<Trash2 size={16} />}
-              onClick={handleReject}
-              sx={{ backgroundColor: "#f6765e", "&:hover": { backgroundColor: "#ea6b54" } }}
-            >
-              Reject
             </Button>
           </Stack>
         </Stack>

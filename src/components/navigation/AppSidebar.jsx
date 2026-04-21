@@ -4,9 +4,13 @@ import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import logo from "@/assets/karnataka-roller-skating-logo.png";
 import { navigationGroups } from "@/lib/app-shell";
 import { useUiStore } from "@/store/ui-store";
+import { useAuthStore } from "@/features/auth/store/auth-store";
 
 export const AppSidebar = () => {
   const navigate = useNavigate();
+  const logout = useAuthStore((state) => state.logout);
+  const role = useAuthStore((state) => state.role);
+  const user = useAuthStore((state) => state.user);
   const sidebarOpen = useUiStore((state) => state.sidebarOpen);
   const mobileSidebarOpen = useUiStore((state) => state.mobileSidebarOpen);
   const closeMobileSidebar = useUiStore((state) => state.closeMobileSidebar);
@@ -67,81 +71,153 @@ export const AppSidebar = () => {
         </div>
 
         <nav className="custom-scrollbar min-h-0 flex-1 overflow-x-hidden overflow-y-auto overscroll-contain px-4 py-3">
-          {navigationGroups.map((group) => (
-            <div key={group.label} className="mb-2 last:mb-0">
-              <div className="space-y-0.5">
-                {group.items.map((item) => {
-                  const Icon = item.icon;
-                  const hasChildren = Array.isArray(item.children) && item.children.length > 0;
-                  const isChildActive = hasChildren
-                    ? item.children.some((child) => location.pathname.startsWith(child.to))
-                    : false;
-                  const isExpanded = Boolean(expandedParentItems[item.slug]);
+          {navigationGroups.map((group) => {
+            // Hide entire Admin Controls group for subadmins
+            if (role === "subadmin" && group.label === "Admin Controls") return null;
 
-                  if (hasChildren) {
-                    return (
-                      <div key={item.slug} className="group relative">
-                        <button
-                          type="button"
-                          onClick={() => toggleParentItem(item.slug)}
-                          className={`flex w-full items-center rounded-2xl px-3 py-2.5 text-sm transition ${
-                            sidebarOpen ? "justify-between" : "lg:justify-center"
-                          } ${
-                            isChildActive
-                              ? "bg-[#fef0ea] text-[#f6765e] shadow-[0_8px_24px_rgba(246,118,94,0.12)]"
-                              : "text-[#7f7270] hover:bg-white hover:text-[#2f2829]"
-                          }`}
-                        >
-                          <div
-                            className={`flex items-center ${
-                              sidebarOpen ? "gap-3" : "lg:justify-center"
+            const filteredItems = group.items.filter((item) => {
+              // Always hide States since there is only one state (Karnataka)
+              if (item.slug === "states") return false;
+
+              return true;
+            });
+
+            if (filteredItems.length === 0) return null;
+
+            return (
+              <div key={group.label} className="mb-2 last:mb-0">
+                <div className="space-y-0.5">
+                  {filteredItems.map((item) => {
+                    const Icon = item.icon;
+                    const hasChildren = Array.isArray(item.children) && item.children.length > 0;
+                    const isChildActive = hasChildren
+                      ? item.children.some((child) => location.pathname.startsWith(child.to))
+                      : false;
+                    const isExpanded = Boolean(expandedParentItems[item.slug]);
+
+                    if (hasChildren) {
+                      return (
+                        <div key={item.slug} className="group relative">
+                          <button
+                            type="button"
+                            onClick={() => toggleParentItem(item.slug)}
+                            className={`flex w-full items-center rounded-2xl px-3 py-2.5 text-sm transition ${
+                              sidebarOpen ? "justify-between" : "lg:justify-center"
+                            } ${
+                              isChildActive
+                                ? "bg-[#fef0ea] text-[#f6765e] shadow-[0_8px_24px_rgba(246,118,94,0.12)]"
+                                : "text-[#7f7270] hover:bg-white hover:text-[#2f2829]"
                             }`}
                           >
-                            <span
-                              className={`flex h-10 w-10 items-center justify-center rounded-2xl ${
-                                isChildActive
-                                  ? "bg-[#f6765e] text-white"
-                                  : "bg-white text-[#8f817e]"
+                            <div
+                              className={`flex items-center ${
+                                sidebarOpen ? "gap-3" : "lg:justify-center"
                               }`}
                             >
-                              <Icon className="h-[18px] w-[18px]" />
-                            </span>
-                            <span className={`${sidebarOpen ? "block" : "lg:hidden"} font-medium`}>
-                              {item.label}
-                            </span>
-                          </div>
+                              <span
+                                className={`flex h-10 w-10 items-center justify-center rounded-2xl ${
+                                  isChildActive
+                                    ? "bg-[#f6765e] text-white"
+                                    : "bg-white text-[#8f817e]"
+                                }`}
+                              >
+                                <Icon className="h-[18px] w-[18px]" />
+                              </span>
+                              <span
+                                className={`${sidebarOpen ? "block" : "lg:hidden"} font-medium`}
+                              >
+                                {item.label}
+                              </span>
+                            </div>
 
-                          {sidebarOpen && (
-                            <ChevronRight
-                              size={16}
-                              className={`text-[#d59583] transition-transform ${isExpanded ? "rotate-90" : ""}`}
-                            />
+                            {sidebarOpen && (
+                              <ChevronRight
+                                size={16}
+                                className={`text-[#d59583] transition-transform ${isExpanded ? "rotate-90" : ""}`}
+                              />
+                            )}
+                          </button>
+
+                          {isExpanded && sidebarOpen && (
+                            <div className="mt-1 ml-12 space-y-1">
+                              {item.children.map((child) => {
+                                const ChildIcon = child.icon;
+                                return (
+                                  <NavLink
+                                    key={child.to}
+                                    to={child.to}
+                                    className={({ isActive }) =>
+                                      `flex items-center gap-2 rounded-xl px-2.5 py-2 text-sm transition ${
+                                        isActive
+                                          ? "bg-[#fff1eb] text-[#f6765e] font-semibold"
+                                          : "text-[#8a7d7a] hover:bg-white hover:text-[#2f2829]"
+                                      }`
+                                    }
+                                  >
+                                    <ChildIcon className="h-4 w-4" />
+                                    <span>{child.label}</span>
+                                  </NavLink>
+                                );
+                              })}
+                            </div>
                           )}
-                        </button>
 
-                        {isExpanded && sidebarOpen && (
-                          <div className="mt-1 ml-12 space-y-1">
-                            {item.children.map((child) => {
-                              const ChildIcon = child.icon;
-                              return (
-                                <NavLink
-                                  key={child.to}
-                                  to={child.to}
-                                  className={({ isActive }) =>
-                                    `flex items-center gap-2 rounded-xl px-2.5 py-2 text-sm transition ${
-                                      isActive
-                                        ? "bg-[#fff1eb] text-[#f6765e] font-semibold"
-                                        : "text-[#8a7d7a] hover:bg-white hover:text-[#2f2829]"
-                                    }`
-                                  }
+                          {!sidebarOpen && (
+                            <div className="pointer-events-none absolute left-full top-1/2 z-50 ml-3 hidden -translate-y-1/2 rounded-xl bg-[#2f2829] px-3 py-2 text-xs font-medium text-white opacity-0 shadow-lg transition group-hover:opacity-100 lg:block">
+                              {item.label}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    }
+
+                    return (
+                      <div key={item.to} className="group relative">
+                        <NavLink
+                          to={item.to}
+                          className={({ isActive }) => {
+                            const activeState = isActive || isChildActive;
+                            return `flex items-center rounded-2xl px-3 py-2.5 text-sm transition ${
+                              sidebarOpen ? "justify-between" : "lg:justify-center"
+                            } ${
+                              activeState
+                                ? "bg-[#fef0ea] text-[#f6765e] shadow-[0_8px_24px_rgba(246,118,94,0.12)]"
+                                : "text-[#7f7270] hover:bg-white hover:text-[#2f2829]"
+                            }`;
+                          }}
+                        >
+                          {({ isActive }) => {
+                            const activeState = isActive || isChildActive;
+                            return (
+                              <>
+                                <div
+                                  className={`flex items-center ${
+                                    sidebarOpen ? "gap-3" : "lg:justify-center"
+                                  }`}
                                 >
-                                  <ChildIcon className="h-4 w-4" />
-                                  <span>{child.label}</span>
-                                </NavLink>
-                              );
-                            })}
-                          </div>
-                        )}
+                                  <span
+                                    className={`flex h-10 w-10 items-center justify-center rounded-2xl ${
+                                      activeState
+                                        ? "bg-[#f6765e] text-white"
+                                        : "bg-white text-[#8f817e]"
+                                    }`}
+                                  >
+                                    <Icon className="h-[18px] w-[18px]" />
+                                  </span>
+                                  <span
+                                    className={`${sidebarOpen ? "block" : "lg:hidden"} font-medium`}
+                                  >
+                                    {item.label}
+                                  </span>
+                                </div>
+
+                                {sidebarOpen && activeState && (
+                                  <ChevronRight size={16} className="text-[#d59583]" />
+                                )}
+                              </>
+                            );
+                          }}
+                        </NavLink>
 
                         {!sidebarOpen && (
                           <div className="pointer-events-none absolute left-full top-1/2 z-50 ml-3 hidden -translate-y-1/2 rounded-xl bg-[#2f2829] px-3 py-2 text-xs font-medium text-white opacity-0 shadow-lg transition group-hover:opacity-100 lg:block">
@@ -150,67 +226,11 @@ export const AppSidebar = () => {
                         )}
                       </div>
                     );
-                  }
-
-                  return (
-                    <div key={item.to} className="group relative">
-                      <NavLink
-                        to={item.to}
-                        className={({ isActive }) => {
-                          const activeState = isActive || isChildActive;
-                          return `flex items-center rounded-2xl px-3 py-2.5 text-sm transition ${
-                            sidebarOpen ? "justify-between" : "lg:justify-center"
-                          } ${
-                            activeState
-                              ? "bg-[#fef0ea] text-[#f6765e] shadow-[0_8px_24px_rgba(246,118,94,0.12)]"
-                              : "text-[#7f7270] hover:bg-white hover:text-[#2f2829]"
-                          }`;
-                        }}
-                      >
-                        {({ isActive }) => {
-                          const activeState = isActive || isChildActive;
-                          return (
-                            <>
-                              <div
-                                className={`flex items-center ${
-                                  sidebarOpen ? "gap-3" : "lg:justify-center"
-                                }`}
-                              >
-                                <span
-                                  className={`flex h-10 w-10 items-center justify-center rounded-2xl ${
-                                    activeState
-                                      ? "bg-[#f6765e] text-white"
-                                      : "bg-white text-[#8f817e]"
-                                  }`}
-                                >
-                                  <Icon className="h-[18px] w-[18px]" />
-                                </span>
-                                <span
-                                  className={`${sidebarOpen ? "block" : "lg:hidden"} font-medium`}
-                                >
-                                  {item.label}
-                                </span>
-                              </div>
-
-                              {sidebarOpen && activeState && (
-                                <ChevronRight size={16} className="text-[#d59583]" />
-                              )}
-                            </>
-                          );
-                        }}
-                      </NavLink>
-
-                      {!sidebarOpen && (
-                        <div className="pointer-events-none absolute left-full top-1/2 z-50 ml-3 hidden -translate-y-1/2 rounded-xl bg-[#2f2829] px-3 py-2 text-xs font-medium text-white opacity-0 shadow-lg transition group-hover:opacity-100 lg:block">
-                          {item.label}
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
+                  })}
+                </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </nav>
 
         <div className="shrink-0 border-t border-[#efe2dc] px-4 py-4">
@@ -227,12 +247,19 @@ export const AppSidebar = () => {
               className={`${sidebarOpen ? "flex" : "hidden"} min-w-0 flex-1 items-center justify-between`}
             >
               <div className="min-w-0">
-                <p className="truncate text-sm font-semibold text-[#2f2829]">Aigar S.</p>
-                <p className="text-xs text-[#9b8d88]">Admin</p>
+                <p className="truncate text-sm font-semibold text-[#2f2829]">
+                  {user?.name || "Aigar S."}
+                </p>
+                <p className="text-xs text-[#9b8d88]">
+                  {role === "admin" ? "State Admin" : "State Official"}
+                </p>
               </div>
               <button
                 type="button"
-                onClick={() => navigate("/login")}
+                onClick={() => {
+                  logout();
+                  navigate("/login");
+                }}
                 className="rounded-full p-2 text-[#9b8d88] transition hover:bg-[#faf4f1] hover:text-[#2f2829]"
                 aria-label="Logout"
               >
