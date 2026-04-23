@@ -17,12 +17,15 @@ import {
   TablePagination,
   TableRow,
   TextField,
-  Typography
+  Typography,
+  Skeleton
 } from "@mui/material";
 import { ChevronRight, Search } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect, useRef } from "react";
 import { Link as RouterLink, useNavigate, useParams } from "react-router-dom";
 import circularHero from "@/assets/Circular_header.jpg";
+import { useDebounce } from "@/hooks/useDebounce";
+import { useRequestsStore } from "@/features/admin/requests/store/requests-store";
 
 const formatValue = (value) => {
   if (value === undefined || value === null || value === "") {
@@ -30,18 +33,6 @@ const formatValue = (value) => {
   }
   return String(value);
 };
-
-const getStatusChip = (status) => (
-  <Chip
-    size="small"
-    label={status === "approved" ? "Approved" : "Pending"}
-    sx={{
-      backgroundColor: status === "approved" ? "#edf8ef" : "#fff1eb",
-      color: status === "approved" ? "#2f8f4e" : "#f6765e",
-      fontWeight: 700
-    }}
-  />
-);
 
 const DetailItem = ({ label, value }) => (
   <Box
@@ -75,18 +66,36 @@ export const RequestListPage = ({ config }) => {
   const [searchTerm, setSearchTerm] = useState("");
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(5);
+  const isFirstRender = useRef(true);
+
+  const debouncedSearchTerm = useDebounce(searchTerm, 500);
+
+  useEffect(() => {
+    if (isFirstRender.current) {
+      isFirstRender.current = false;
+      if (config.onSearch) {
+        config.onSearch("");
+      }
+      return;
+    }
+
+    if (config.onSearch) {
+      config.onSearch(debouncedSearchTerm);
+    }
+  }, [debouncedSearchTerm, config]);
 
   const requests = config.useRequests();
+  const loading = useRequestsStore((state) => state.loading);
 
   const filteredRequests = useMemo(() => {
     const normalizedSearch = searchTerm.trim().toLowerCase();
-    if (!normalizedSearch) {
+    if (!normalizedSearch || config.onSearch) {
       return requests;
     }
     return requests.filter((item) =>
       findSearchText(item, config.listFields).includes(normalizedSearch)
     );
-  }, [requests, searchTerm, config.listFields]);
+  }, [requests, searchTerm, config.listFields, config.onSearch]);
 
   const paginatedRequests = useMemo(() => {
     const start = page * rowsPerPage;
@@ -129,14 +138,14 @@ export const RequestListPage = ({ config }) => {
             >
               Dashboard
             </Typography>
-            <Typography sx={{ color: "inherit" }}>Requests</Typography>
+            <Typography sx={{ color: "inherit" }}>Reports</Typography>
             <Typography sx={{ color: "white", fontWeight: 700 }}>{config.label}</Typography>
           </Breadcrumbs>
           <Typography variant="h3" sx={{ fontWeight: 700, letterSpacing: "-0.05em", mb: 1.5 }}>
-            {config.label} Requests
+            {config.label} Reports
           </Typography>
           <Typography sx={{ color: "rgba(255,255,255,0.86)" }}>
-            Review pending requests and open complete details.
+            Review the reports and open complete details.
           </Typography>
         </Stack>
       </Paper>
@@ -151,7 +160,7 @@ export const RequestListPage = ({ config }) => {
           sx={{ p: 3, alignItems: { lg: "center" }, justifyContent: "space-between" }}
         >
           <Typography variant="h5" sx={{ fontWeight: 700, letterSpacing: "-0.04em" }}>
-            {config.label} Requests List
+            {config.label} Reports List
           </Typography>
           <TextField
             value={searchTerm}
@@ -159,7 +168,7 @@ export const RequestListPage = ({ config }) => {
               setSearchTerm(event.target.value);
               setPage(0);
             }}
-            placeholder={`Search ${config.label.toLowerCase()} requests...`}
+            placeholder={`Search ${config.label.toLowerCase()} reports...`}
             slotProps={{
               input: {
                 startAdornment: (
@@ -186,23 +195,34 @@ export const RequestListPage = ({ config }) => {
                   </TableCell>
                 ))}
                 <TableCell sx={{ color: "#7e716d", fontWeight: 700, fontSize: 13 }}>
-                  Status
-                </TableCell>
-                <TableCell sx={{ color: "#7e716d", fontWeight: 700, fontSize: 13 }}>
                   Actions
                 </TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
-              {paginatedRequests.length > 0 ? (
+              {loading ? (
+                Array.from({ length: rowsPerPage }).map((_, index) => (
+                  <TableRow key={`skeleton-${index}`}>
+                    {config.listFields.map((field) => (
+                      <TableCell key={`skeleton-${index}-${field.key}`}>
+                        <Skeleton variant="text" width="80%" />
+                      </TableCell>
+                    ))}
+                    <TableCell>
+                      <Skeleton variant="circular" width={32} height={32} />
+                    </TableCell>
+                  </TableRow>
+                ))
+              ) : paginatedRequests.length > 0 ? (
                 paginatedRequests.map((item) => (
                   <TableRow key={item.id} hover>
                     {config.listFields.map((field) => (
                       <TableCell key={`${item.id}-${field.key}`}>
-                        {formatValue(item[field.key])}
+                        {field.key === "phone" && item.countryCode
+                          ? `${item.countryCode} ${item[field.key]}`
+                          : formatValue(item[field.key])}
                       </TableCell>
                     ))}
-                    <TableCell>{getStatusChip(item.status)}</TableCell>
                     <TableCell>
                       <Stack direction="row" spacing={1}>
                         <IconButton
@@ -218,10 +238,10 @@ export const RequestListPage = ({ config }) => {
               ) : (
                 <TableRow>
                   <TableCell
-                    colSpan={config.listFields.length + 2}
+                    colSpan={config.listFields.length + 1}
                     sx={{ py: 6, textAlign: "center", color: "#978a86" }}
                   >
-                    No requests found.
+                    No reports found.
                   </TableCell>
                 </TableRow>
               )}
@@ -260,10 +280,10 @@ export const RequestDetailsPage = ({ config }) => {
     return (
       <Paper elevation={0} sx={{ p: 4, borderRadius: "28px", textAlign: "center" }}>
         <Typography variant="h5" sx={{ fontWeight: 700, color: "#2f2829" }}>
-          Request not found
+          Report not found
         </Typography>
         <Button sx={{ mt: 3 }} variant="contained" onClick={() => navigate(config.basePath)}>
-          Back to {config.label} requests
+          Back to {config.label} reports
         </Button>
       </Paper>
     );
@@ -319,7 +339,7 @@ export const RequestDetailsPage = ({ config }) => {
                 to={config.basePath}
                 sx={{ color: "inherit", textDecoration: "none", "&:hover": { color: "white" } }}
               >
-                {config.label} Requests
+                {config.label} Reports
               </Typography>
               <Typography sx={{ fontWeight: 700, color: "white" }}>Details</Typography>
             </Breadcrumbs>
@@ -331,19 +351,18 @@ export const RequestDetailsPage = ({ config }) => {
                 color: "rgba(255,255,255,0.72)"
               }}
             >
-              Request Overview
+              Report Overview
             </Typography>
             <Typography variant="h3" sx={{ mt: 1, fontWeight: 800, letterSpacing: "-0.05em" }}>
-              {config.label} Request Details
+              {config.label} Report Details
             </Typography>
             <Typography
               sx={{ mt: 1.25, maxWidth: 620, color: "rgba(255,255,255,0.86)", lineHeight: 1.7 }}
             >
-              Review all submitted information for this request.
+              Review all submitted information for this report.
             </Typography>
           </Box>
           <Stack direction="row" spacing={1.2} useFlexGap sx={{ mt: 2, flexWrap: "wrap" }}>
-            {getStatusChip(request.status)}
             <Chip
               label={`${config.detailFields.length} fields`}
               sx={{ backgroundColor: "rgba(255,255,255,0.14)", color: "white", fontWeight: 700 }}
@@ -375,7 +394,7 @@ export const RequestDetailsPage = ({ config }) => {
               Submitted Information
             </Typography>
             <Typography sx={{ mt: 0.5, color: "#8d7f7b" }}>
-              Complete details submitted for this request.
+              Complete details submitted for this report.
             </Typography>
           </Box>
           <Stack direction={{ xs: "column", sm: "row" }} spacing={1}>
@@ -395,7 +414,15 @@ export const RequestDetailsPage = ({ config }) => {
           }}
         >
           {config.detailFields.map((field) => (
-            <DetailItem key={field.key} label={field.label} value={request[field.key]} />
+            <DetailItem
+              key={field.key}
+              label={field.label}
+              value={
+                field.key === "phone" && request.countryCode
+                  ? `${request.countryCode} ${request[field.key]}`
+                  : request[field.key]
+              }
+            />
           ))}
           <DetailItem
             label="Documents"

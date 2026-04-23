@@ -4,8 +4,8 @@ export const authApi = {
   login: async (credentials) => {
     return api.post("/admin/v1/login", credentials);
   },
-  logout: async () => {
-    return api.post("/admin/v1/logout");
+  logout: async (refreshToken) => {
+    return api.post("/admin/v1/logout", { refreshToken });
   },
   getProfile: async () => {
     return api.get("/admin/v1/profile");

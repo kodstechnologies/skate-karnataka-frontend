@@ -5,98 +5,169 @@ import officialHero from "@/assets/Official_header.jpg";
 
 export const schoolRequestConfig = {
   label: "School",
-  basePath: "/requests/school",
+  basePath: "/reports/school",
   heroImage: schoolHero,
   useRequests: () => useRequestsStore((state) => state.schoolRequests),
-  approve: (id) => useRequestsStore.getState().approveSchoolRequest(id),
-  reject: (id) => useRequestsStore.getState().rejectSchoolRequest(id),
+  onSearch: (value) => {
+    const params = {};
+    const search = value.trim();
+    if (!search) {
+      return useRequestsStore.getState().fetchSchoolRequests({});
+    }
+    if (search.includes("@")) {
+      params.email = search;
+    } else if (/^\+?\d+$/.test(search)) {
+      params.phone = search;
+    } else if (["male", "female"].includes(search.toLowerCase())) {
+      params.gender = search.toLowerCase();
+    } else {
+      params.fullName = search;
+    }
+    return useRequestsStore.getState().fetchSchoolRequests(params);
+  },
   listFields: [
     { key: "schoolName", label: "School Name" },
-    { key: "board", label: "Board" },
-    { key: "principalName", label: "Principal" },
-    { key: "schoolContactNumber", label: "Contact" },
-    { key: "schoolEmail", label: "Email" }
+    { key: "fullName", label: "Representative" },
+    { key: "email", label: "Email" },
+    { key: "phone", label: "Contact" },
+    { key: "gender", label: "Gender" },
+    { key: "address", label: "Address" }
   ],
   detailFields: [
     { key: "schoolName", label: "School Name" },
-    { key: "board", label: "Board" },
-    { key: "principalName", label: "Principal Name" },
-    { key: "schoolEmail", label: "School Email" },
-    { key: "schoolContactNumber", label: "Contact Number" },
-    { key: "servingFrom", label: "Serving From" },
-    { key: "certificatesAvailable", label: "Certificates Available" },
-    { key: "certifiedBy", label: "Certified By" },
-    { key: "skatingInfraAvailable", label: "Skating Infra Available" },
-    { key: "skatingInfraInfo", label: "Skating Infra Info" },
-    { key: "lookingForSkatingService", label: "Looking For Skating Service" },
-    { key: "lookingForSkatingCoach", label: "Looking For Skating Coach" },
-    { key: "coachName", label: "Coach Name" },
-    { key: "coachGender", label: "Coach Gender" },
-    { key: "coachContact", label: "Coach Contact" },
-    { key: "coachCertificates", label: "Coach Certificates" }
+    { key: "fullName", label: "Representative Name" },
+    { key: "email", label: "Email" },
+    { key: "phone", label: "Phone" },
+    { key: "gender", label: "Gender" },
+    { key: "address", label: "Address" },
+    { key: "district", label: "District ID" },
+    { key: "role", label: "Role" }
   ]
 };
 
 export const officialRequestConfig = {
   label: "Official",
-  basePath: "/requests/official",
+  basePath: "/reports/official",
   heroImage: officialHero,
   useRequests: () => useRequestsStore((state) => state.officialRequests),
-  approve: (id) => useRequestsStore.getState().approveOfficialRequest(id),
-  reject: (id) => useRequestsStore.getState().rejectOfficialRequest(id),
+  onSearch: (value) => {
+    const params = {};
+    const search = value.trim();
+
+    if (!search) {
+      return useRequestsStore.getState().fetchOfficialRequests({});
+    }
+
+    if (search.includes("@")) {
+      params.email = search;
+    } else if (/^\+?\d+$/.test(search)) {
+      params.phone = search;
+    } else if (["male", "female"].includes(search.toLowerCase())) {
+      params.gender = search.toLowerCase();
+    } else {
+      params.fullName = search;
+    }
+
+    useRequestsStore.getState().fetchOfficialRequests(params);
+  },
   listFields: [
-    { key: "officialEmail", label: "Official Email" },
-    { key: "officialContactNumber", label: "Contact Number" },
-    { key: "experience", label: "Experience" },
-    { key: "isSkater", label: "Is Skater" },
-    { key: "isOfficiating", label: "Is Officiating" }
+    { key: "fullName", label: "Full Name" },
+    { key: "email", label: "Email" },
+    { key: "phone", label: "Phone" },
+    { key: "gender", label: "Gender" },
+    { key: "role", label: "Role" }
   ],
   detailFields: [
-    { key: "club", label: "Club" },
-    { key: "experience", label: "Experience (Years)" },
-    { key: "technicalTrainingCourse", label: "Technical Training Course" },
-    { key: "coachingExperience", label: "Coaching Experience" },
-    { key: "isSkater", label: "Is Skater" },
-    { key: "skaterDetails", label: "Skater Details" },
-    { key: "isOfficiating", label: "Is Officiating" },
-    { key: "officiatingDetails", label: "Officiating Details" },
-    { key: "conductingClasses", label: "Conducting Classes" },
-    { key: "conductingClassesDetails", label: "Conducting Classes Details" },
-    { key: "coaching", label: "Coaching" },
-    { key: "officiating", label: "Officiating" },
-    { key: "officialContactNumber", label: "Official Contact Number" },
-    { key: "officialEmail", label: "Official Email" }
+    { key: "fullName", label: "Full Name" },
+    { key: "email", label: "Email" },
+    { key: "phone", label: "Phone" },
+    { key: "gender", label: "Gender" },
+    { key: "address", label: "Address" },
+    { key: "district", label: "District" },
+    { key: "role", label: "Role" }
+  ]
+};
+
+export const parentRequestConfig = {
+  label: "Parent",
+  basePath: "/reports/parent",
+  heroImage: officialHero,
+  useRequests: () => useRequestsStore((state) => state.parentRequests),
+  onSearch: (value) => {
+    const params = {};
+    const search = value.trim();
+
+    if (!search) {
+      return useRequestsStore.getState().fetchParentRequests({});
+    }
+
+    if (search.includes("@")) {
+      params.email = search;
+    } else if (/^\+?\d+$/.test(search)) {
+      params.phone = search;
+    } else if (["male", "female"].includes(search.toLowerCase())) {
+      params.gender = search.toLowerCase();
+    } else {
+      params.fullName = search;
+    }
+
+    useRequestsStore.getState().fetchParentRequests(params);
+  },
+  listFields: [
+    { key: "fullName", label: "Full Name" },
+    { key: "email", label: "Email" },
+    { key: "phone", label: "Phone" },
+    { key: "gender", label: "Gender" }
+  ],
+  detailFields: [
+    { key: "fullName", label: "Full Name" },
+    { key: "email", label: "Email" },
+    { key: "phone", label: "Phone" },
+    { key: "gender", label: "Gender" },
+    { key: "role", label: "Role" }
   ]
 };
 
 export const academyRequestConfig = {
   label: "Academy",
-  basePath: "/requests/academy",
+  basePath: "/reports/academy",
   heroImage: academyHero,
   useRequests: () => useRequestsStore((state) => state.academyRequests),
-  approve: (id) => useRequestsStore.getState().approveAcademyRequest(id),
-  reject: (id) => useRequestsStore.getState().rejectAcademyRequest(id),
+  onSearch: (value) => {
+    const params = {};
+    const search = value.trim();
+
+    if (!search) {
+      return useRequestsStore.getState().fetchAcademyRequests({});
+    }
+
+    if (search.includes("@")) {
+      params.email = search;
+    } else if (/^\+?\d+$/.test(search)) {
+      params.phone = search;
+    } else if (["male", "female"].includes(search.toLowerCase())) {
+      params.gender = search.toLowerCase();
+    } else {
+      params.fullName = search;
+    }
+
+    useRequestsStore.getState().fetchAcademyRequests(params);
+  },
   listFields: [
-    { key: "clubName", label: "Club Name" },
-    { key: "ROSNumber", label: "ROS Number" },
-    { key: "presidentName", label: "President Name" },
-    { key: "presidentNumber", label: "President Number" },
-    { key: "secretaryName", label: "Secretary Name" }
+    { key: "fullName", label: "Representative" },
+    { key: "email", label: "Email" },
+    { key: "phone", label: "Contact" },
+    { key: "gender", label: "Gender" },
+    { key: "address", label: "Address" },
+    { key: "districtName", label: "District" }
   ],
   detailFields: [
-    { key: "clubName", label: "Club Name" },
-    { key: "ROSNumber", label: "ROS Number" },
-    { key: "presidentName", label: "President Name" },
-    { key: "presidentNumber", label: "President Number" },
-    { key: "secretaryName", label: "Secretary Name" },
-    { key: "secretaryNumber", label: "Secretary Number" },
-    { key: "tenacitySkaters", label: "Tenacity Skaters" },
-    { key: "recreationalSkaters", label: "Recreational Skaters" },
-    { key: "QuadSkaters", label: "Quad Skaters" },
-    { key: "ProInlineSkaters", label: "Pro Inline Skaters" },
-    { key: "trackAddress", label: "Track Address" },
-    { key: "trackMeasurements", label: "Track Measurements" },
-    { key: "noOfTrainers", label: "No Of Trainers" },
-    { key: "trainerCertification", label: "Trainer Certification" }
+    { key: "fullName", label: "Representative Name" },
+    { key: "email", label: "Email" },
+    { key: "phone", label: "Phone" },
+    { key: "gender", label: "Gender" },
+    { key: "address", label: "Address" },
+    { key: "districtName", label: "District" },
+    { key: "role", label: "Role" }
   ]
 };

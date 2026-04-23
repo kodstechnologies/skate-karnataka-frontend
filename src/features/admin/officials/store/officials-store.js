@@ -57,7 +57,7 @@ const seedOfficials = [
       },
       {
         id: "log-5",
-        action: "Published Circular",
+        action: "Published Gallery Item",
         target: "Safety Guidelines",
         timestamp: "2026-04-15T16:30:00Z"
       }

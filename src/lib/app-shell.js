@@ -2,12 +2,12 @@ import RollerSkatingIcon from "@mui/icons-material/RollerSkating";
 import Groups2Icon from "@mui/icons-material/Groups2";
 import EventIcon from "@mui/icons-material/Event";
 import LocationCityIcon from "@mui/icons-material/LocationCity";
-import PublicIcon from "@mui/icons-material/Public";
 import SchoolIcon from "@mui/icons-material/School";
 import WorkspacePremiumIcon from "@mui/icons-material/WorkspacePremium";
 import BusinessIcon from "@mui/icons-material/Business";
 import AdminPanelSettingsIcon from "@mui/icons-material/AdminPanelSettings";
-import { LayoutDashboard, Megaphone, Inbox } from "lucide-react";
+import FamilyRestroomIcon from "@mui/icons-material/FamilyRestroom";
+import { LayoutDashboard, Inbox, Image } from "lucide-react";
 
 export const navigationGroups = [
   {
@@ -32,23 +32,29 @@ export const navigationGroups = [
       { slug: "clubs", to: "/clubs", label: "Clubs", icon: Groups2Icon },
       { slug: "skaters", to: "/skaters", label: "Skaters", icon: RollerSkatingIcon },
       { slug: "events", to: "/events", label: "Events", icon: EventIcon },
-      { slug: "circulars", to: "/circulars", label: "Circulars", icon: Megaphone },
+      { slug: "gallery", to: "/gallery", label: "Gallery", icon: Image },
       {
-        slug: "requests",
-        to: "/requests/school",
-        label: "Requests",
+        slug: "reports",
+        to: "/reports/school",
+        label: "Reports",
         icon: Inbox,
         children: [
-          { slug: "school-requests", to: "/requests/school", label: "School", icon: SchoolIcon },
+          { slug: "school-reports", to: "/reports/school", label: "School", icon: SchoolIcon },
           {
-            slug: "official-requests",
-            to: "/requests/official",
+            slug: "official-reports",
+            to: "/reports/official",
             label: "Official",
             icon: WorkspacePremiumIcon
           },
           {
-            slug: "academy-requests",
-            to: "/requests/academy",
+            slug: "parent-reports",
+            to: "/reports/parent",
+            label: "Parent",
+            icon: FamilyRestroomIcon
+          },
+          {
+            slug: "academy-reports",
+            to: "/reports/academy",
             label: "Academy",
             icon: BusinessIcon
           }

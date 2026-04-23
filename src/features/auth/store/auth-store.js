@@ -10,6 +10,7 @@ export const useAuthStore = create()(
       role: null,
       isAuthenticated: false,
       isLoading: false,
+      refreshToken: null,
 
       login: async (email, password) => {
         set({ isLoading: true });
@@ -17,11 +18,17 @@ export const useAuthStore = create()(
           const response = await authApi.login({ email, password });
 
           if (response.success) {
-            const adminData = response.data.admin;
+            const { accessToken, refreshToken, admin: adminData } = response.data;
+
+            // Store tokens
+            localStorage.setItem("accessToken", accessToken);
+            localStorage.setItem("refreshToken", refreshToken);
+
             set({
               user: adminData,
               role: adminData.role,
-              isAuthenticated: true
+              isAuthenticated: true,
+              refreshToken // Store it in state for logout body
             });
 
             await get().getProfile();
@@ -42,11 +49,16 @@ export const useAuthStore = create()(
 
       logout: async () => {
         try {
-          await authApi.logout();
+          const { refreshToken } = get();
+          await authApi.logout(refreshToken);
         } catch (error) {
           console.error("Logout API failed:", error);
         } finally {
-          set({ user: null, role: null, isAuthenticated: false });
+          // Clear tokens
+          localStorage.removeItem("accessToken");
+          localStorage.removeItem("refreshToken");
+
+          set({ user: null, role: null, isAuthenticated: false, refreshToken: null });
           toast.success("Logged out successfully");
         }
       },
@@ -154,7 +166,12 @@ export const useAuthStore = create()(
       }
     }),
     {
-      name: "krsa-auth-store"
+      name: "krsa-auth-store",
+      partialize: (state) => ({
+        role: state.role,
+        isAuthenticated: state.isAuthenticated,
+        refreshToken: state.refreshToken
+      })
     }
   )
 );

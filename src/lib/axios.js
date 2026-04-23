@@ -2,7 +2,6 @@ import axios from "axios";
 
 const api = axios.create({
   baseURL: import.meta.env.VITE_API_BASE_URL,
-  withCredentials: true,
   headers: {
     "Content-Type": "application/json"
   }
@@ -11,9 +10,10 @@ const api = axios.create({
 // Request Interceptor
 api.interceptors.request.use(
   (config) => {
-    // Note: With withCredentials: true and tokens in cookies,
-    // the browser automatically handles sending tokens.
-    // No need to manually attach Authorization headers from localStorage.
+    const accessToken = localStorage.getItem("accessToken");
+    if (accessToken) {
+      config.headers.Authorization = accessToken;
+    }
     return config;
   },
   (error) => {
