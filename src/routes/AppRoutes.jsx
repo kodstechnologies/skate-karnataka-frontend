@@ -21,6 +21,8 @@ import { SchoolRequestsPage } from "@/features/admin/requests/pages/SchoolReques
 import { SkaterDetailsPage } from "@/features/admin/skaters/pages/SkaterDetailsPage";
 import { SkatersPage } from "@/features/admin/skaters/pages/SkatersPage";
 import { LoginPage } from "@/features/auth/pages/LoginPage";
+import { ForgotPasswordPage } from "@/features/auth/pages/ForgotPasswordPage";
+import { ProfilePage } from "@/features/admin/pages/ProfilePage";
 import { MainLayout } from "@/layouts/MainLayout";
 import { NotFoundPage } from "@/pages/NotFoundPage";
 
@@ -28,9 +30,11 @@ export const AppRoutes = () => {
   return (
     <Routes>
       <Route path="/login" element={<LoginPage />} />
+      <Route path="/forgot-password" element={<ForgotPasswordPage />} />
       <Route path="/" element={<Navigate to="/login" replace />} />
       <Route element={<MainLayout />}>
         <Route path="/dashboard" element={<AdminDashboard />} />
+        <Route path="/profile" element={<ProfilePage />} />
         <Route path="/officials" element={<OfficialsPage />} />
         <Route path="/officials/create" element={<OfficialFormPage />} />
         <Route path="/officials/:officialId/edit" element={<OfficialFormPage />} />

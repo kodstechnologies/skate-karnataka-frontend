@@ -1,15 +1,42 @@
 import { Bell, ChevronDown, Menu, Search } from "lucide-react";
-import { useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useMemo, useState, useEffect } from "react";
+import { useNavigate, Link } from "react-router-dom";
 import { navigationItems } from "@/lib/app-shell";
 import { useUiStore } from "@/store/ui-store";
+import { useAuthStore } from "@/features/auth/store/auth-store";
+import { Avatar, Skeleton, Menu as MuiMenu, MenuItem, ListItemIcon, Divider } from "@mui/material";
+import { Logout, Person } from "@mui/icons-material";
 
 export const AppHeader = () => {
   const sidebarOpen = useUiStore((state) => state.sidebarOpen);
   const toggleSidebar = useUiStore((state) => state.toggleSidebar);
   const toggleMobileSidebar = useUiStore((state) => state.toggleMobileSidebar);
+  const { user, getProfile, logout, isLoading } = useAuthStore();
   const navigate = useNavigate();
   const [query, setQuery] = useState("");
+  const [anchorEl, setAnchorEl] = useState(null);
+  const open = Boolean(anchorEl);
+
+  useEffect(() => {
+    if (!user) {
+      getProfile().catch(() => {});
+    }
+  }, [getProfile, user]);
+
+  const handleClick = (event) => {
+    setAnchorEl(event.currentTarget);
+  };
+  const handleClose = () => {
+    setAnchorEl(null);
+  };
+
+  const handleLogoutClick = () => {
+    handleClose();
+    // The AppSidebar will handle the actual confirmation modal
+    // but for the header dropdown we can trigger a logout or redirect to a common confirm
+    logout();
+    navigate("/login");
+  };
 
   const filteredItems = useMemo(() => {
     if (!query.trim()) {
@@ -39,6 +66,16 @@ export const AppHeader = () => {
     if (event.key === "Enter" && filteredItems[0]) {
       handleNavigate(filteredItems[0].to);
     }
+  };
+
+  const getInitials = (name) => {
+    if (!name) return "A";
+    return name
+      .split(" ")
+      .map((n) => n[0])
+      .join("")
+      .toUpperCase()
+      .slice(0, 2);
   };
 
   return (
@@ -90,13 +127,84 @@ export const AppHeader = () => {
           <span className="absolute right-3 top-3 h-2.5 w-2.5 rounded-full border-2 border-white bg-[#f6765e]" />
         </button>
 
-        <button className="flex items-center gap-2 rounded-2xl border border-[#eee1db] bg-white px-2 py-2 shadow-sm transition hover:bg-[#fffaf7]">
-          <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-[#fff1eb] text-xs font-semibold text-[#f6765e]">
-            AS
-          </div>
-          <span className="hidden text-sm font-medium text-[#2f2829] sm:block">AS</span>
-          <ChevronDown size={16} className="hidden text-[#ab9b95] sm:block" />
-        </button>
+        {isLoading && !user ? (
+          <Skeleton variant="rectangular" width={100} height={44} sx={{ borderRadius: "16px" }} />
+        ) : (
+          <button
+            onClick={handleClick}
+            className="flex items-center gap-2 rounded-2xl border border-[#eee1db] bg-white px-2 py-2 shadow-sm transition hover:bg-[#fffaf7]"
+          >
+            <Avatar
+              src={user?.img}
+              sx={{
+                width: 32,
+                height: 32,
+                borderRadius: "12px",
+                bgcolor: "#fff1eb",
+                color: "#f6765e",
+                fontSize: "0.75rem",
+                fontWeight: 600
+              }}
+            >
+              {getInitials(user?.fullName)}
+            </Avatar>
+            <span className="hidden text-sm font-medium text-[#2f2829] sm:block">
+              {user?.fullName?.split(" ")[0]}
+            </span>
+            <ChevronDown size={16} className="hidden text-[#ab9b95] sm:block" />
+          </button>
+        )}
+
+        <MuiMenu
+          anchorEl={anchorEl}
+          open={open}
+          onClose={handleClose}
+          onClick={handleClose}
+          transformOrigin={{ horizontal: "right", vertical: "top" }}
+          anchorOrigin={{ horizontal: "right", vertical: "bottom" }}
+          slotProps={{
+            paper: {
+              elevation: 0,
+              sx: {
+                overflow: "visible",
+                filter: "drop-shadow(0px 2px 8px rgba(0,0,0,0.1))",
+                mt: 1.5,
+                borderRadius: "16px",
+                padding: "4px",
+                minWidth: "180px",
+                "&:before": {
+                  content: '""',
+                  display: "block",
+                  position: "absolute",
+                  top: 0,
+                  right: 14,
+                  width: 10,
+                  height: 10,
+                  bgcolor: "background.paper",
+                  transform: "translateY(-50%) rotate(45deg)",
+                  zIndex: 0
+                }
+              }
+            }
+          }}
+        >
+          <MenuItem onClick={() => navigate("/profile")} sx={{ borderRadius: "12px", py: 1 }}>
+            <ListItemIcon>
+              <Person fontSize="small" />
+            </ListItemIcon>
+            Profile
+          </MenuItem>
+          <Divider sx={{ my: 1 }} />
+          <MenuItem
+            onClick={handleLogoutClick}
+            sx={{ borderRadius: "12px", py: 1, color: "error.main" }}
+          >
+            <ListItemIcon>
+              <Logout fontSize="small" color="error" />
+            </ListItemIcon>
+            Logout
+          </MenuItem>
+        </MuiMenu>
       </div>
     </header>
   );

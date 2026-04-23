@@ -12,5 +12,14 @@ export default defineConfig({
     alias: {
       "@": path.resolve(__dirname, "./src")
     }
+  },
+  server: {
+    proxy: {
+      "/admin": {
+        target: "http://13.127.20.88",
+        changeOrigin: true,
+        secure: false
+      }
+    }
   }
 });

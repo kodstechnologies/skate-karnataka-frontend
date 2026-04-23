@@ -6,7 +6,7 @@ const App = () => {
     <>
       <AppRoutes />
       <Toaster
-        position="top-right"
+        position="top-center"
         toastOptions={{
           duration: 2500
         }}

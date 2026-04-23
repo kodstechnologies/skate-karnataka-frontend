@@ -1,65 +1,156 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import { useOfficialsStore } from "@/features/admin/officials/store/officials-store";
+import { authApi } from "@/api/auth-api";
+import toast from "react-hot-toast";
 
 export const useAuthStore = create()(
   persist(
-    (set) => ({
+    (set, get) => ({
       user: null,
-      role: null, // 'admin' (State) or 'subadmin' (State Official)
+      role: null,
       isAuthenticated: false,
+      isLoading: false,
 
-      login: (email, password) => {
-        const normalizedEmail = email.toLowerCase();
+      login: async (email, password) => {
+        set({ isLoading: true });
+        try {
+          const response = await authApi.login({ email, password });
 
-        // 1. Check for Master Admin (Hardcoded for now as requested earlier)
-        if (normalizedEmail === "admin@krsa.com") {
-          set({
-            user: { email, name: "Soumyan" },
-            role: "admin",
-            isAuthenticated: true
-          });
-          return "admin";
+          if (response.success) {
+            const adminData = response.data.admin;
+            set({
+              user: adminData,
+              role: adminData.role,
+              isAuthenticated: true
+            });
+
+            await get().getProfile();
+
+            toast.success(response.message || "Logged in successfully");
+            set({ isLoading: false });
+            return adminData.role;
+          } else {
+            throw new Error(response.message || "Login failed");
+          }
+        } catch (error) {
+          const errorMessage = error.response?.data?.message || error.message || "Login failed";
+          toast.error(errorMessage);
+          set({ isLoading: false });
+          throw error;
         }
-
-        // 2. Check for State Official from store
-        const official = useOfficialsStore
-          .getState()
-          .officials.find(
-            (o) => o.email.toLowerCase() === normalizedEmail && o.password === password
-          );
-
-        if (official) {
-          set({
-            user: { email: official.email, name: official.fullName },
-            role: "subadmin",
-            isAuthenticated: true
-          });
-          return "subadmin";
-        }
-
-        // 3. Fallback for older "any official email" logic if no store match found
-        // (to keep previous functionality working if needed)
-        if (normalizedEmail.includes("official")) {
-          set({
-            user: { email, name: "Official User" },
-            role: "subadmin",
-            isAuthenticated: true
-          });
-          return "subadmin";
-        }
-
-        // 4. Default fallback (generic admin for other emails)
-        set({
-          user: { email, name: "Admin" },
-          role: "admin",
-          isAuthenticated: true
-        });
-        return "admin";
       },
 
-      logout: () => {
-        set({ user: null, role: null, isAuthenticated: false });
+      logout: async () => {
+        try {
+          await authApi.logout();
+        } catch (error) {
+          console.error("Logout API failed:", error);
+        } finally {
+          set({ user: null, role: null, isAuthenticated: false });
+          toast.success("Logged out successfully");
+        }
+      },
+
+      getProfile: async () => {
+        set({ isLoading: true });
+        try {
+          const response = await authApi.getProfile();
+          if (response.success) {
+            set({
+              user: response.data,
+              role: response.data.role,
+              isLoading: false
+            });
+            return response.data;
+          }
+          throw new Error(response.message || "Failed to fetch profile");
+        } catch (error) {
+          set({ isLoading: false });
+          console.error("Fetch profile failed:", error);
+          throw error;
+        }
+      },
+
+      updateProfile: async (data) => {
+        set({ isLoading: true });
+        try {
+          const response = await authApi.updateProfile(data);
+          if (response.success) {
+            set({
+              user: response.data,
+              isLoading: false
+            });
+            toast.success(response.message || "Profile updated successfully");
+            return response.data;
+          }
+          throw new Error(response.message || "Failed to update profile");
+        } catch (error) {
+          set({ isLoading: false });
+          const errorMessage =
+            error.response?.data?.message || error.message || "Failed to update profile";
+          toast.error(errorMessage);
+          throw error;
+        }
+      },
+
+      sendOtp: async (email) => {
+        set({ isLoading: true });
+        try {
+          const response = await authApi.sendOtp(email);
+          if (response.success) {
+            toast.success(response.message || "OTP sent successfully");
+            set({ isLoading: false });
+            return response.data;
+          } else {
+            throw new Error(response.message || "Failed to send OTP");
+          }
+        } catch (error) {
+          const errorMessage =
+            error.response?.data?.message || error.message || "Failed to send OTP";
+          toast.error(errorMessage);
+          set({ isLoading: false });
+          throw error;
+        }
+      },
+
+      verifyOtp: async (email, otp) => {
+        set({ isLoading: true });
+        try {
+          const response = await authApi.verifyOtp(email, otp);
+          if (response.success) {
+            toast.success(response.message || "OTP verified successfully");
+            set({ isLoading: false });
+            return response.data;
+          } else {
+            throw new Error(response.message || "Failed to verify OTP");
+          }
+        } catch (error) {
+          const errorMessage =
+            error.response?.data?.message || error.message || "Failed to verify OTP";
+          toast.error(errorMessage);
+          set({ isLoading: false });
+          throw error;
+        }
+      },
+
+      resetPassword: async (data) => {
+        set({ isLoading: true });
+        try {
+          const response = await authApi.resetPassword(data);
+          if (response.success) {
+            toast.success(response.message || "Password reset successfully");
+            set({ isLoading: false });
+            return response.data;
+          } else {
+            throw new Error(response.message || "Failed to reset password");
+          }
+        } catch (error) {
+          const errorMessage =
+            error.response?.data?.message || error.message || "Failed to reset password";
+          toast.error(errorMessage);
+          set({ isLoading: false });
+          throw error;
+        }
       }
     }),
     {

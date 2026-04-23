@@ -5,17 +5,28 @@ import logo from "@/assets/karnataka-roller-skating-logo.png";
 import { navigationGroups } from "@/lib/app-shell";
 import { useUiStore } from "@/store/ui-store";
 import { useAuthStore } from "@/features/auth/store/auth-store";
+import {
+  Avatar,
+  Skeleton,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogContentText,
+  DialogActions,
+  Button
+} from "@mui/material";
 
 export const AppSidebar = () => {
   const navigate = useNavigate();
   const logout = useAuthStore((state) => state.logout);
   const role = useAuthStore((state) => state.role);
-  const user = useAuthStore((state) => state.user);
+  const { user, isLoading } = useAuthStore();
   const sidebarOpen = useUiStore((state) => state.sidebarOpen);
   const mobileSidebarOpen = useUiStore((state) => state.mobileSidebarOpen);
   const closeMobileSidebar = useUiStore((state) => state.closeMobileSidebar);
   const location = useLocation();
   const [expandedParentItems, setExpandedParentItems] = useState({});
+  const [logoutDialogOpen, setLogoutDialogOpen] = useState(false);
 
   useEffect(() => {
     closeMobileSidebar();
@@ -26,6 +37,22 @@ export const AppSidebar = () => {
       ...previous,
       [itemSlug]: !previous[itemSlug]
     }));
+  };
+
+  const handleLogoutConfirm = () => {
+    setLogoutDialogOpen(false);
+    logout();
+    navigate("/login");
+  };
+
+  const getInitials = (name) => {
+    if (!name) return "A";
+    return name
+      .split(" ")
+      .map((n) => n[0])
+      .join("")
+      .toUpperCase()
+      .slice(0, 2);
   };
 
   return (
@@ -239,27 +266,47 @@ export const AppSidebar = () => {
               sidebarOpen ? "gap-3" : "justify-center lg:px-2"
             }`}
           >
-            <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[#f6765e] text-sm font-semibold text-white">
-              AS
-            </div>
+            {isLoading && !user ? (
+              <Skeleton variant="circular" width={44} height={44} />
+            ) : (
+              <Avatar
+                src={user?.img}
+                sx={{
+                  width: 44,
+                  height: 44,
+                  borderRadius: "16px",
+                  bgcolor: "#f6765e",
+                  fontSize: "1rem",
+                  fontWeight: 600
+                }}
+              >
+                {getInitials(user?.fullName)}
+              </Avatar>
+            )}
 
             <div
               className={`${sidebarOpen ? "flex" : "hidden"} min-w-0 flex-1 items-center justify-between`}
             >
               <div className="min-w-0">
-                <p className="truncate text-sm font-semibold text-[#2f2829]">
-                  {user?.name || "Aigar S."}
-                </p>
-                <p className="text-xs text-[#9b8d88]">
-                  {role === "admin" ? "State Admin" : "State Official"}
-                </p>
+                {isLoading && !user ? (
+                  <>
+                    <Skeleton variant="text" width={80} />
+                    <Skeleton variant="text" width={60} />
+                  </>
+                ) : (
+                  <>
+                    <p className="truncate text-sm font-semibold text-[#2f2829]">
+                      {user?.fullName || "Admin"}
+                    </p>
+                    <p className="text-xs text-[#9b8d88]">
+                      {role === "admin" ? "State Admin" : "State Official"}
+                    </p>
+                  </>
+                )}
               </div>
               <button
                 type="button"
-                onClick={() => {
-                  logout();
-                  navigate("/login");
-                }}
+                onClick={() => setLogoutDialogOpen(true)}
                 className="rounded-full p-2 text-[#9b8d88] transition hover:bg-[#faf4f1] hover:text-[#2f2829]"
                 aria-label="Logout"
               >
@@ -269,6 +316,45 @@ export const AppSidebar = () => {
           </div>
         </div>
       </aside>
+
+      <Dialog
+        open={logoutDialogOpen}
+        onClose={() => setLogoutDialogOpen(false)}
+        slotProps={{
+          paper: {
+            sx: { borderRadius: "24px", p: 1 }
+          }
+        }}
+      >
+        <DialogTitle sx={{ fontWeight: 800 }}>Confirm Logout</DialogTitle>
+        <DialogContent>
+          <DialogContentText>
+            Are you sure you want to log out of the admin portal?
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions sx={{ p: 2, gap: 1 }}>
+          <Button
+            onClick={() => setLogoutDialogOpen(false)}
+            sx={{ borderRadius: "12px", textTransform: "none", color: "#8d7f7b" }}
+          >
+            Cancel
+          </Button>
+          <Button
+            onClick={handleLogoutConfirm}
+            variant="contained"
+            color="error"
+            sx={{
+              borderRadius: "12px",
+              textTransform: "none",
+              px: 3,
+              boxShadow: "none",
+              "&:hover": { boxShadow: "none" }
+            }}
+          >
+            Logout
+          </Button>
+        </DialogActions>
+      </Dialog>
     </>
   );
 };

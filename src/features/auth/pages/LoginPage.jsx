@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import {
   Box,
   Button,
@@ -37,19 +37,16 @@ export const LoginPage = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
 
-    // Immediate login to avoid delay feeling like "nothing working"
     try {
-      login(email, password);
-      setTimeout(() => {
-        setLoading(false);
-        navigate("/dashboard");
-      }, 800);
+      await login(email, password);
+      navigate("/dashboard");
     } catch (error) {
       console.error("Login failed:", error);
+    } finally {
       setLoading(false);
     }
   };
@@ -57,14 +54,12 @@ export const LoginPage = () => {
   return (
     <Box
       sx={{
-        height: "100vh",
+        minHeight: "100vh",
         width: "100%",
         display: "flex",
         backgroundColor: "white",
-        overflow: "hidden",
-        position: "fixed",
-        top: 0,
-        left: 0
+        overflowY: "auto",
+        position: "relative"
       }}
     >
       <Box
@@ -72,22 +67,22 @@ export const LoginPage = () => {
           display: "flex",
           flexDirection: { xs: "column", md: "row" },
           width: "100%",
-          height: "100%"
+          minHeight: "100vh"
         }}
       >
         {/* Left Side - Animation/Visual */}
         <Box
           sx={{
-            flex: { xs: "none", md: 1.15 },
+            flex: { xs: "0 0 auto", md: 1.15 },
             background: "linear-gradient(145deg, #f6765e 0%, #e85d44 100%)",
             display: "flex",
             flexDirection: "column",
             alignItems: "center",
             justifyContent: "center",
-            p: { xs: 3, md: 6 },
+            p: { xs: 4, sm: 6, md: 8 },
             textAlign: "center",
             position: "relative",
-            minHeight: { xs: "35vh", md: "auto" },
+            minHeight: { xs: "40vh", md: "100vh" },
             overflow: "hidden"
           }}
         >
@@ -130,9 +125,9 @@ export const LoginPage = () => {
           >
             <Box
               sx={{
-                width: { xs: "130px", sm: "170px", md: "100%" },
+                width: { xs: "140px", sm: "180px", md: "100%" },
                 maxWidth: "400px",
-                mb: { xs: 1, md: 2 },
+                mb: { xs: 2, md: 3 },
                 filter: "drop-shadow(0 20px 30px rgba(0,0,0,0.15))"
               }}
             >
@@ -181,7 +176,7 @@ export const LoginPage = () => {
         <Box
           sx={{
             flex: 1,
-            p: { xs: 3, sm: 6, md: 8 },
+            p: { xs: 4, sm: 6, md: 8 },
             display: "flex",
             flexDirection: "column",
             justifyContent: "center",
@@ -189,7 +184,7 @@ export const LoginPage = () => {
             maxWidth: { md: "600px" },
             mx: "auto",
             width: "100%",
-            overflowY: { xs: "auto", md: "hidden" }
+            minHeight: { xs: "auto", md: "100vh" }
           }}
         >
           <Box sx={{ mb: { xs: 3, md: 5 }, textAlign: { xs: "center", md: "left" } }}>
@@ -298,6 +293,21 @@ export const LoginPage = () => {
                   "& .MuiInputLabel-root.Mui-focused": { color: "#f6765e" }
                 }}
               />
+
+              <Box sx={{ display: "flex", justifyContent: "flex-end" }}>
+                <Button
+                  component={Link}
+                  to="/forgot-password"
+                  sx={{
+                    color: "#f6765e",
+                    textTransform: "none",
+                    fontWeight: 600,
+                    "&:hover": { backgroundColor: "transparent", opacity: 0.8 }
+                  }}
+                >
+                  Forgot Password?
+                </Button>
+              </Box>
 
               <Button
                 fullWidth
