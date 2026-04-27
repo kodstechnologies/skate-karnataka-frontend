@@ -1,4 +1,5 @@
 import axios from "axios";
+import { useAuthStore } from "@/features/auth/store/auth-store";
 
 const api = axios.create({
   baseURL: import.meta.env.VITE_API_BASE_URL,
@@ -32,7 +33,7 @@ api.interceptors.response.use(
     if (error.response?.status === 401) {
       // If 401 occurs, it means tokens are invalid or expired
       // You might want to clear the store and redirect to login
-      // useAuthStore.getState().logout();
+      useAuthStore.getState().logout();
       console.warn("Session expired or unauthorized");
     }
 

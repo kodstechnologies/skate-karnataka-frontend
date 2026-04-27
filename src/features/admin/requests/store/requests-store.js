@@ -6,15 +6,18 @@ import { academyApi } from "@/api/academy-api";
 
 const withRequestMeta = (request) => ({
   ...request,
-  // Map backend _id to id for frontend routing and keys
   id: request._id || request.id
 });
 
 export const useRequestsStore = create((set) => ({
   schoolRequests: [],
+  selectedSchool: null,
   officialRequests: [],
+  selectedOfficial: null,
   parentRequests: [],
+  selectedParent: null,
   academyRequests: [],
+  selectedAcademy: null,
   loading: false,
   fetchSchoolRequests: async (params) => {
     try {
@@ -24,6 +27,18 @@ export const useRequestsStore = create((set) => ({
       set({ schoolRequests: schools });
     } catch (error) {
       console.error("Failed to fetch school requests:", error);
+    } finally {
+      set({ loading: false });
+    }
+  },
+  fetchSchoolDetails: async (id) => {
+    try {
+      set({ loading: true, selectedSchool: null });
+      const response = await schoolApi.getDetails(id);
+      const details = response?.data ? withRequestMeta(response.data) : null;
+      set({ selectedSchool: details });
+    } catch (error) {
+      console.error("Failed to fetch school details:", error);
     } finally {
       set({ loading: false });
     }
@@ -40,6 +55,18 @@ export const useRequestsStore = create((set) => ({
       set({ loading: false });
     }
   },
+  fetchOfficialDetails: async (id) => {
+    try {
+      set({ loading: true, selectedOfficial: null });
+      const response = await officialApi.getDetails(id);
+      const details = response?.data ? withRequestMeta(response.data) : null;
+      set({ selectedOfficial: details });
+    } catch (error) {
+      console.error("Failed to fetch official details:", error);
+    } finally {
+      set({ loading: false });
+    }
+  },
   fetchParentRequests: async (params) => {
     try {
       set({ loading: true });
@@ -52,6 +79,18 @@ export const useRequestsStore = create((set) => ({
       set({ loading: false });
     }
   },
+  fetchParentDetails: async (id) => {
+    try {
+      set({ loading: true, selectedParent: null });
+      const response = await parentApi.getDetails(id);
+      const details = response?.data ? withRequestMeta(response.data) : null;
+      set({ selectedParent: details });
+    } catch (error) {
+      console.error("Failed to fetch parent details:", error);
+    } finally {
+      set({ loading: false });
+    }
+  },
   fetchAcademyRequests: async (params) => {
     try {
       set({ loading: true });
@@ -60,6 +99,18 @@ export const useRequestsStore = create((set) => ({
       set({ academyRequests: academies });
     } catch (error) {
       console.error("Failed to fetch academy requests:", error);
+    } finally {
+      set({ loading: false });
+    }
+  },
+  fetchAcademyDetails: async (id) => {
+    try {
+      set({ loading: true, selectedAcademy: null });
+      const response = await academyApi.getDetails(id);
+      const details = response?.data ? withRequestMeta(response.data) : null;
+      set({ selectedAcademy: details });
+    } catch (error) {
+      console.error("Failed to fetch academy details:", error);
     } finally {
       set({ loading: false });
     }

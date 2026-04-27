@@ -11,7 +11,6 @@ import { EventsPage } from "@/features/admin/events/pages/EventsPage";
 import { AdminDashboard } from "@/features/admin/pages/AdminDashboard";
 import { OfficialsPage } from "@/features/admin/officials/pages/OfficialsPage";
 import { OfficialFormPage } from "@/features/admin/officials/pages/OfficialFormPage";
-import { SubAdminLogsPage } from "@/features/admin/officials/pages/SubAdminLogsPage";
 import { AcademyRequestDetailsPage } from "@/features/admin/requests/pages/AcademyRequestDetailsPage";
 import { AcademyRequestsPage } from "@/features/admin/requests/pages/AcademyRequestsPage";
 import { OfficialRequestDetailsPage } from "@/features/admin/requests/pages/OfficialRequestDetailsPage";
@@ -40,7 +39,6 @@ export const AppRoutes = () => {
         <Route path="/officials" element={<OfficialsPage />} />
         <Route path="/officials/create" element={<OfficialFormPage />} />
         <Route path="/officials/:officialId/edit" element={<OfficialFormPage />} />
-        <Route path="/officials/:officialId/logs" element={<SubAdminLogsPage />} />
         <Route path="/skaters" element={<SkatersPage />} />
         <Route path="/skaters/:skaterId" element={<SkaterDetailsPage />} />
         <Route path="/clubs" element={<ClubsPage />} />

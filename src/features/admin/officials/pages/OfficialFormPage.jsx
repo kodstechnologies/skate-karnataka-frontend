@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   Box,
   Breadcrumbs,
@@ -10,63 +10,91 @@ import {
   MenuItem,
   InputAdornment,
   IconButton,
-  Divider
+  Divider,
+  FormControlLabel,
+  Switch,
+  Autocomplete,
+  Chip,
+  Skeleton
 } from "@mui/material";
-import {
-  ChevronRight,
-  Save,
-  User,
-  Mail,
-  Phone,
-  ShieldCheck,
-  Lock,
-  Eye,
-  EyeOff
-} from "lucide-react";
+import { ChevronRight, Save, User, Mail, Phone, ShieldCheck, Users } from "lucide-react";
 import { Link as RouterLink, useNavigate, useParams } from "react-router-dom";
 import officialHero from "@/assets/State_official_header.jpg";
 import { useOfficialsStore } from "../store/officials-store";
 
-const designationOptions = [
-  "Technical Official",
-  "District Coordinator",
-  "Event Manager",
-  "Registrar"
+const genderOptions = [
+  { value: "male", label: "Male" },
+  { value: "female", label: "Female" },
+  { value: "other", label: "Other" }
 ];
 
-const statusOptions = [
-  { value: "active", label: "Active" },
-  { value: "inactive", label: "Inactive" }
-];
+const moduleOptions = ["Skaters", "Clubs", "Events", "Gallery", "Districts", "Reports"];
 
 export const OfficialFormPage = () => {
   const navigate = useNavigate();
   const { officialId } = useParams();
   const isEditing = Boolean(officialId);
-  const officials = useOfficialsStore((state) => state.officials);
-  const addOfficial = useOfficialsStore((state) => state.addOfficial);
-  const updateOfficial = useOfficialsStore((state) => state.updateOfficial);
+  const { officials, isLoading, fetchOfficials, addOfficial, updateOfficial } = useOfficialsStore();
+
+  useEffect(() => {
+    if (officials.length === 0) {
+      fetchOfficials();
+    }
+  }, [fetchOfficials, officials.length]);
 
   const existingOfficial = useMemo(
-    () => officials.find((o) => o.id === officialId) ?? null,
+    () => officials.find((o) => o._id === officialId) ?? null,
     [officialId, officials]
   );
 
   const [formData, setFormData] = useState({
-    fullName: existingOfficial?.fullName ?? "",
-    email: existingOfficial?.email ?? "",
-    phone: existingOfficial?.phone ?? "",
-    password: existingOfficial?.password ?? "",
-    designation: existingOfficial?.designation ?? "Technical Official",
-    status: existingOfficial?.status ?? "active"
+    fullName: "",
+    email: "",
+    phone: "",
+    gender: "male",
+    status: true,
+    allowedModule: []
   });
 
-  const [showPassword, setShowPassword] = useState(false);
+  const [imgFile, setImgFile] = useState(null);
+  const [imgPreview, setImgPreview] = useState(null);
   const [errors, setErrors] = useState({});
 
+  // Sync form data when existingOfficial is loaded or changed
+  const [prevOfficial, setPrevOfficial] = useState(null);
+  if (existingOfficial !== prevOfficial) {
+    setPrevOfficial(existingOfficial);
+    setFormData({
+      fullName: existingOfficial?.fullName || "",
+      email: existingOfficial?.email || "",
+      phone: existingOfficial?.phone || "",
+      gender: existingOfficial?.gender || "male",
+      status: existingOfficial?.status ?? true,
+      allowedModule: Array.isArray(existingOfficial?.allowedModule)
+        ? existingOfficial.allowedModule
+        : typeof existingOfficial?.allowedModule === "string"
+          ? JSON.parse(existingOfficial.allowedModule)
+          : []
+    });
+    setImgPreview(existingOfficial?.img || null);
+  }
+
   const handleFieldChange = (field) => (event) => {
-    setFormData((prev) => ({ ...prev, [field]: event.target.value }));
+    const value = field === "status" ? event.target.checked : event.target.value;
+    setFormData((prev) => ({ ...prev, [field]: value }));
     setErrors((prev) => ({ ...prev, [field]: "" }));
+  };
+
+  const handleImageChange = (event) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      setImgFile(file);
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setImgPreview(reader.result);
+      };
+      reader.readAsDataURL(file);
+    }
   };
 
   const validate = () => {
@@ -74,25 +102,39 @@ export const OfficialFormPage = () => {
     if (!formData.fullName.trim()) nextErrors.fullName = "Name is required";
     if (!formData.email.trim()) nextErrors.email = "Email is required";
     if (!formData.phone.trim()) nextErrors.phone = "Phone is required";
-    if (!formData.password.trim()) nextErrors.password = "Password is required";
 
     setErrors(nextErrors);
     return Object.keys(nextErrors).length === 0;
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!validate()) return;
 
-    if (isEditing) {
-      updateOfficial(officialId, formData);
-    } else {
-      addOfficial(formData);
+    const data = new FormData();
+    data.append("fullName", formData.fullName);
+    data.append("email", formData.email);
+    data.append("phone", formData.phone);
+    data.append("gender", formData.gender);
+    data.append("status", formData.status.toString());
+    data.append("allowedModule", JSON.stringify(formData.allowedModule));
+
+    if (imgFile) {
+      data.append("img", imgFile);
     }
 
-    navigate("/officials");
+    try {
+      if (isEditing) {
+        await updateOfficial(officialId, data);
+      } else {
+        await addOfficial(data);
+      }
+      navigate("/officials");
+    } catch (error) {
+      console.error("Failed to save official:", error);
+    }
   };
 
-  if (isEditing && !existingOfficial) {
+  if (isEditing && !existingOfficial && !isLoading) {
     return (
       <Paper elevation={0} sx={{ p: 4, borderRadius: "28px", textAlign: "center" }}>
         <Typography variant="h5" sx={{ fontWeight: 700, color: "#2f2829" }}>
@@ -157,161 +199,255 @@ export const OfficialFormPage = () => {
 
       <Paper
         elevation={0}
-        sx={{ borderRadius: "32px", p: 4, border: "1px solid #f2dfd7", maxWidth: 1100, mx: "auto" }}
+        sx={{
+          borderRadius: "32px",
+          p: { xs: 2, sm: 4 },
+          border: "1px solid #f2dfd7",
+          maxWidth: 1380, // Match the main max-width
+          mx: "auto",
+          width: "100%"
+        }}
       >
-        <Typography variant="h6" sx={{ mb: 4, fontWeight: 700, color: "#2f2829" }}>
-          Official Information
-        </Typography>
-
-        <Stack spacing={3}>
-          <TextField
-            fullWidth
-            label="Full Name"
-            value={formData.fullName}
-            onChange={handleFieldChange("fullName")}
-            error={Boolean(errors.fullName)}
-            helperText={errors.fullName}
-            slotProps={{
-              input: {
-                startAdornment: (
-                  <InputAdornment position="start">
-                    <User size={18} style={{ color: "#b19f99" }} />
-                  </InputAdornment>
-                )
-              }
-            }}
-          />
-
-          <Stack direction={{ xs: "column", md: "row" }} spacing={2}>
-            <TextField
-              fullWidth
-              label="Email Address"
-              value={formData.email}
-              onChange={handleFieldChange("email")}
-              error={Boolean(errors.email)}
-              helperText={errors.email}
-              slotProps={{
-                input: {
-                  startAdornment: (
-                    <InputAdornment position="start">
-                      <Mail size={18} style={{ color: "#b19f99" }} />
-                    </InputAdornment>
-                  )
-                }
-              }}
-            />
-            <TextField
-              fullWidth
-              label="Phone Number"
-              value={formData.phone}
-              onChange={handleFieldChange("phone")}
-              error={Boolean(errors.phone)}
-              helperText={errors.phone}
-              slotProps={{
-                input: {
-                  startAdornment: (
-                    <InputAdornment position="start">
-                      <Phone size={18} style={{ color: "#b19f99" }} />
-                    </InputAdornment>
-                  )
-                }
-              }}
-            />
+        {isLoading ? (
+          <Stack spacing={3}>
+            <Stack direction="row" spacing={2} alignItems="center">
+              <Skeleton variant="circular" width={120} height={120} />
+              <Skeleton variant="rectangular" height={56} sx={{ flex: 1, borderRadius: 2 }} />
+            </Stack>
+            <Stack direction="row" spacing={2}>
+              <Skeleton variant="rectangular" height={56} sx={{ flex: 1, borderRadius: 2 }} />
+              <Skeleton variant="rectangular" height={56} sx={{ flex: 1, borderRadius: 2 }} />
+            </Stack>
+            <Skeleton variant="rectangular" height={56} sx={{ borderRadius: 2 }} />
+            <Stack direction="row" spacing={2}>
+              <Skeleton variant="rectangular" height={56} sx={{ flex: 1, borderRadius: 2 }} />
+              <Skeleton variant="rectangular" height={56} sx={{ flex: 1, borderRadius: 2 }} />
+            </Stack>
           </Stack>
+        ) : (
+          <>
+            <Typography variant="h6" sx={{ mb: 4, fontWeight: 700, color: "#2f2829" }}>
+              Official Information
+            </Typography>
 
-          <TextField
-            fullWidth
-            label="Login Password"
-            type={showPassword ? "text" : "password"}
-            value={formData.password}
-            onChange={handleFieldChange("password")}
-            error={Boolean(errors.password)}
-            helperText={errors.password || "This will be the password used for login"}
-            slotProps={{
-              input: {
-                startAdornment: (
-                  <InputAdornment position="start">
-                    <Lock size={18} style={{ color: "#b19f99" }} />
-                  </InputAdornment>
-                ),
-                endAdornment: (
-                  <InputAdornment position="end">
-                    <IconButton
-                      onClick={() => setShowPassword(!showPassword)}
-                      edge="end"
-                      sx={{ color: "#b19f99" }}
-                    >
-                      {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-                    </IconButton>
-                  </InputAdornment>
-                )
-              }
-            }}
-          />
+            <Stack spacing={3}>
+              <Stack
+                direction={{ xs: "column", md: "row" }}
+                spacing={2}
+                sx={{ alignItems: "center" }}
+              >
+                <Box sx={{ textAlign: "center", position: "relative" }}>
+                  <Box
+                    sx={{
+                      width: 120,
+                      height: 120,
+                      borderRadius: "24px",
+                      overflow: "hidden",
+                      border: "2px dashed #efe2dc",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      backgroundColor: "#fafafa",
+                      mb: 1
+                    }}
+                  >
+                    {imgPreview ? (
+                      <img
+                        src={imgPreview}
+                        alt="Profile"
+                        style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                      />
+                    ) : (
+                      <User size={40} color="#b19f99" />
+                    )}
+                  </Box>
+                  <Button
+                    component="label"
+                    variant="outlined"
+                    size="small"
+                    sx={{ borderRadius: "8px", textTransform: "none" }}
+                  >
+                    Upload Photo
+                    <input type="file" hidden accept="image/*" onChange={handleImageChange} />
+                  </Button>
+                </Box>
+                <Box sx={{ flex: 1, width: "100%" }}>
+                  <TextField
+                    fullWidth
+                    label="Full Name"
+                    value={formData.fullName}
+                    onChange={handleFieldChange("fullName")}
+                    error={Boolean(errors.fullName)}
+                    helperText={errors.fullName}
+                    slotProps={{
+                      input: {
+                        startAdornment: (
+                          <InputAdornment position="start">
+                            <User size={18} style={{ color: "#b19f99" }} />
+                          </InputAdornment>
+                        )
+                      }
+                    }}
+                  />
+                </Box>
+              </Stack>
 
-          <Stack direction={{ xs: "column", md: "row" }} spacing={2}>
-            <TextField
-              select
-              fullWidth
-              label="Designation"
-              value={formData.designation}
-              onChange={handleFieldChange("designation")}
-              slotProps={{
-                input: {
-                  startAdornment: (
-                    <InputAdornment position="start">
-                      <ShieldCheck size={18} style={{ color: "#b19f99" }} />
-                    </InputAdornment>
-                  )
+              <Stack direction={{ xs: "column", md: "row" }} spacing={2}>
+                <TextField
+                  fullWidth
+                  label="Email Address"
+                  value={formData.email}
+                  onChange={handleFieldChange("email")}
+                  error={Boolean(errors.email)}
+                  helperText={errors.email}
+                  slotProps={{
+                    input: {
+                      startAdornment: (
+                        <InputAdornment position="start">
+                          <Mail size={18} style={{ color: "#b19f99" }} />
+                        </InputAdornment>
+                      )
+                    }
+                  }}
+                />
+                <TextField
+                  fullWidth
+                  label="Phone Number"
+                  value={formData.phone}
+                  onChange={handleFieldChange("phone")}
+                  error={Boolean(errors.phone)}
+                  helperText={errors.phone}
+                  slotProps={{
+                    input: {
+                      startAdornment: (
+                        <InputAdornment position="start">
+                          <Phone size={18} style={{ color: "#b19f99" }} />
+                        </InputAdornment>
+                      )
+                    }
+                  }}
+                />
+              </Stack>
+
+              <Stack
+                direction={{ xs: "column", md: "row" }}
+                spacing={3}
+                sx={{ alignItems: { md: "center" } }}
+              >
+                <Box sx={{ flex: { xs: "1 1 auto", md: "0 0 300px" } }}>
+                  <TextField
+                    select
+                    fullWidth
+                    label="Gender"
+                    value={formData.gender}
+                    onChange={handleFieldChange("gender")}
+                    slotProps={{
+                      input: {
+                        startAdornment: (
+                          <InputAdornment position="start">
+                            <Users size={18} style={{ color: "#b19f99" }} />
+                          </InputAdornment>
+                        )
+                      }
+                    }}
+                  >
+                    {genderOptions.map((option) => (
+                      <MenuItem key={option.value} value={option.value}>
+                        {option.label}
+                      </MenuItem>
+                    ))}
+                  </TextField>
+                </Box>
+
+                <Box sx={{ flex: 1, display: "flex", alignItems: "center" }}>
+                  <FormControlLabel
+                    control={
+                      <Switch
+                        checked={formData.status}
+                        onChange={handleFieldChange("status")}
+                        color="success"
+                      />
+                    }
+                    label={
+                      <Typography
+                        sx={{
+                          fontWeight: 600,
+                          color: formData.status ? "#2f8f4e" : "#d32f2f",
+                          whiteSpace: "nowrap"
+                        }}
+                      >
+                        Account Status: {formData.status ? "Active" : "Inactive"}
+                      </Typography>
+                    }
+                  />
+                </Box>
+              </Stack>
+
+              <Autocomplete
+                multiple
+                options={moduleOptions}
+                value={formData.allowedModule}
+                onChange={(_, newValue) => {
+                  setFormData((prev) => ({ ...prev, allowedModule: newValue }));
+                }}
+                renderInput={(params) => (
+                  <TextField
+                    {...params}
+                    label="Allowed Modules"
+                    placeholder="Select modules"
+                    InputProps={{
+                      ...params.InputProps,
+                      startAdornment: (
+                        <>
+                          <InputAdornment position="start">
+                            <ShieldCheck size={18} style={{ color: "#b19f99" }} />
+                          </InputAdornment>
+                          {params.InputProps?.startAdornment}
+                        </>
+                      )
+                    }}
+                  />
+                )}
+                renderTags={(value, getTagProps) =>
+                  value.map((option, index) => (
+                    <Chip
+                      label={option}
+                      {...getTagProps({ index })}
+                      key={option}
+                      sx={{ backgroundColor: "#f3efff", color: "#6e56cf", fontWeight: 600 }}
+                    />
+                  ))
                 }
-              }}
-            >
-              {designationOptions.map((option) => (
-                <MenuItem key={option} value={option}>
-                  {option}
-                </MenuItem>
-              ))}
-            </TextField>
-            <TextField
-              select
-              fullWidth
-              label="Account Status"
-              value={formData.status}
-              onChange={handleFieldChange("status")}
-            >
-              {statusOptions.map((option) => (
-                <MenuItem key={option.value} value={option.value}>
-                  {option.label}
-                </MenuItem>
-              ))}
-            </TextField>
-          </Stack>
+              />
 
-          <Divider sx={{ my: 2 }} />
+              <Divider sx={{ my: 2 }} />
 
-          <Stack direction="row" spacing={2} sx={{ justifyContent: "flex-end" }}>
-            <Button
-              variant="outlined"
-              onClick={() => navigate("/officials")}
-              sx={{ borderRadius: "14px", px: 4 }}
-            >
-              Cancel
-            </Button>
-            <Button
-              variant="contained"
-              startIcon={<Save size={18} />}
-              onClick={handleSubmit}
-              sx={{
-                borderRadius: "14px",
-                px: 4,
-                backgroundColor: "#f6765e",
-                "&:hover": { backgroundColor: "#ea6b54" }
-              }}
-            >
-              {isEditing ? "Save Changes" : "Create Official"}
-            </Button>
-          </Stack>
-        </Stack>
+              <Stack direction="row" spacing={2} sx={{ justifyContent: "flex-end" }}>
+                <Button
+                  variant="outlined"
+                  onClick={() => navigate("/officials")}
+                  sx={{ borderRadius: "14px", px: 4 }}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  variant="contained"
+                  startIcon={<Save size={18} />}
+                  onClick={handleSubmit}
+                  disabled={isLoading}
+                  sx={{
+                    borderRadius: "14px",
+                    px: 4,
+                    backgroundColor: "#f6765e",
+                    "&:hover": { backgroundColor: "#ea6b54" }
+                  }}
+                >
+                  {isEditing ? "Save Changes" : "Create Official"}
+                </Button>
+              </Stack>
+            </Stack>
+          </>
+        )}
       </Paper>
     </Box>
   );

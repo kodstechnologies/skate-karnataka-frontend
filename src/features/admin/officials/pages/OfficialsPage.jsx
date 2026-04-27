@@ -16,20 +16,21 @@ import {
   TableRow,
   TextField,
   Typography,
-  Tooltip
+  Tooltip,
+  Skeleton,
+  Avatar
 } from "@mui/material";
 import {
   ChevronRight,
   Search,
-  Plus,
   PencilLine,
   Trash2,
-  History,
   Mail,
   Phone,
-  UserPlus
+  UserPlus,
+  ShieldCheck
 } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link as RouterLink, useNavigate } from "react-router-dom";
 import officialHero from "@/assets/State_official_header.jpg";
 import { useOfficialsStore } from "../store/officials-store";
@@ -37,22 +38,22 @@ import { ConfirmDeleteModal } from "@/components/ui/ConfirmDeleteModal";
 
 export const OfficialsPage = () => {
   const navigate = useNavigate();
-  const officials = useOfficialsStore((state) => state.officials);
-  const deleteOfficial = useOfficialsStore((state) => state.deleteOfficial);
+  const { officials, isLoading, fetchOfficials, deleteOfficial } = useOfficialsStore();
 
   const [searchTerm, setSearchTerm] = useState("");
   const [page, setPage] = useState(0);
-  const [rowsPerPage, setRowsPerPage] = useState(5);
+  const [rowsPerPage, setRowsPerPage] = useState(10);
   const [pendingDeleteOfficial, setPendingDeleteOfficial] = useState(null);
+
+  useEffect(() => {
+    fetchOfficials();
+  }, [fetchOfficials]);
 
   const filteredOfficials = useMemo(() => {
     const normalizedSearch = searchTerm.trim().toLowerCase();
     if (!normalizedSearch) return officials;
     return officials.filter((o) =>
-      [o.fullName, o.email, o.phone, o.designation]
-        .join(" ")
-        .toLowerCase()
-        .includes(normalizedSearch)
+      [o.fullName, o.email, o.phone].join(" ").toLowerCase().includes(normalizedSearch)
     );
   }, [officials, searchTerm]);
 
@@ -61,10 +62,14 @@ export const OfficialsPage = () => {
     return filteredOfficials.slice(start, start + rowsPerPage);
   }, [filteredOfficials, page, rowsPerPage]);
 
-  const handleDelete = () => {
+  const handleDelete = async () => {
     if (pendingDeleteOfficial) {
-      deleteOfficial(pendingDeleteOfficial.id);
-      setPendingDeleteOfficial(null);
+      try {
+        await deleteOfficial(pendingDeleteOfficial._id);
+        setPendingDeleteOfficial(null);
+      } catch (error) {
+        console.error("Failed to delete official:", error);
+      }
     }
   };
 
@@ -116,9 +121,23 @@ export const OfficialsPage = () => {
               Manage Officials
             </Typography>
             <Typography sx={{ color: "rgba(255,255,255,0.86)", maxWidth: 600, lineHeight: 1.7 }}>
-              Create and manage sub-admin accounts for state officials. Monitor their activities
-              through system logs.
+              Create and manage sub-admin accounts for state officials.
             </Typography>
+
+            <Stack direction="row" spacing={1} useFlexGap sx={{ mt: 2.5, flexWrap: "wrap" }}>
+              <Chip
+                label={`${officials.length} Total`}
+                sx={{ color: "white", backgroundColor: "rgba(255,255,255,0.14)" }}
+              />
+              <Chip
+                label={`${officials.filter((o) => o.status === true || o.status === "true").length} Active`}
+                sx={{ color: "white", backgroundColor: "rgba(255,255,255,0.14)" }}
+              />
+              <Chip
+                label={`${officials.filter((o) => o.status === false || o.status === "false").length} Inactive`}
+                sx={{ color: "white", backgroundColor: "rgba(255,255,255,0.14)" }}
+              />
+            </Stack>
           </Box>
         </Stack>
       </Paper>
@@ -138,7 +157,7 @@ export const OfficialsPage = () => {
               Official Registry
             </Typography>
             <Typography sx={{ mt: 0.5, color: "#8d7f7b", fontSize: 14 }}>
-              Showing {filteredOfficials.length} sub-admins in Karnataka
+              Showing {filteredOfficials.length} officials
             </Typography>
           </Box>
 
@@ -149,7 +168,7 @@ export const OfficialsPage = () => {
                 setSearchTerm(e.target.value);
                 setPage(0);
               }}
-              placeholder="Search by name, email..."
+              placeholder="Search by name, email, phone..."
               slotProps={{
                 input: {
                   startAdornment: (
@@ -185,7 +204,7 @@ export const OfficialsPage = () => {
                   Contact Details
                 </TableCell>
                 <TableCell sx={{ color: "#7e716d", fontWeight: 700, fontSize: 13 }}>
-                  Designation
+                  Modules
                 </TableCell>
                 <TableCell sx={{ color: "#7e716d", fontWeight: 700, fontSize: 13 }}>
                   Status
@@ -196,16 +215,66 @@ export const OfficialsPage = () => {
               </TableRow>
             </TableHead>
             <TableBody>
-              {paginatedOfficials.length > 0 ? (
-                paginatedOfficials.map((official) => (
-                  <TableRow key={official.id} hover>
+              {isLoading ? (
+                Array.from({ length: 5 }).map((_, idx) => (
+                  <TableRow key={idx}>
                     <TableCell>
-                      <Typography sx={{ fontWeight: 700, color: "#2f2829" }}>
-                        {official.fullName}
-                      </Typography>
-                      <Typography sx={{ fontSize: 12, color: "#8d7f7b" }}>
-                        ID: {official.id}
-                      </Typography>
+                      <Skeleton variant="text" width={150} />
+                      <Skeleton variant="text" width={100} />
+                    </TableCell>
+                    <TableCell>
+                      <Skeleton variant="text" width={200} />
+                      <Skeleton variant="text" width={150} />
+                    </TableCell>
+                    <TableCell>
+                      <Skeleton
+                        variant="rectangular"
+                        width={100}
+                        height={24}
+                        sx={{ borderRadius: 1 }}
+                      />
+                    </TableCell>
+                    <TableCell>
+                      <Skeleton
+                        variant="rectangular"
+                        width={80}
+                        height={24}
+                        sx={{ borderRadius: 1 }}
+                      />
+                    </TableCell>
+                    <TableCell>
+                      <Skeleton
+                        variant="rectangular"
+                        width={120}
+                        height={36}
+                        sx={{ borderRadius: 2 }}
+                      />
+                    </TableCell>
+                  </TableRow>
+                ))
+              ) : paginatedOfficials.length > 0 ? (
+                paginatedOfficials.map((official) => (
+                  <TableRow key={official._id} hover>
+                    <TableCell>
+                      <Stack direction="row" spacing={2} sx={{ alignItems: "center" }}>
+                        <Avatar
+                          src={official.img}
+                          sx={{
+                            width: 44,
+                            height: 44,
+                            borderRadius: "14px",
+                            bgcolor: "#f6765e",
+                            fontWeight: 700
+                          }}
+                        >
+                          {official.fullName?.charAt(0)}
+                        </Avatar>
+                        <Box>
+                          <Typography sx={{ fontWeight: 700, color: "#2f2829" }}>
+                            {official.fullName}
+                          </Typography>
+                        </Box>
+                      </Stack>
                     </TableCell>
                     <TableCell>
                       <Stack spacing={0.5}>
@@ -220,41 +289,73 @@ export const OfficialsPage = () => {
                       </Stack>
                     </TableCell>
                     <TableCell>
-                      <Chip
-                        label={official.designation}
-                        size="small"
-                        sx={{ backgroundColor: "#f3efff", color: "#6e56cf", fontWeight: 600 }}
-                      />
+                      <Stack direction="row" spacing={0.5} sx={{ flexWrap: "wrap", gap: 0.5 }}>
+                        {official.allowedModule &&
+                          (Array.isArray(official.allowedModule)
+                            ? official.allowedModule
+                            : JSON.parse(official.allowedModule)
+                          )
+                            .slice(0, 2)
+                            .map((mod) => (
+                              <Chip
+                                key={mod}
+                                label={mod}
+                                size="small"
+                                sx={{
+                                  backgroundColor: "#f3efff",
+                                  color: "#6e56cf",
+                                  fontWeight: 600
+                                }}
+                              />
+                            ))}
+                        {official.allowedModule &&
+                          (Array.isArray(official.allowedModule)
+                            ? official.allowedModule
+                            : JSON.parse(official.allowedModule)
+                          ).length > 2 && (
+                            <Chip
+                              label={`+${(Array.isArray(official.allowedModule) ? official.allowedModule : JSON.parse(official.allowedModule)).length - 2}`}
+                              size="small"
+                              variant="outlined"
+                            />
+                          )}
+                      </Stack>
                     </TableCell>
                     <TableCell>
-                      <Chip
-                        label={official.status}
-                        size="small"
-                        sx={{
-                          backgroundColor: official.status === "active" ? "#edf8ef" : "#fef1f1",
-                          color: official.status === "active" ? "#2f8f4e" : "#d32f2f",
-                          fontWeight: 700,
-                          textTransform: "capitalize"
-                        }}
-                      />
+                      {isLoading ? (
+                        <Skeleton
+                          variant="rectangular"
+                          width={80}
+                          height={24}
+                          sx={{ borderRadius: 1 }}
+                        />
+                      ) : (
+                        <Chip
+                          label={
+                            official.status === true || official.status === "true"
+                              ? "Active"
+                              : "Inactive"
+                          }
+                          size="small"
+                          sx={{
+                            backgroundColor:
+                              official.status === true || official.status === "true"
+                                ? "#edf8ef"
+                                : "#fef1f1",
+                            color:
+                              official.status === true || official.status === "true"
+                                ? "#2f8f4e"
+                                : "#d32f2f",
+                            fontWeight: 700
+                          }}
+                        />
+                      )}
                     </TableCell>
                     <TableCell>
                       <Stack direction="row" spacing={1}>
-                        <Tooltip title="View Logs">
-                          <IconButton
-                            onClick={() => navigate(`/officials/${official.id}/logs`)}
-                            sx={{
-                              border: "1px solid #efe2dc",
-                              backgroundColor: "#f8f3ff",
-                              color: "#6e56cf"
-                            }}
-                          >
-                            <History size={18} />
-                          </IconButton>
-                        </Tooltip>
                         <Tooltip title="Edit">
                           <IconButton
-                            onClick={() => navigate(`/officials/${official.id}/edit`)}
+                            onClick={() => navigate(`/officials/${official._id}/edit`)}
                             sx={{
                               border: "1px solid #efe2dc",
                               backgroundColor: "#fff8f4",
