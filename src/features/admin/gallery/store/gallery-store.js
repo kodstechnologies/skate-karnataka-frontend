@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import { galleryApi } from "@/api/gallery-api";
+import toast from "react-hot-toast";
 
 export const useGalleryStore = create((set, get) => ({
   items: [],
@@ -40,16 +41,19 @@ export const useGalleryStore = create((set, get) => ({
       const response = await galleryApi.create(formData);
       if (response.success) {
         set({ isLoading: false });
+        toast.success(response.message || "Gallery item added successfully");
         // Refresh current page
         const { pagination, currentType } = get();
         await get().fetchItems(currentType, pagination.page, pagination.limit);
         return response;
       }
     } catch (error) {
+      const errorMessage = error?.response?.data?.message || "Failed to add gallery item";
       set({
-        error: error?.response?.data?.message || "Failed to add gallery item",
+        error: errorMessage,
         isLoading: false
       });
+      toast.error(errorMessage);
       throw error;
     }
   },
@@ -60,16 +64,19 @@ export const useGalleryStore = create((set, get) => ({
       const response = await galleryApi.update(id, formData);
       if (response.success) {
         set({ isLoading: false });
+        toast.success(response.message || "Gallery item updated successfully");
         // Refresh items
         const { pagination, currentType } = get();
         await get().fetchItems(currentType, pagination.page, pagination.limit);
         return response;
       }
     } catch (error) {
+      const errorMessage = error?.response?.data?.message || "Failed to update gallery item";
       set({
-        error: error?.response?.data?.message || "Failed to update gallery item",
+        error: errorMessage,
         isLoading: false
       });
+      toast.error(errorMessage);
       throw error;
     }
   },
@@ -80,16 +87,19 @@ export const useGalleryStore = create((set, get) => ({
       const response = await galleryApi.delete(id);
       if (response.success) {
         set({ isLoading: false });
+        toast.success(response.message || "Gallery item deleted successfully");
         // Refresh items
         const { pagination, currentType } = get();
         await get().fetchItems(currentType, pagination.page, pagination.limit);
         return response;
       }
     } catch (error) {
+      const errorMessage = error?.response?.data?.message || "Failed to delete gallery item";
       set({
-        error: error?.response?.data?.message || "Failed to delete gallery item",
+        error: errorMessage,
         isLoading: false
       });
+      toast.error(errorMessage);
       throw error;
     }
   }

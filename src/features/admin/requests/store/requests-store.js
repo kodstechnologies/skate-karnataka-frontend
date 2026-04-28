@@ -3,6 +3,7 @@ import { schoolApi } from "@/api/school-api";
 import { officialApi } from "@/api/official-api";
 import { parentApi } from "@/api/parent-api";
 import { academyApi } from "@/api/academy-api";
+import toast from "react-hot-toast";
 
 const withRequestMeta = (request) => ({
   ...request,
@@ -26,7 +27,9 @@ export const useRequestsStore = create((set) => ({
       const schools = response?.data?.data?.map(withRequestMeta) || [];
       set({ schoolRequests: schools });
     } catch (error) {
-      console.error("Failed to fetch school requests:", error);
+      const errorMessage = error?.response?.data?.message || "Failed to fetch school requests";
+      console.error(errorMessage, error);
+      toast.error(errorMessage);
     } finally {
       set({ loading: false });
     }
@@ -38,7 +41,9 @@ export const useRequestsStore = create((set) => ({
       const details = response?.data ? withRequestMeta(response.data) : null;
       set({ selectedSchool: details });
     } catch (error) {
-      console.error("Failed to fetch school details:", error);
+      const errorMessage = error?.response?.data?.message || "Failed to fetch school details";
+      console.error(errorMessage, error);
+      toast.error(errorMessage);
     } finally {
       set({ loading: false });
     }
@@ -50,7 +55,9 @@ export const useRequestsStore = create((set) => ({
       const officials = response?.data?.data?.map(withRequestMeta) || [];
       set({ officialRequests: officials });
     } catch (error) {
-      console.error("Failed to fetch official requests:", error);
+      const errorMessage = error?.response?.data?.message || "Failed to fetch official requests";
+      console.error(errorMessage, error);
+      toast.error(errorMessage);
     } finally {
       set({ loading: false });
     }
@@ -62,7 +69,9 @@ export const useRequestsStore = create((set) => ({
       const details = response?.data ? withRequestMeta(response.data) : null;
       set({ selectedOfficial: details });
     } catch (error) {
-      console.error("Failed to fetch official details:", error);
+      const errorMessage = error?.response?.data?.message || "Failed to fetch official details";
+      console.error(errorMessage, error);
+      toast.error(errorMessage);
     } finally {
       set({ loading: false });
     }
@@ -74,7 +83,9 @@ export const useRequestsStore = create((set) => ({
       const parents = response?.data?.data?.map(withRequestMeta) || [];
       set({ parentRequests: parents });
     } catch (error) {
-      console.error("Failed to fetch parent requests:", error);
+      const errorMessage = error?.response?.data?.message || "Failed to fetch parent requests";
+      console.error(errorMessage, error);
+      toast.error(errorMessage);
     } finally {
       set({ loading: false });
     }
@@ -86,7 +97,9 @@ export const useRequestsStore = create((set) => ({
       const details = response?.data ? withRequestMeta(response.data) : null;
       set({ selectedParent: details });
     } catch (error) {
-      console.error("Failed to fetch parent details:", error);
+      const errorMessage = error?.response?.data?.message || "Failed to fetch parent details";
+      console.error(errorMessage, error);
+      toast.error(errorMessage);
     } finally {
       set({ loading: false });
     }
@@ -98,7 +111,9 @@ export const useRequestsStore = create((set) => ({
       const academies = response?.data?.data?.map(withRequestMeta) || [];
       set({ academyRequests: academies });
     } catch (error) {
-      console.error("Failed to fetch academy requests:", error);
+      const errorMessage = error?.response?.data?.message || "Failed to fetch academy requests";
+      console.error(errorMessage, error);
+      toast.error(errorMessage);
     } finally {
       set({ loading: false });
     }
@@ -110,7 +125,9 @@ export const useRequestsStore = create((set) => ({
       const details = response?.data ? withRequestMeta(response.data) : null;
       set({ selectedAcademy: details });
     } catch (error) {
-      console.error("Failed to fetch academy details:", error);
+      const errorMessage = error?.response?.data?.message || "Failed to fetch academy details";
+      console.error(errorMessage, error);
+      toast.error(errorMessage);
     } finally {
       set({ loading: false });
     }
