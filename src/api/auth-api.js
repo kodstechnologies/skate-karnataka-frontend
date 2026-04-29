@@ -1,8 +1,11 @@
 import api from "@/lib/axios";
 
 export const authApi = {
-  login: async (credentials) => {
-    return api.post("/admin/v1/login", credentials);
+  requestLoginOtp: async (identifier) => {
+    return api.post("/auth/v1/login", { identifier });
+  },
+  verifyLoginOtp: async ({ userId, otp, firebaseTokens }) => {
+    return api.post("/auth/verify-otp", { userId, otp, firebaseTokens });
   },
   logout: async (refreshToken) => {
     return api.post("/admin/v1/logout", { refreshToken });
@@ -16,14 +19,5 @@ export const authApi = {
         "Content-Type": "multipart/form-data"
       }
     });
-  },
-  sendOtp: async (email) => {
-    return api.post("/admin/v1/send-otp-for-password", { email });
-  },
-  verifyOtp: async (email, otp) => {
-    return api.post("/admin/v1/verify-otp-for-password", { email, otp });
-  },
-  resetPassword: async (data) => {
-    return api.post("/admin/v1/reset-password", data);
   }
 };
