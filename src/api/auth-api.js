@@ -25,5 +25,8 @@ export const authApi = {
   },
   resetPassword: async (data) => {
     return api.post("/admin/v1/reset-password", data);
+  },
+  updateFCMToken: async (fcmToken) => {
+    return api.post("/admin/v1/update-fcm-token", { fcmToken });
   }
 };

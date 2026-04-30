@@ -26,6 +26,7 @@ import { ForgotPasswordPage } from "@/features/auth/pages/ForgotPasswordPage";
 import { ProfilePage } from "@/features/admin/pages/ProfilePage";
 import { MainLayout } from "@/layouts/MainLayout";
 import { NotFoundPage } from "@/pages/NotFoundPage";
+import CertificateManagement from "../features/admin/certification/pages/CertificateManagement";
 
 export const AppRoutes = () => {
   return (
@@ -62,6 +63,7 @@ export const AppRoutes = () => {
         <Route path="/reports/parent/:requestId" element={<ParentRequestDetailsPage />} />
         <Route path="/reports/academy" element={<AcademyRequestsPage />} />
         <Route path="/reports/academy/:requestId" element={<AcademyRequestDetailsPage />} />
+        <Route path="/certification" element={<CertificateManagement />} />
       </Route>
       <Route path="*" element={<NotFoundPage />} />
     </Routes>

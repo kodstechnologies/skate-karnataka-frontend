@@ -7,7 +7,7 @@ import WorkspacePremiumIcon from "@mui/icons-material/WorkspacePremium";
 import BusinessIcon from "@mui/icons-material/Business";
 import AdminPanelSettingsIcon from "@mui/icons-material/AdminPanelSettings";
 import FamilyRestroomIcon from "@mui/icons-material/FamilyRestroom";
-import { LayoutDashboard, Inbox, Image } from "lucide-react";
+import { LayoutDashboard, Inbox, Image, Award } from "lucide-react";
 
 export const navigationGroups = [
   {
@@ -33,6 +33,12 @@ export const navigationGroups = [
       { slug: "skaters", to: "/skaters", label: "Skaters", icon: RollerSkatingIcon },
       { slug: "events", to: "/events", label: "Events", icon: EventIcon },
       { slug: "gallery", to: "/gallery", label: "Gallery", icon: Image },
+      {
+        slug: "Certification",
+        to: "/certification",
+        label: "Certification",
+        icon: Award
+      },
       {
         slug: "reports",
         to: "/reports/school",
