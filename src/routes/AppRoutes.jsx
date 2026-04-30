@@ -5,6 +5,8 @@ import { ClubsPage } from "@/features/admin/clubs/pages/ClubsPage";
 import { GalleryFormPage } from "@/features/admin/gallery/pages/GalleryFormPage";
 import { GalleryPage } from "@/features/admin/gallery/pages/GalleryPage";
 import { DistrictFormPage } from "@/features/admin/districts/pages/DistrictFormPage";
+import { DistrictMemberFormPage } from "@/features/admin/districts/pages/DistrictMemberFormPage";
+import { DistrictMembersPage } from "@/features/admin/districts/pages/DistrictMembersPage";
 import { DistrictsPage } from "@/features/admin/districts/pages/DistrictsPage";
 import { EventFormPage } from "@/features/admin/events/pages/EventFormPage";
 import { EventsPage } from "@/features/admin/events/pages/EventsPage";
@@ -52,6 +54,12 @@ export const AppRoutes = () => {
         <Route path="/districts" element={<DistrictsPage />} />
         <Route path="/districts/create" element={<DistrictFormPage />} />
         <Route path="/districts/:districtId/edit" element={<DistrictFormPage />} />
+        <Route path="/districts/:districtId/members" element={<DistrictMembersPage />} />
+        <Route path="/districts/:districtId/members/create" element={<DistrictMemberFormPage />} />
+        <Route
+          path="/districts/:districtId/members/:memberId/edit"
+          element={<DistrictMemberFormPage />}
+        />
         <Route path="/reports/school" element={<SchoolRequestsPage />} />
         <Route path="/reports/school/:requestId" element={<SchoolRequestDetailsPage />} />
         <Route path="/reports/official" element={<OfficialRequestsPage />} />

@@ -9,29 +9,12 @@ import {
   initialDistrictFormValues
 } from "@/features/admin/districts/components/districtFormConfig";
 import { useDistrictsStore } from "@/features/admin/districts/store/districts-store";
-import { useStatesStore } from "@/features/admin/states/store/states-store";
 
 const validateDistrictForm = (formData) => {
   const errors = {};
-  const requiredFields = ["districtName", "stateName", "coordinatorName", "coordinatorPhone"];
-
-  requiredFields.forEach((field) => {
-    if (!String(formData[field] ?? "").trim()) {
-      errors[field] = "This field is required";
-    }
-  });
-
-  if (formData.coordinatorPhone.trim() && !/^[0-9]{10}$/.test(formData.coordinatorPhone.trim())) {
-    errors.coordinatorPhone = "Coordinator phone must be a 10 digit number";
+  if (!String(formData.districtName ?? "").trim()) {
+    errors.districtName = "District name is required";
   }
-
-  if (
-    formData.assistantCoordinatorPhone.trim() &&
-    !/^[0-9]{10}$/.test(formData.assistantCoordinatorPhone.trim())
-  ) {
-    errors.assistantCoordinatorPhone = "Assistant coordinator phone must be a 10 digit number";
-  }
-
   return errors;
 };
 
@@ -39,11 +22,11 @@ export const DistrictFormPage = () => {
   const navigate = useNavigate();
   const { districtId } = useParams();
   const isEditing = Boolean(districtId);
+
   const districts = useDistrictsStore((store) => store.districts);
   const addDistrict = useDistrictsStore((store) => store.addDistrict);
   const updateDistrict = useDistrictsStore((store) => store.updateDistrict);
-  const states = useStatesStore((store) => store.states);
-  const stateOptions = useMemo(() => states.map((state) => state.stateName), [states]);
+
   const existingDistrict = useMemo(
     () => districts.find((item) => item.id === districtId) ?? null,
     [districtId, districts]
@@ -61,20 +44,32 @@ export const DistrictFormPage = () => {
     setErrors((current) => ({ ...current, [field]: "" }));
   };
 
-  const handleSubmit = () => {
+  const handleFileChange = (file) => {
+    if (!file) {
+      setFormData((current) => ({ ...current, imgFile: null, imgPreview: "" }));
+      return;
+    }
+    const previewUrl = URL.createObjectURL(file);
+    setFormData((current) => ({ ...current, imgFile: file, imgPreview: previewUrl }));
+  };
+
+  const handleSubmit = async () => {
     const nextErrors = validateDistrictForm(formData);
     if (Object.keys(nextErrors).length > 0) {
       setErrors(nextErrors);
       return;
     }
 
+    let success;
     if (isEditing && existingDistrict) {
-      updateDistrict(existingDistrict.id, formData);
+      success = await updateDistrict(existingDistrict.id, formData);
     } else {
-      addDistrict(formData);
+      success = await addDistrict(formData);
     }
 
-    navigate("/districts");
+    if (success) {
+      navigate("/districts");
+    }
   };
 
   if (isEditing && !existingDistrict) {
@@ -92,6 +87,7 @@ export const DistrictFormPage = () => {
 
   return (
     <Box className="space-y-5">
+      {/* Hero Banner */}
       <Paper
         elevation={0}
         sx={{
@@ -117,24 +113,8 @@ export const DistrictFormPage = () => {
             pointerEvents: "none"
           }}
         />
-        <Box
-          sx={{
-            position: "absolute",
-            right: { xs: -40, md: 24 },
-            top: { xs: -30, md: 24 },
-            width: { xs: 140, md: 220 },
-            height: { xs: 140, md: 220 },
-            borderRadius: "999px",
-            background:
-              "radial-gradient(circle, rgba(255,255,255,0.22) 0%, rgba(255,255,255,0) 70%)",
-            pointerEvents: "none"
-          }}
-        />
 
-        <Stack
-          spacing={3}
-          sx={{ position: "relative", zIndex: 1, height: "100%", justifyContent: "space-between" }}
-        >
+        <Stack spacing={3} sx={{ position: "relative", zIndex: 1 }}>
           <Box sx={{ maxWidth: 760 }}>
             <Breadcrumbs
               separator={<ChevronRight size={14} />}
@@ -165,6 +145,7 @@ export const DistrictFormPage = () => {
                 {isEditing ? "Edit" : "Create"}
               </Typography>
             </Breadcrumbs>
+
             <Typography
               sx={{
                 mb: 1.25,
@@ -181,13 +162,15 @@ export const DistrictFormPage = () => {
               {isEditing ? "Update District" : "Create District"}
             </Typography>
             <Typography sx={{ color: "rgba(255,255,255,0.86)", maxWidth: 660, lineHeight: 1.7 }}>
-              Build a complete district profile with state mapping, coordinator details,
-              participation counts, and operational status in one structured workspace.
+              {isEditing
+                ? "Review each section below and update the stored district data."
+                : "Fill in the district details including name, about, office address, and an optional image."}
             </Typography>
           </Box>
         </Stack>
       </Paper>
 
+      {/* Form Card */}
       <Paper
         elevation={0}
         sx={{
@@ -208,8 +191,8 @@ export const DistrictFormPage = () => {
           </Typography>
           <Typography sx={{ mt: 0.8, color: "#8d7f7b", lineHeight: 1.7 }}>
             {isEditing
-              ? "Review each section below and update the stored district data with a structured workflow."
-              : "Complete the sections below to register a district in a clean and premium admin experience."}
+              ? "Update the fields below with accurate district information."
+              : "Complete the sections below to register a new district."}
           </Typography>
         </Box>
 
@@ -217,8 +200,9 @@ export const DistrictFormPage = () => {
           formData={formData}
           errors={errors}
           onFieldChange={handleFieldChange}
-          stateOptions={stateOptions}
+          onFileChange={handleFileChange}
         />
+
         <Stack
           direction={{ xs: "column", sm: "row" }}
           spacing={1.5}

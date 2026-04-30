@@ -36,17 +36,15 @@ api.interceptors.response.use(
 
     // Centralized error handling for 401 Unauthorized
     if (error.response?.status === 401 && !isLogoutEndpoint) {
-      if (!isLoggingOut) {
+      const authState = useAuthStore.getState();
+      if (authState.isAuthenticated && !isLoggingOut) {
         isLoggingOut = true;
         console.warn("Session expired. Logging out...");
 
         // Trigger the logout flow and release the lock when done
-        useAuthStore
-          .getState()
-          .logout()
-          .finally(() => {
-            isLoggingOut = false;
-          });
+        authState.logout().finally(() => {
+          isLoggingOut = false;
+        });
       }
     }
 

@@ -20,7 +20,8 @@ export const AppSidebar = () => {
   const navigate = useNavigate();
   const logout = useAuthStore((state) => state.logout);
   const role = useAuthStore((state) => state.role);
-  const { user, isLoading } = useAuthStore();
+  const user = useAuthStore((state) => state.user);
+  const isLoading = useAuthStore((state) => state.isLoading);
   const sidebarOpen = useUiStore((state) => state.sidebarOpen);
   const mobileSidebarOpen = useUiStore((state) => state.mobileSidebarOpen);
   const closeMobileSidebar = useUiStore((state) => state.closeMobileSidebar);

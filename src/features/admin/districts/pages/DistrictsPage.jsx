@@ -1,5 +1,6 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
+  Avatar,
   Box,
   Breadcrumbs,
   Button,
@@ -17,65 +18,84 @@ import {
   TablePagination,
   TableRow,
   TextField,
+  Tooltip,
   Typography
 } from "@mui/material";
-import { ChevronRight, PencilLine, Plus, Search, ShieldCheck, Trash2, Trophy } from "lucide-react";
+import {
+  ChevronRight,
+  PencilLine,
+  Plus,
+  Search,
+  ShieldCheck,
+  Trophy,
+  Trash2,
+  Users
+} from "lucide-react";
 import { Link as RouterLink, useNavigate } from "react-router-dom";
 import districtHero from "@/assets/District_header.jpg";
 import { ConfirmDeleteModal } from "@/components/ui/ConfirmDeleteModal";
 import { useDistrictsStore } from "@/features/admin/districts/store/districts-store";
 
-const DetailItem = ({ label, value }) => (
-  <div>
-    <Typography sx={{ fontSize: 11, color: "#a28f89", textTransform: "uppercase" }}>
-      {label}
-    </Typography>
-    <Typography sx={{ mt: 0.5, fontSize: 14, color: "#2f2829" }}>{value || "-"}</Typography>
-  </div>
-);
-
 export const DistrictsPage = () => {
   const navigate = useNavigate();
   const districts = useDistrictsStore((store) => store.districts);
   const deleteDistrict = useDistrictsStore((store) => store.deleteDistrict);
+  const fetchDistricts = useDistrictsStore((store) => store.fetchDistricts);
+  const isLoading = useDistrictsStore((store) => store.isLoading);
+  const pagination = useDistrictsStore((store) => store.pagination);
   const [searchTerm, setSearchTerm] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(5);
   const [pendingDeleteDistrict, setPendingDeleteDistrict] = useState(null);
 
+  // Debounce search term to prevent rapid API calls
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(searchTerm);
+      setPage(0); // Reset to first page on search
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [searchTerm]);
+
+  // Fetch districts with params. If backend supports it, it will use them.
+  useEffect(() => {
+    fetchDistricts({ name: debouncedSearch, page: page + 1, limit: rowsPerPage });
+  }, [fetchDistricts, debouncedSearch, page, rowsPerPage]);
+
   const filteredDistricts = useMemo(() => {
+    if (pagination) return districts; // Backend handled search
+
     const normalized = searchTerm.trim().toLowerCase();
-    if (!normalized) {
-      return districts;
-    }
+    if (!normalized) return districts;
     return districts.filter((item) =>
-      [item.districtName, item.stateName, item.districtCode, item.coordinatorName]
+      [item.districtName, item.officeAddress, item.about]
         .join(" ")
         .toLowerCase()
         .includes(normalized)
     );
-  }, [searchTerm, districts]);
+  }, [searchTerm, districts, pagination]);
 
   const paginatedDistricts = useMemo(() => {
+    if (pagination) return districts; // Backend handled pagination
+
     const start = page * rowsPerPage;
     return filteredDistricts.slice(start, start + rowsPerPage);
-  }, [filteredDistricts, page, rowsPerPage]);
+  }, [filteredDistricts, page, rowsPerPage, pagination, districts]);
 
-  const closeDeleteDialog = () => {
-    setPendingDeleteDistrict(null);
-  };
+  const totalCount = pagination ? pagination.total : filteredDistricts.length;
 
-  const handleDelete = () => {
-    if (!pendingDeleteDistrict) {
-      return;
-    }
+  const closeDeleteDialog = () => setPendingDeleteDistrict(null);
 
-    deleteDistrict(pendingDeleteDistrict.id);
-    closeDeleteDialog();
+  const handleDelete = async () => {
+    if (!pendingDeleteDistrict) return;
+    const success = await deleteDistrict(pendingDeleteDistrict.id);
+    if (success) closeDeleteDialog();
   };
 
   return (
     <Box className="space-y-5">
+      {/* Hero Banner */}
       <Paper
         elevation={0}
         sx={{
@@ -99,7 +119,6 @@ export const DistrictsPage = () => {
             pointerEvents: "none"
           }}
         />
-
         <Stack
           sx={{ position: "relative", zIndex: 1, height: "100%", justifyContent: "space-between" }}
         >
@@ -134,8 +153,7 @@ export const DistrictsPage = () => {
               District Registry Hub
             </Typography>
             <Typography sx={{ color: "rgba(255,255,255,0.86)", maxWidth: 620, lineHeight: 1.7 }}>
-              Manage district coordinators, state mapping, participation counts, and operational
-              status from one workspace.
+              Manage district records, office addresses, members, and more from one workspace.
             </Typography>
 
             <Stack direction="row" spacing={1.25} useFlexGap sx={{ mt: 3, flexWrap: "wrap" }}>
@@ -146,7 +164,7 @@ export const DistrictsPage = () => {
               />
               <Chip
                 icon={<ShieldCheck size={16} />}
-                label="Coordinator mapping"
+                label="Member mapping"
                 sx={{ color: "white", backgroundColor: "rgba(255,255,255,0.14)" }}
               />
             </Stack>
@@ -154,13 +172,10 @@ export const DistrictsPage = () => {
         </Stack>
       </Paper>
 
+      {/* Table Card */}
       <Paper
         elevation={0}
-        sx={{
-          borderRadius: "28px",
-          border: "1px solid rgba(255,255,255,0.7)",
-          overflow: "hidden"
-        }}
+        sx={{ borderRadius: "28px", border: "1px solid rgba(255,255,255,0.7)", overflow: "hidden" }}
       >
         <Stack
           direction={{ xs: "column", lg: "row" }}
@@ -179,11 +194,11 @@ export const DistrictsPage = () => {
           <Stack direction={{ xs: "column", sm: "row" }} spacing={1.5}>
             <TextField
               value={searchTerm}
-              onChange={(event) => {
-                setSearchTerm(event.target.value);
+              onChange={(e) => {
+                setSearchTerm(e.target.value);
                 setPage(0);
               }}
-              placeholder="Search by district, state, coordinator..."
+              placeholder="Search by district, address..."
               slotProps={{
                 input: {
                   startAdornment: (
@@ -193,7 +208,7 @@ export const DistrictsPage = () => {
                   )
                 }
               }}
-              sx={{ minWidth: { xs: "100%", sm: 320 } }}
+              sx={{ minWidth: { xs: "100%", sm: 300 } }}
             />
             <Button
               variant="contained"
@@ -207,6 +222,7 @@ export const DistrictsPage = () => {
 
         <Divider />
 
+        {/* Mobile Cards */}
         <Stack spacing={2} sx={{ display: { xs: "flex", md: "none" }, p: 2 }}>
           {paginatedDistricts.length > 0 ? (
             paginatedDistricts.map((district) => (
@@ -221,35 +237,35 @@ export const DistrictsPage = () => {
                 }}
               >
                 <Stack spacing={1.5}>
-                  <div className="flex items-start justify-between gap-3">
-                    <div>
-                      <Typography sx={{ mt: 0.5, fontWeight: 700, color: "#2f2829" }}>
-                        {district.districtName}
-                      </Typography>
-                      <Typography sx={{ mt: 0.5, fontSize: 12, fontWeight: 700, color: "#f6765e" }}>
-                        {district.districtCode || "-"}
-                      </Typography>
-                    </div>
-                    <Chip
-                      label={district.status === "active" ? "Active" : "Inactive"}
-                      size="small"
+                  <Stack direction="row" spacing={1.5} alignItems="center">
+                    <Avatar
+                      src={district.img}
+                      alt={district.districtName}
                       sx={{
-                        backgroundColor: district.status === "active" ? "#e9f9ef" : "#f3ecea",
-                        color: district.status === "active" ? "#22a35a" : "#8f817e",
-                        fontWeight: 700
+                        width: 44,
+                        height: 44,
+                        borderRadius: "12px",
+                        border: "1px solid #f0e4dd"
                       }}
                     />
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-3">
-                    <DetailItem label="State" value={district.stateName} />
-                    <DetailItem label="Coordinator" value={district.coordinatorName} />
-                    <DetailItem label="Phone" value={district.coordinatorPhone} />
-                    <DetailItem label="Assistant" value={district.assistantCoordinatorName} />
-                    <DetailItem label="Total Clubs" value={district.totalClubs} />
-                    <DetailItem label="Total Skaters" value={district.totalSkaters} />
-                  </div>
-
+                    <Typography sx={{ fontWeight: 700, color: "#2f2829" }}>
+                      {district.districtName}
+                    </Typography>
+                  </Stack>
+                  {district.about && (
+                    <Typography sx={{ fontSize: 13, color: "#6b5e5a", lineHeight: 1.6 }}>
+                      {district.about}
+                    </Typography>
+                  )}
+                  <Typography sx={{ fontSize: 13, color: "#8d7f7b" }}>
+                    <strong>Address:</strong> {district.officeAddress || "-"}
+                  </Typography>
+                  <Stack direction="row" alignItems="center" spacing={0.5}>
+                    <Users size={14} color="#f6765e" />
+                    <Typography sx={{ fontSize: 13, color: "#2f2829", fontWeight: 600 }}>
+                      {district.members} Members
+                    </Typography>
+                  </Stack>
                   <Stack direction="row" spacing={1}>
                     <Button
                       variant="outlined"
@@ -277,40 +293,39 @@ export const DistrictsPage = () => {
               elevation={0}
               sx={{ p: 4, borderRadius: "22px", textAlign: "center", color: "#978a86" }}
             >
-              No districts found for the current search.
+              No districts found.
             </Paper>
           )}
         </Stack>
 
+        {/* Desktop Table */}
         <TableContainer className="custom-scrollbar" sx={{ display: { xs: "none", md: "block" } }}>
-          <Table sx={{ minWidth: 1220 }}>
+          <Table sx={{ minWidth: 900 }}>
             <TableHead>
               <TableRow sx={{ backgroundColor: "#fdf7f3" }}>
-                {[
-                  "District Name",
-                  "Code",
-                  "State",
-                  "Coordinator",
-                  "Coordinator Phone",
-                  "Assistant Coordinator",
-                  "Total Clubs",
-                  "Total Skaters",
-                  "Status",
-                  "Actions"
-                ].map((column) => (
-                  <TableCell
-                    key={column}
-                    sx={{
-                      borderBottom: "1px solid #f0e1da",
-                      color: "#7e716d",
-                      fontWeight: 700,
-                      fontSize: 13,
-                      whiteSpace: "nowrap"
-                    }}
-                  >
-                    {column}
-                  </TableCell>
-                ))}
+                {["District", "Image", "About", "Office Address", "Members", "Actions"].map(
+                  (col) => (
+                    <TableCell
+                      key={col}
+                      sx={{
+                        borderBottom: "1px solid #f0e1da",
+                        color: "#7e716d",
+                        fontWeight: 700,
+                        fontSize: 13,
+                        whiteSpace: "nowrap"
+                      }}
+                    >
+                      {col === "Members" ? (
+                        <Stack direction="row" spacing={0.5} alignItems="center">
+                          <Users size={14} />
+                          <span>Members</span>
+                        </Stack>
+                      ) : (
+                        col
+                      )}
+                    </TableCell>
+                  )
+                )}
               </TableRow>
             </TableHead>
             <TableBody>
@@ -322,33 +337,116 @@ export const DistrictsPage = () => {
                     sx={{
                       "& .MuiTableCell-root": {
                         borderBottom: "1px solid #f5e9e3",
-                        verticalAlign: "top"
+                        verticalAlign: "middle"
                       }
                     }}
                   >
+                    {/* Name */}
                     <TableCell sx={{ fontWeight: 700, color: "#2f2829", whiteSpace: "nowrap" }}>
                       {district.districtName}
                     </TableCell>
-                    <TableCell sx={{ fontWeight: 700, color: "#f6765e" }}>
-                      {district.districtCode || "-"}
-                    </TableCell>
-                    <TableCell>{district.stateName || "-"}</TableCell>
-                    <TableCell>{district.coordinatorName || "-"}</TableCell>
-                    <TableCell>{district.coordinatorPhone || "-"}</TableCell>
-                    <TableCell>{district.assistantCoordinatorName || "-"}</TableCell>
-                    <TableCell>{district.totalClubs || "-"}</TableCell>
-                    <TableCell>{district.totalSkaters || "-"}</TableCell>
+
+                    {/* Image */}
                     <TableCell>
-                      <Chip
-                        size="small"
-                        label={district.status === "active" ? "Active" : "Inactive"}
-                        sx={{
-                          backgroundColor: district.status === "active" ? "#e9f9ef" : "#f3ecea",
-                          color: district.status === "active" ? "#22a35a" : "#8f817e",
-                          fontWeight: 700
-                        }}
-                      />
+                      {district.img ? (
+                        <Avatar
+                          src={district.img}
+                          alt={district.districtName}
+                          variant="rounded"
+                          sx={{
+                            width: 48,
+                            height: 48,
+                            borderRadius: "10px",
+                            border: "1px solid #f0e4dd"
+                          }}
+                        />
+                      ) : (
+                        <Avatar
+                          variant="rounded"
+                          sx={{
+                            width: 48,
+                            height: 48,
+                            borderRadius: "10px",
+                            backgroundColor: "#f3ecea",
+                            color: "#c0a8a2",
+                            fontSize: 11,
+                            fontWeight: 700
+                          }}
+                        >
+                          No img
+                        </Avatar>
+                      )}
                     </TableCell>
+
+                    {/* About */}
+                    <TableCell sx={{ maxWidth: 280 }}>
+                      <Tooltip title={district.about || ""} placement="top" arrow>
+                        <Typography
+                          sx={{
+                            fontSize: 13,
+                            color: "#5a4f4c",
+                            display: "-webkit-box",
+                            WebkitLineClamp: 2,
+                            WebkitBoxOrient: "vertical",
+                            overflow: "hidden"
+                          }}
+                        >
+                          {district.about || <span style={{ color: "#bbb" }}>—</span>}
+                        </Typography>
+                      </Tooltip>
+                    </TableCell>
+
+                    {/* Office Address */}
+                    <TableCell sx={{ maxWidth: 240 }}>
+                      <Typography
+                        sx={{
+                          fontSize: 13,
+                          color: "#5a4f4c",
+                          display: "-webkit-box",
+                          WebkitLineClamp: 2,
+                          WebkitBoxOrient: "vertical",
+                          overflow: "hidden"
+                        }}
+                      >
+                        {district.officeAddress || <span style={{ color: "#bbb" }}>—</span>}
+                      </Typography>
+                    </TableCell>
+
+                    {/* Members */}
+                    <TableCell>
+                      <Stack
+                        direction="row"
+                        spacing={0.75}
+                        alignItems="center"
+                        onClick={() => navigate(`/districts/${district.id}/members`)}
+                        sx={{
+                          cursor: "pointer",
+                          "&:hover .members-icon": { backgroundColor: "#ffe0d9" }
+                        }}
+                      >
+                        <Box
+                          className="members-icon"
+                          sx={{
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            width: 32,
+                            height: 32,
+                            borderRadius: "8px",
+                            backgroundColor: "#fff0ed",
+                            border: "1px solid #f2d9d1",
+                            transition: "background-color 0.2s"
+                          }}
+                        >
+                          <Users size={15} color="#f6765e" />
+                        </Box>
+                        <Typography sx={{ fontWeight: 700, fontSize: 14, color: "#2f2829" }}>
+                          {district.members}
+                        </Typography>
+                      </Stack>
+                    </TableCell>
+
+                    {/* Actions */}
                     <TableCell>
                       <Stack direction="row" spacing={1}>
                         <IconButton
@@ -375,8 +473,10 @@ export const DistrictsPage = () => {
                 ))
               ) : (
                 <TableRow>
-                  <TableCell colSpan={10} sx={{ py: 6, textAlign: "center", color: "#978a86" }}>
-                    No districts found for the current search.
+                  <TableCell colSpan={6} sx={{ py: 6, textAlign: "center", color: "#978a86" }}>
+                    {isLoading
+                      ? "Loading districts..."
+                      : "No districts found for the current search."}
                   </TableCell>
                 </TableRow>
               )}
@@ -386,12 +486,12 @@ export const DistrictsPage = () => {
 
         <TablePagination
           component="div"
-          count={filteredDistricts.length}
+          count={totalCount}
           page={page}
           onPageChange={(_, nextPage) => setPage(nextPage)}
           rowsPerPage={rowsPerPage}
-          onRowsPerPageChange={(event) => {
-            setRowsPerPage(parseInt(event.target.value, 10));
+          onRowsPerPageChange={(e) => {
+            setRowsPerPage(parseInt(e.target.value, 10));
             setPage(0);
           }}
           rowsPerPageOptions={[5, 10, 25]}

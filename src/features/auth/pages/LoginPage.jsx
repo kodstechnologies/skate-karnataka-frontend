@@ -1,5 +1,5 @@
 import { useState, useRef, useCallback, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Navigate } from "react-router-dom";
 import {
   Box,
   Button,
@@ -107,11 +107,20 @@ const getPhoneError = (val) => {
 // ─── Main Component ────────────────────────────────────────────────────────
 export const LoginPage = () => {
   const navigate = useNavigate();
-  const { requestLoginOtp, verifyLoginOtp, isLoading } = useAuthStore();
+  const requestLoginOtp = useAuthStore((state) => state.requestLoginOtp);
+  const verifyLoginOtp = useAuthStore((state) => state.verifyLoginOtp);
+  const isLoading = useAuthStore((state) => state.isLoading);
+  const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("md"));
 
   const { View: LottieView } = useLottie({ animationData: skateLottie, loop: true });
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      navigate("/dashboard", { replace: true });
+    }
+  }, [isAuthenticated, navigate]);
 
   const [step, setStep] = useState(1);
   const [identifier, setIdentifier] = useState("");
@@ -400,7 +409,7 @@ export const LoginPage = () => {
             >
               {step === 1 ? "Sign In" : "Verify OTP"}
             </Typography>
-            <Typography variant="body1" sx={{ color: "#8d7f7b", fontWeight: 400 }}>
+            <Typography variant="body1" component="div" sx={{ color: "#8d7f7b", fontWeight: 400 }}>
               {step === 1 ? (
                 "Enter your registered mobile number"
               ) : (
