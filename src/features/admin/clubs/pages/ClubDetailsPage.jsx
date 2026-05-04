@@ -1,23 +1,14 @@
 import BadgeOutlinedIcon from "@mui/icons-material/BadgeOutlined";
-import DescriptionOutlinedIcon from "@mui/icons-material/DescriptionOutlined";
 import GroupsOutlinedIcon from "@mui/icons-material/GroupsOutlined";
 import LocationOnOutlinedIcon from "@mui/icons-material/LocationOnOutlined";
-import PictureAsPdfOutlinedIcon from "@mui/icons-material/PictureAsPdfOutlined";
-import SportsScoreOutlinedIcon from "@mui/icons-material/SportsScoreOutlined";
-import { Box, Breadcrumbs, Button, Chip, Paper, Stack, Typography } from "@mui/material";
+import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined";
+import HomeWorkOutlinedIcon from "@mui/icons-material/HomeWorkOutlined";
+import { Avatar, Box, Breadcrumbs, Button, Chip, Paper, Stack, Typography } from "@mui/material";
 import { ChevronRight } from "lucide-react";
 import { useMemo } from "react";
 import { Link as RouterLink, useNavigate, useParams } from "react-router-dom";
 import clubHero from "@/assets/Club_header.jpg";
 import { useClubsStore } from "@/features/admin/clubs/store/clubs-store";
-
-const formatYesNo = (value) => {
-  if (!value) {
-    return "-";
-  }
-
-  return value === "yes" ? "Yes" : "No";
-};
 
 const getDisplayValue = (value) => value || "-";
 
@@ -107,89 +98,12 @@ const SectionCard = ({ title, description, children }) => (
   </Paper>
 );
 
-const PdfCard = ({ label, fileValue }) => (
-  <Box
-    sx={{
-      p: 2.25,
-      borderRadius: "22px",
-      border: "1px solid #f4e5de",
-      backgroundColor: "#fffaf8"
-    }}
-  >
-    <Typography
-      sx={{ fontSize: 11, color: "#a28f89", textTransform: "uppercase", letterSpacing: "0.08em" }}
-    >
-      {label}
-    </Typography>
-
-    {fileValue?.name ? (
-      <Stack spacing={1.75} sx={{ mt: 1.5 }}>
-        <div className="flex items-center gap-3 rounded-2xl border border-[#efe2dc] bg-white px-3 py-3 text-sm text-[#6f6462] shadow-sm">
-          <PictureAsPdfOutlinedIcon sx={{ fontSize: 22, color: "#f6765e" }} />
-          <div className="min-w-0">
-            <div className="truncate font-semibold text-[#2f2829]">{fileValue.name}</div>
-            <div className="text-xs text-[#978883]">PDF document attached</div>
-          </div>
-        </div>
-
-        {fileValue.dataUrl ? (
-          <>
-            <Box
-              sx={{
-                overflow: "hidden",
-                borderRadius: "20px",
-                border: "1px solid #ead8d1",
-                backgroundColor: "white",
-                boxShadow: "0 10px 24px rgba(40, 25, 20, 0.06)"
-              }}
-            >
-              <Box
-                component="iframe"
-                title={`${label} preview`}
-                src={fileValue.dataUrl}
-                sx={{
-                  width: "100%",
-                  height: 320,
-                  border: 0,
-                  display: "block",
-                  backgroundColor: "white"
-                }}
-              />
-            </Box>
-
-            <Button
-              variant="contained"
-              component="a"
-              href={fileValue.dataUrl}
-              target="_blank"
-              rel="noreferrer"
-              sx={{ alignSelf: "flex-start" }}
-            >
-              Open PDF
-            </Button>
-          </>
-        ) : (
-          <Typography sx={{ fontSize: 13, color: "#8d7f7b" }}>
-            Preview is not available for this file.
-          </Typography>
-        )}
-      </Stack>
-    ) : (
-      <Typography sx={{ mt: 1.25, fontSize: 14, color: "#8d7f7b" }}>No PDF uploaded</Typography>
-    )}
-  </Box>
-);
-
 export const ClubDetailsPage = () => {
   const navigate = useNavigate();
   const { clubId } = useParams();
   const clubs = useClubsStore((state) => state.clubs);
   const club = useMemo(() => clubs.find((item) => item.id === clubId) ?? null, [clubId, clubs]);
-  const totalSkaters =
-    Number(club?.tenacitySkatersCount || 0) +
-    Number(club?.recreationalSkatersCount || 0) +
-    Number(club?.quadSkatersCount || 0) +
-    Number(club?.proInlineSkatersCount || 0);
+  const totalMembers = club?.members?.length || 0;
 
   if (!club) {
     return (
@@ -291,29 +205,30 @@ export const ClubDetailsPage = () => {
               <Typography sx={{ color: "white", fontWeight: 700 }}>Details</Typography>
             </Breadcrumbs>
 
-            <Typography
-              sx={{
-                mb: 1.25,
-                fontSize: { xs: 13, md: 14 },
-                fontWeight: 700,
-                textTransform: "uppercase",
-                letterSpacing: "0.14em",
-                color: "rgba(255,255,255,0.72)"
-              }}
-            >
-              Club Profile Overview
-            </Typography>
-            <Typography variant="h3" sx={{ fontWeight: 800, letterSpacing: "-0.06em", mb: 1.5 }}>
-              {club.clubName}
-            </Typography>
-            <Typography sx={{ color: "rgba(255,255,255,0.86)", maxWidth: 660, lineHeight: 1.7 }}>
-              Review the complete club registration, leadership contacts, facility readiness, skater
-              mix, and uploaded documents from one polished detail view.
-            </Typography>
+            <Stack direction="row" spacing={2} alignItems="center" sx={{ mb: 1.5 }}>
+              <Avatar src={club.img} sx={{ width: 64, height: 64, border: "2px solid white" }} />
+              <Box>
+                <Typography
+                  sx={{
+                    mb: 0.5,
+                    fontSize: { xs: 12, md: 13 },
+                    fontWeight: 700,
+                    textTransform: "uppercase",
+                    letterSpacing: "0.14em",
+                    color: "rgba(255,255,255,0.72)"
+                  }}
+                >
+                  Club Profile
+                </Typography>
+                <Typography variant="h3" sx={{ fontWeight: 800, letterSpacing: "-0.06em" }}>
+                  {club.name}
+                </Typography>
+              </Box>
+            </Stack>
 
             <Stack direction="row" spacing={1.25} useFlexGap sx={{ mt: 3, flexWrap: "wrap" }}>
               <Chip
-                label={club.krsaClubId}
+                label={club.clubId}
                 sx={{
                   color: "white",
                   backgroundColor: "rgba(255,255,255,0.14)",
@@ -322,7 +237,7 @@ export const ClubDetailsPage = () => {
                 }}
               />
               <Chip
-                label={club.district}
+                label={club.districtName}
                 sx={{
                   color: "white",
                   backgroundColor: "rgba(255,255,255,0.14)",
@@ -331,7 +246,7 @@ export const ClubDetailsPage = () => {
                 }}
               />
               <Chip
-                label={`${totalSkaters} skaters`}
+                label={`${totalMembers} members`}
                 sx={{
                   color: "white",
                   backgroundColor: "rgba(255,255,255,0.14)",
@@ -358,25 +273,25 @@ export const ClubDetailsPage = () => {
         <SummaryCard
           icon={<BadgeOutlinedIcon sx={{ fontSize: 24 }} />}
           label="Club ID"
-          value={getDisplayValue(club.krsaClubId)}
+          value={getDisplayValue(club.clubId)}
           accent="#f6765e"
         />
         <SummaryCard
           icon={<LocationOnOutlinedIcon sx={{ fontSize: 24 }} />}
           label="District"
-          value={getDisplayValue(club.district)}
+          value={getDisplayValue(club.districtName)}
           accent="#c86f3d"
         />
         <SummaryCard
-          icon={<GroupsOutlinedIcon sx={{ fontSize: 24 }} />}
-          label="President"
-          value={getDisplayValue(club.clubPresidentName)}
+          icon={<HomeWorkOutlinedIcon sx={{ fontSize: 24 }} />}
+          label="District Status"
+          value={getDisplayValue(club.districtStatus)}
           accent="#9c5cff"
         />
         <SummaryCard
-          icon={<SportsScoreOutlinedIcon sx={{ fontSize: 24 }} />}
-          label="Total Skaters"
-          value={String(totalSkaters)}
+          icon={<GroupsOutlinedIcon sx={{ fontSize: 24 }} />}
+          label="Total Members"
+          value={String(totalMembers)}
           accent="#2aa876"
         />
       </Box>
@@ -389,10 +304,7 @@ export const ClubDetailsPage = () => {
         }}
       >
         <Stack spacing={2.5}>
-          <SectionCard
-            title="Club Identity"
-            description="Core registration and administrative details for this affiliated club."
-          >
+          <SectionCard title="Club Identity" description="Core details for this affiliated club.">
             <Box
               sx={{
                 display: "grid",
@@ -400,93 +312,31 @@ export const ClubDetailsPage = () => {
                 gap: 2
               }}
             >
-              <DetailItem label="KRSA Club ID" value={club.krsaClubId} />
-              <DetailItem label="Club login" value={club.clubLogin} />
-              <DetailItem label="Name of club" value={club.clubName} />
-              <DetailItem label="District" value={club.district} />
-              <DetailItem label="ROS number" value={club.rosNumber} />
-              <DetailItem label="Registration address" value={club.registrationAddress} />
-            </Box>
-          </SectionCard>
-
-          <SectionCard
-            title="Leadership Contacts"
-            description="Primary office-bearer information used for communication and coordination."
-          >
-            <Box
-              sx={{
-                display: "grid",
-                gridTemplateColumns: { xs: "1fr", md: "repeat(2, minmax(0, 1fr))" },
-                gap: 2
-              }}
-            >
-              <DetailItem label="Club president name" value={club.clubPresidentName} />
-              <DetailItem label="Club president number" value={club.clubPresidentPhone} />
-              <DetailItem label="Club secretary name" value={club.clubSecretaryName} />
-              <DetailItem label="Club secretary number" value={club.clubSecretaryPhone} />
+              <DetailItem label="KRSA Club ID" value={club.clubId} />
+              <DetailItem label="Name of club" value={club.name} />
+              <DetailItem label="District" value={club.districtName} />
+              <DetailItem label="Status" value={club.districtStatus} />
+              <Box sx={{ gridColumn: { md: "span 2" } }}>
+                <DetailItem label="Office Address" value={club.officeAddress} />
+              </Box>
             </Box>
           </SectionCard>
         </Stack>
 
         <Stack spacing={2.5}>
           <SectionCard
-            title="Training and Facility"
-            description="Skater capacity, coaching availability, and facility readiness for the club."
+            title="About the Club"
+            description="General information regarding this club."
           >
             <Box
               sx={{
                 display: "grid",
-                gridTemplateColumns: { xs: "1fr", md: "repeat(2, minmax(0, 1fr))" },
+                gridTemplateColumns: "1fr",
                 gap: 2
               }}
             >
-              <DetailItem label="Tenacity skaters" value={club.tenacitySkatersCount} />
-              <DetailItem label="Recreational skaters" value={club.recreationalSkatersCount} />
-              <DetailItem label="Quad skaters" value={club.quadSkatersCount} />
-              <DetailItem label="Pro inline skaters" value={club.proInlineSkatersCount} />
-              <DetailItem label="Track address" value={club.trackAddress} />
-              <DetailItem label="Track measurements" value={club.trackMeasurements} />
-              <DetailItem label="No of trainers" value={club.trainersCount} />
-              <DetailItem
-                label="Trainers / coaches available"
-                value={formatYesNo(club.coachesAvailable)}
-              />
+              <DetailItem label="About" value={club.about} />
             </Box>
-          </SectionCard>
-
-          <SectionCard
-            title="Documents"
-            description="Uploaded PDFs and club paperwork stored with this record."
-          >
-            <Box
-              sx={{
-                display: "grid",
-                gridTemplateColumns: { xs: "1fr", md: "repeat(2, minmax(0, 1fr))" },
-                gap: 2
-              }}
-            >
-              <PdfCard label="ROS certificate" fileValue={club.rosCertificate} />
-              <PdfCard label="Documents" fileValue={club.documents} />
-            </Box>
-
-            <Paper
-              elevation={0}
-              sx={{
-                mt: 2,
-                p: 2,
-                borderRadius: "22px",
-                border: "1px dashed #f0d6ce",
-                background: "linear-gradient(180deg, #fff8f5 0%, #fffdfb 100%)"
-              }}
-            >
-              <Stack direction="row" spacing={1.5} sx={{ alignItems: "center" }}>
-                <DescriptionOutlinedIcon sx={{ color: "#f6765e" }} />
-                <Typography sx={{ color: "#7f7270", lineHeight: 1.7 }}>
-                  Use the edit page whenever you want to update the uploaded files or replace old
-                  PDFs with new ones.
-                </Typography>
-              </Stack>
-            </Paper>
           </SectionCard>
         </Stack>
       </Box>

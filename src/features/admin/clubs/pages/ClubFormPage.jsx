@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Box, Breadcrumbs, Button, Paper, Stack, Typography } from "@mui/material";
 import { ChevronRight, Save } from "lucide-react";
 import { Link as RouterLink, useNavigate, useParams } from "react-router-dom";
@@ -10,10 +10,11 @@ import {
   initialClubFormValues
 } from "@/features/admin/clubs/components/clubFormConfig";
 import { useClubsStore } from "@/features/admin/clubs/store/clubs-store";
+import { useDistrictsStore } from "@/features/admin/districts/store/districts-store";
 
 const validateClubForm = (formData) => {
   const errors = {};
-  const requiredFields = ["clubName", "district", "clubPresidentName", "clubPresidentPhone"];
+  const requiredFields = ["name", "district"];
 
   requiredFields.forEach((field) => {
     if (!String(formData[field] ?? "").trim()) {
@@ -21,41 +22,12 @@ const validateClubForm = (formData) => {
     }
   });
 
-  if (formData.clubName.trim() && formData.clubName.trim().length < 2) {
-    errors.clubName = "Name of club must be at least 2 characters";
-  }
-
-  if (
-    formData.clubPresidentPhone.trim() &&
-    !/^[0-9]{10}$/.test(formData.clubPresidentPhone.trim())
-  ) {
-    errors.clubPresidentPhone = "Club president number must be a 10 digit number";
-  }
-
-  if (
-    formData.clubSecretaryPhone.trim() &&
-    !/^[0-9]{10}$/.test(formData.clubSecretaryPhone.trim())
-  ) {
-    errors.clubSecretaryPhone = "Club secretary number must be a 10 digit number";
+  if (formData.name.trim() && formData.name.trim().length < 2) {
+    errors.name = "Name of club must be at least 2 characters";
   }
 
   return errors;
 };
-
-const readFileAsDataUrl = (file) =>
-  new Promise((resolve, reject) => {
-    const reader = new FileReader();
-
-    reader.onload = () => {
-      resolve(reader.result);
-    };
-
-    reader.onerror = () => {
-      reject(new Error("Unable to read file"));
-    };
-
-    reader.readAsDataURL(file);
-  });
 
 export const ClubFormPage = () => {
   const navigate = useNavigate();
@@ -64,6 +36,15 @@ export const ClubFormPage = () => {
   const clubs = useClubsStore((state) => state.clubs);
   const addClub = useClubsStore((state) => state.addClub);
   const updateClub = useClubsStore((state) => state.updateClub);
+
+  const districts = useDistrictsStore((state) => state.districts);
+  const fetchDistricts = useDistrictsStore((state) => state.fetchDistricts);
+
+  useEffect(() => {
+    if (districts.length === 0) {
+      fetchDistricts({ limit: 100 });
+    }
+  }, [districts.length, fetchDistricts]);
 
   const existingClub = useMemo(
     () => clubs.find((club) => club.id === clubId) ?? null,
@@ -87,30 +68,20 @@ export const ClubFormPage = () => {
       return;
     }
 
-    const isPdf = file.type === "application/pdf" || file.name.toLowerCase().endsWith(".pdf");
-
-    if (!isPdf) {
-      setErrors((current) => ({ ...current, [field]: "Only PDF files are allowed" }));
+    const isImage = file.type.startsWith("image/");
+    if (!isImage) {
+      setErrors((current) => ({ ...current, [field]: "Only image files are allowed" }));
       return;
     }
 
-    try {
-      const dataUrl = await readFileAsDataUrl(file);
-
-      setFormData((current) => ({
-        ...current,
-        [field]: {
-          name: file.name,
-          dataUrl
-        }
-      }));
-      setErrors((current) => ({ ...current, [field]: "" }));
-    } catch {
-      setErrors((current) => ({ ...current, [field]: "Unable to read selected PDF" }));
-    }
+    setFormData((current) => ({
+      ...current,
+      [field]: file
+    }));
+    setErrors((current) => ({ ...current, [field]: "" }));
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     const nextErrors = validateClubForm(formData);
 
     if (Object.keys(nextErrors).length > 0) {
@@ -118,13 +89,14 @@ export const ClubFormPage = () => {
       return;
     }
 
-    if (isEditing && existingClub) {
-      updateClub(existingClub.id, formData);
-    } else {
-      addClub(formData);
-    }
+    const success =
+      isEditing && existingClub
+        ? await updateClub(existingClub.id, formData)
+        : await addClub(formData);
 
-    navigate("/clubs");
+    if (success) {
+      navigate("/clubs");
+    }
   };
 
   if (isEditing && !existingClub) {
@@ -245,8 +217,7 @@ export const ClubFormPage = () => {
               {isEditing ? "Update Club Profile" : "Create Club Profile"}
             </Typography>
             <Typography sx={{ color: "rgba(255,255,255,0.86)", maxWidth: 660, lineHeight: 1.7 }}>
-              Build a complete club profile with identity details, office bearers, rink information,
-              skater counts, and supporting PDFs in one elegant admin workflow.
+              Build a complete club profile with identity details and information.
             </Typography>
           </Box>
         </Stack>
@@ -281,6 +252,7 @@ export const ClubFormPage = () => {
           <ClubForm
             formData={formData}
             errors={errors}
+            districts={districts}
             onFieldChange={handleFieldChange}
             onFileChange={handleFileChange}
           />
