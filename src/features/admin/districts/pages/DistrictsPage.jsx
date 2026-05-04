@@ -9,6 +9,7 @@ import {
   IconButton,
   InputAdornment,
   Paper,
+  Skeleton,
   Stack,
   Table,
   TableBody,
@@ -224,7 +225,11 @@ export const DistrictsPage = () => {
 
         {/* Mobile Cards */}
         <Stack spacing={2} sx={{ display: { xs: "flex", md: "none" }, p: 2 }}>
-          {paginatedDistricts.length > 0 ? (
+          {isLoading ? (
+            [0, 1, 2].map((i) => (
+              <Skeleton key={i} variant="rounded" height={220} sx={{ borderRadius: "22px" }} />
+            ))
+          ) : paginatedDistricts.length > 0 ? (
             paginatedDistricts.map((district) => (
               <Paper
                 key={district.id}
@@ -329,7 +334,17 @@ export const DistrictsPage = () => {
               </TableRow>
             </TableHead>
             <TableBody>
-              {paginatedDistricts.length > 0 ? (
+              {isLoading ? (
+                [0, 1, 2, 3].map((i) => (
+                  <TableRow key={i}>
+                    {[0, 1, 2, 3, 4, 5].map((j) => (
+                      <TableCell key={j}>
+                        <Skeleton variant="rounded" height={32} sx={{ borderRadius: "10px" }} />
+                      </TableCell>
+                    ))}
+                  </TableRow>
+                ))
+              ) : paginatedDistricts.length > 0 ? (
                 paginatedDistricts.map((district) => (
                   <TableRow
                     key={district.id}

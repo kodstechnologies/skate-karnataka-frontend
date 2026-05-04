@@ -9,6 +9,7 @@ import {
   IconButton,
   InputAdornment,
   Paper,
+  Skeleton,
   Stack,
   Table,
   TableBody,
@@ -52,6 +53,7 @@ export const ClubsPage = () => {
   const fetchClubs = useClubsStore((state) => state.fetchClubs);
   const deleteClub = useClubsStore((state) => state.deleteClub);
   const pagination = useClubsStore((state) => state.pagination);
+  const isLoading = useClubsStore((state) => state.isLoading);
 
   const [searchTerm, setSearchTerm] = useState("");
   const [page, setPage] = useState(0);
@@ -264,7 +266,11 @@ export const ClubsPage = () => {
         <Divider />
 
         <Stack spacing={2} sx={{ display: { xs: "flex", md: "none" }, p: 2 }}>
-          {displayClubs.length > 0 ? (
+          {isLoading ? (
+            [0, 1, 2].map((i) => (
+              <Skeleton key={i} variant="rounded" height={220} sx={{ borderRadius: "22px" }} />
+            ))
+          ) : displayClubs.length > 0 ? (
             displayClubs.map((club) => (
               <Paper
                 key={club.id}
@@ -380,7 +386,17 @@ export const ClubsPage = () => {
             </TableHead>
 
             <TableBody>
-              {displayClubs.length > 0 ? (
+              {isLoading ? (
+                [0, 1, 2, 3].map((i) => (
+                  <TableRow key={i}>
+                    {[0, 1, 2, 3, 4, 5, 6, 7, 8].map((j) => (
+                      <TableCell key={j}>
+                        <Skeleton variant="rounded" height={32} sx={{ borderRadius: "10px" }} />
+                      </TableCell>
+                    ))}
+                  </TableRow>
+                ))
+              ) : displayClubs.length > 0 ? (
                 displayClubs.map((club) => (
                   <TableRow
                     key={club.id}

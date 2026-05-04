@@ -4,10 +4,6 @@ import {
   Breadcrumbs,
   Button,
   Chip,
-  Dialog,
-  DialogActions,
-  DialogContent,
-  DialogTitle,
   Divider,
   IconButton,
   InputAdornment,
@@ -24,9 +20,9 @@ import {
   TextField,
   Typography
 } from "@mui/material";
-import { ChevronRight, Eye, Mail, MessageSquare, Phone, Search, User, X } from "lucide-react";
-import { Link as RouterLink } from "react-router-dom";
-import contactHero from "@/assets/contect.png";
+import { ChevronRight, Eye, Mail, MessageSquare, Phone, Search, User } from "lucide-react";
+import { Link as RouterLink, useNavigate } from "react-router-dom";
+import feedbackHero from "@/assets/Feedback_header.png";
 import { useFeedbackStore } from "@/features/admin/feedback/store/feedback-store";
 
 const formatDate = (dateStr) => {
@@ -38,13 +34,13 @@ const formatDate = (dateStr) => {
 };
 
 export const FeedbackPage = () => {
+  const navigate = useNavigate();
   const { feedbacks, isLoading, fetchFeedbacks, pagination } = useFeedbackStore();
 
   const [searchTerm, setSearchTerm] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
-  const [selectedFeedback, setSelectedFeedback] = useState(null);
 
   // Debounce search
   useEffect(() => {
@@ -90,7 +86,7 @@ export const FeedbackPage = () => {
           overflow: "hidden",
           position: "relative",
           border: "1px solid rgba(255,255,255,0.7)",
-          background: `linear-gradient(110deg, rgba(18,14,16,0.9) 0%, rgba(35,23,23,0.72) 38%, rgba(246,118,94,0.3) 100%), url("${contactHero}")`,
+          background: `linear-gradient(110deg, rgba(18,14,16,0.9) 0%, rgba(35,23,23,0.72) 38%, rgba(246,118,94,0.3) 100%), url("${feedbackHero}")`,
           backgroundPosition: "center 30%",
           backgroundRepeat: "no-repeat",
           backgroundSize: "cover",
@@ -276,45 +272,14 @@ export const FeedbackPage = () => {
                   </Stack>
 
                   {item.message && (
-                    <Box
-                      sx={{
-                        p: 1.5,
-                        borderRadius: "12px",
-                        backgroundColor: "#f5ede9",
-                        border: "1px solid #eeddd5"
-                      }}
+                    <Button
+                      variant="outlined"
+                      startIcon={<Eye size={16} />}
+                      onClick={() => navigate(`/feedback/${item.id || item._id}`)}
+                      fullWidth
                     >
-                      <Typography
-                        sx={{
-                          fontSize: 13,
-                          color: "#5a4f4c",
-                          lineHeight: 1.6,
-                          display: "-webkit-box",
-                          WebkitLineClamp: 3,
-                          WebkitBoxOrient: "vertical",
-                          overflow: "hidden"
-                        }}
-                      >
-                        {item.message}
-                      </Typography>
-                      {item.message.length > 120 && (
-                        <Button
-                          size="small"
-                          onClick={() => setSelectedFeedback(item)}
-                          sx={{
-                            mt: 0.75,
-                            p: 0,
-                            fontSize: 12,
-                            color: "#f6765e",
-                            textTransform: "none",
-                            minWidth: 0,
-                            "&:hover": { background: "none", textDecoration: "underline" }
-                          }}
-                        >
-                          Read full message
-                        </Button>
-                      )}
-                    </Box>
+                      View Message
+                    </Button>
                   )}
                 </Stack>
               </Paper>
@@ -335,7 +300,7 @@ export const FeedbackPage = () => {
           <Table sx={{ minWidth: 900 }}>
             <TableHead>
               <TableRow sx={{ backgroundColor: "#fdf7f3" }}>
-                {["Name", "Email", "Phone", "Message", "Submitted At", ""].map((col) => (
+                {["Name", "Email", "Phone", "Submitted At", "Message"].map((col) => (
                   <TableCell
                     key={col}
                     sx={{
@@ -415,34 +380,17 @@ export const FeedbackPage = () => {
                       {item.phone || "—"}
                     </TableCell>
 
-                    {/* Message */}
-                    <TableCell sx={{ maxWidth: 280 }}>
-                      <Typography
-                        sx={{
-                          fontSize: 13,
-                          color: "#5a4f4c",
-                          display: "-webkit-box",
-                          WebkitLineClamp: 2,
-                          WebkitBoxOrient: "vertical",
-                          overflow: "hidden",
-                          lineHeight: 1.6
-                        }}
-                      >
-                        {item.message || <span style={{ color: "#bbb" }}>—</span>}
-                      </Typography>
-                    </TableCell>
-
                     {/* Date — must come before action to match header order */}
                     <TableCell sx={{ fontSize: 13, color: "#8d7f7b", whiteSpace: "nowrap" }}>
                       {formatDate(item.createdAt)}
                     </TableCell>
 
-                    {/* View action */}
+                    {/* View action (Message column) */}
                     <TableCell sx={{ whiteSpace: "nowrap" }}>
                       {item.message && (
                         <IconButton
                           size="small"
-                          onClick={() => setSelectedFeedback(item)}
+                          onClick={() => navigate(`/feedback/${item.id || item._id}`)}
                           title="View full message"
                           sx={{
                             border: "1px solid #efe2dc",
@@ -483,110 +431,6 @@ export const FeedbackPage = () => {
           rowsPerPageOptions={[5, 10, 25]}
         />
       </Paper>
-
-      {/* Full Message Dialog */}
-      <Dialog
-        open={Boolean(selectedFeedback)}
-        onClose={() => setSelectedFeedback(null)}
-        maxWidth="sm"
-        fullWidth
-        slotProps={{ paper: { sx: { borderRadius: "24px", p: 1 } } }}
-      >
-        <DialogTitle
-          sx={{
-            fontWeight: 800,
-            fontSize: 18,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-            pb: 1
-          }}
-        >
-          Full Message
-          <IconButton
-            onClick={() => setSelectedFeedback(null)}
-            size="small"
-            sx={{ color: "#8d7f7b" }}
-          >
-            <X size={18} />
-          </IconButton>
-        </DialogTitle>
-
-        <Divider />
-
-        <DialogContent sx={{ pt: 2.5 }}>
-          {selectedFeedback && (
-            <Stack spacing={2.5}>
-              {/* Sender info */}
-              <Stack spacing={1}>
-                <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                  <User size={14} color="#f6765e" />
-                  <Typography sx={{ fontSize: 13, color: "#6b5e5a" }}>
-                    <strong>{selectedFeedback.fullName}</strong>
-                  </Typography>
-                </Box>
-                <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                  <Mail size={14} color="#f6765e" />
-                  <Typography sx={{ fontSize: 13, color: "#6b5e5a" }}>
-                    {selectedFeedback.email || "—"}
-                  </Typography>
-                </Box>
-                <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                  <Phone size={14} color="#f6765e" />
-                  <Typography sx={{ fontSize: 13, color: "#6b5e5a" }}>
-                    {selectedFeedback.phone || "—"}
-                  </Typography>
-                </Box>
-              </Stack>
-
-              <Divider />
-
-              {/* Message body */}
-              <Box
-                sx={{
-                  p: 2,
-                  borderRadius: "16px",
-                  backgroundColor: "#fdf7f3",
-                  border: "1px solid #f0e1da"
-                }}
-              >
-                <Typography
-                  sx={{
-                    fontSize: 14,
-                    color: "#3a3130",
-                    lineHeight: 1.8,
-                    whiteSpace: "pre-wrap",
-                    wordBreak: "break-word"
-                  }}
-                >
-                  {selectedFeedback.message}
-                </Typography>
-              </Box>
-
-              {/* Timestamp */}
-              <Typography sx={{ fontSize: 12, color: "#b3a5a0", textAlign: "right" }}>
-                Submitted: {formatDate(selectedFeedback.createdAt)}
-              </Typography>
-            </Stack>
-          )}
-        </DialogContent>
-
-        <DialogActions sx={{ px: 3, pb: 2.5 }}>
-          <Button
-            onClick={() => setSelectedFeedback(null)}
-            variant="contained"
-            sx={{
-              borderRadius: "12px",
-              textTransform: "none",
-              backgroundColor: "#f6765e",
-              boxShadow: "none",
-              "&:hover": { backgroundColor: "#ea6b54", boxShadow: "none" }
-            }}
-          >
-            Close
-          </Button>
-        </DialogActions>
-      </Dialog>
     </Box>
   );
 };

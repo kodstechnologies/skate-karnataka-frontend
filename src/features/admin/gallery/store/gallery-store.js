@@ -18,20 +18,20 @@ export const useGalleryStore = create((set, get) => ({
     set({ isLoading: true, error: null, currentType: type });
     try {
       const response = await galleryApi.getAll(type, page, limit);
-      if (response.success) {
-        set({
-          items: response.data.data,
-          pagination: response.data.pagination,
-          isLoading: false
-        });
-      } else {
-        set({ error: response.message, isLoading: false });
-      }
+      // axios interceptor already returns response.data — so response = { success, data: { data, pagination }, message }
+      const payload = response?.data || response || {};
+      const items = Array.isArray(payload) ? payload : payload?.data || [];
+      const pagination = payload?.pagination || {
+        total: items.length,
+        page,
+        limit,
+        totalPages: Math.ceil(items.length / limit)
+      };
+      set({ items, pagination, isLoading: false });
     } catch (error) {
-      set({
-        error: error?.response?.data?.message || "Failed to fetch gallery items",
-        isLoading: false
-      });
+      const errorMessage = error?.response?.data?.message || "Failed to fetch gallery items";
+      set({ error: errorMessage, isLoading: false });
+      toast.error(errorMessage);
     }
   },
 
@@ -39,20 +39,14 @@ export const useGalleryStore = create((set, get) => ({
     set({ isLoading: true, error: null });
     try {
       const response = await galleryApi.create(formData);
-      if (response.success) {
-        set({ isLoading: false });
-        toast.success(response.message || "Gallery item added successfully");
-        // Refresh current page
-        const { pagination, currentType } = get();
-        await get().fetchItems(currentType, pagination.page, pagination.limit);
-        return response;
-      }
+      set({ isLoading: false });
+      toast.success(response?.message || "Gallery item added successfully");
+      const { pagination, currentType } = get();
+      await get().fetchItems(currentType, pagination.page, pagination.limit);
+      return response;
     } catch (error) {
       const errorMessage = error?.response?.data?.message || "Failed to add gallery item";
-      set({
-        error: errorMessage,
-        isLoading: false
-      });
+      set({ error: errorMessage, isLoading: false });
       toast.error(errorMessage);
       throw error;
     }
@@ -62,20 +56,14 @@ export const useGalleryStore = create((set, get) => ({
     set({ isLoading: true, error: null });
     try {
       const response = await galleryApi.update(id, formData);
-      if (response.success) {
-        set({ isLoading: false });
-        toast.success(response.message || "Gallery item updated successfully");
-        // Refresh items
-        const { pagination, currentType } = get();
-        await get().fetchItems(currentType, pagination.page, pagination.limit);
-        return response;
-      }
+      set({ isLoading: false });
+      toast.success(response?.message || "Gallery item updated successfully");
+      const { pagination, currentType } = get();
+      await get().fetchItems(currentType, pagination.page, pagination.limit);
+      return response;
     } catch (error) {
       const errorMessage = error?.response?.data?.message || "Failed to update gallery item";
-      set({
-        error: errorMessage,
-        isLoading: false
-      });
+      set({ error: errorMessage, isLoading: false });
       toast.error(errorMessage);
       throw error;
     }
@@ -85,20 +73,14 @@ export const useGalleryStore = create((set, get) => ({
     set({ isLoading: true, error: null });
     try {
       const response = await galleryApi.delete(id);
-      if (response.success) {
-        set({ isLoading: false });
-        toast.success(response.message || "Gallery item deleted successfully");
-        // Refresh items
-        const { pagination, currentType } = get();
-        await get().fetchItems(currentType, pagination.page, pagination.limit);
-        return response;
-      }
+      set({ isLoading: false });
+      toast.success(response?.message || "Gallery item deleted successfully");
+      const { pagination, currentType } = get();
+      await get().fetchItems(currentType, pagination.page, pagination.limit);
+      return response;
     } catch (error) {
       const errorMessage = error?.response?.data?.message || "Failed to delete gallery item";
-      set({
-        error: errorMessage,
-        isLoading: false
-      });
+      set({ error: errorMessage, isLoading: false });
       toast.error(errorMessage);
       throw error;
     }

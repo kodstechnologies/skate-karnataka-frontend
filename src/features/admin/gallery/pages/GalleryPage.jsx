@@ -1,4 +1,3 @@
-import OndemandVideoOutlinedIcon from "@mui/icons-material/OndemandVideoOutlined";
 import {
   Box,
   Breadcrumbs,
@@ -7,17 +6,16 @@ import {
   Paper,
   Stack,
   TablePagination,
-  TextField,
   Typography,
   Skeleton,
   Dialog,
   DialogContent,
   IconButton
 } from "@mui/material";
-import { ChevronRight, Image, PencilLine, Plus, Search, Trash2, X, Play } from "lucide-react";
-import { useEffect, useState } from "react";
+import { ChevronRight, Image, PencilLine, Plus, Trash2, X, Play, Eye } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
 import { Link as RouterLink, useNavigate } from "react-router-dom";
-import galleryHero from "@/assets/Circular_header.jpg";
+import galleryHero from "@/assets/Gallery_header.jpg";
 import { ConfirmDeleteModal } from "@/components/ui/ConfirmDeleteModal";
 import { useGalleryStore } from "@/features/admin/gallery/store/gallery-store";
 
@@ -25,13 +23,12 @@ export const GalleryPage = () => {
   const navigate = useNavigate();
   const { items, pagination, isLoading, fetchItems, deleteItem } = useGalleryStore();
 
-  const [searchTerm, setSearchTerm] = useState("");
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(6);
   const [pendingDeleteItem, setPendingDeleteItem] = useState(null);
   const [activeType, setActiveType] = useState("all");
 
-  // Media Viewer State
+  // Media viewer
   const [viewerOpen, setViewerOpen] = useState(false);
   const [selectedMedia, setSelectedMedia] = useState(null);
 
@@ -40,10 +37,7 @@ export const GalleryPage = () => {
   }, [fetchItems, activeType, page, rowsPerPage]);
 
   const handleDelete = async () => {
-    if (!pendingDeleteItem) {
-      return;
-    }
-
+    if (!pendingDeleteItem) return;
     await deleteItem(pendingDeleteItem._id);
     setPendingDeleteItem(null);
   };
@@ -53,12 +47,29 @@ export const GalleryPage = () => {
     setViewerOpen(true);
   };
 
-  const filteredItems = items.filter((item) =>
-    (item.ownerName || "").toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  // ── Pagination: prefer backend total, fall back to frontend slicing ──
+  const isBackendPagination = !!(pagination && pagination.total > 0);
+
+  const displayItems = useMemo(() => {
+    if (isBackendPagination) {
+      // Backend already returns the correct page slice
+      return items;
+    }
+    // Frontend slicing
+    const start = page * rowsPerPage;
+    return items.slice(start, start + rowsPerPage);
+  }, [items, isBackendPagination, page, rowsPerPage]);
+
+  const totalCount = useMemo(() => {
+    if (isBackendPagination) {
+      return pagination.total;
+    }
+    return items.length;
+  }, [items.length, isBackendPagination, pagination]);
 
   return (
     <Box className="space-y-5">
+      {/* ── Hero Banner ── */}
       <Paper
         elevation={0}
         sx={{
@@ -68,11 +79,11 @@ export const GalleryPage = () => {
           overflow: "hidden",
           position: "relative",
           border: "1px solid rgba(255,255,255,0.65)",
-          background: `linear-gradient(120deg, rgba(18, 14, 16, 0.82) 0%, rgba(38, 25, 26, 0.62) 34%, rgba(83, 199, 197, 0.23) 100%), url("${galleryHero}")`,
+          background: `linear-gradient(120deg, rgba(18,14,16,0.85) 0%, rgba(38,25,26,0.66) 40%, rgba(83,199,197,0.20) 100%), url("${galleryHero}")`,
           backgroundPosition: "center",
           backgroundSize: "cover",
           color: "white",
-          boxShadow: "0 28px 90px rgba(28, 18, 16, 0.22)"
+          boxShadow: "0 28px 90px rgba(28,18,16,0.22)"
         }}
       >
         <Stack
@@ -117,45 +128,44 @@ export const GalleryPage = () => {
               Gallery Management Hub
             </Typography>
             <Typography sx={{ color: "rgba(255,255,255,0.86)", maxWidth: 660, lineHeight: 1.7 }}>
-              Publish gallery items with image, video banner, and targeted delivery for state,
-              district, and club audiences.
+              Upload and manage photos and videos for state, district, and club audiences — all from
+              one clean workspace.
             </Typography>
 
-            <Stack direction="row" spacing={1} useFlexGap sx={{ mt: 2.5, flexWrap: "wrap" }}>
+            {/* Type filter chips (Commented out as requested) */}
+            {/* <Stack direction="row" spacing={1} useFlexGap sx={{ mt: 2.5, flexWrap: "wrap" }}>
               {["all", "state", "district", "club"].map((type) => (
                 <Chip
                   key={type}
                   label={type.charAt(0).toUpperCase() + type.slice(1)}
-                  onClick={() => {
-                    setActiveType(type);
-                    setPage(0);
-                  }}
+                  onClick={() => { setActiveType(type); setPage(0); }}
                   sx={{
                     color: "white",
+                    fontWeight: 600,
                     backgroundColor: activeType === type ? "#f6765e" : "rgba(255,255,255,0.14)",
-                    "&:hover": {
-                      backgroundColor: activeType === type ? "#f6765e" : "rgba(255,255,255,0.24)"
-                    }
+                    "&:hover": { backgroundColor: activeType === type ? "#f6765e" : "rgba(255,255,255,0.24)" }
                   }}
                 />
               ))}
-            </Stack>
+            </Stack> */}
           </Box>
         </Stack>
       </Paper>
 
+      {/* ── Gallery List ── */}
       <Paper
         elevation={0}
         sx={{
           borderRadius: { xs: "24px", md: "32px" },
-          border: "1px solid rgba(246, 228, 221, 0.95)",
+          border: "1px solid rgba(246,228,221,0.95)",
           overflow: "hidden",
           background:
             "linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(255,249,246,0.98) 100%)",
-          boxShadow: "0 26px 80px rgba(48, 30, 24, 0.07)",
+          boxShadow: "0 26px 80px rgba(48,30,24,0.07)",
           minHeight: 400
         }}
       >
+        {/* Toolbar */}
         <Stack
           direction={{ xs: "column", lg: "row" }}
           spacing={2}
@@ -174,61 +184,33 @@ export const GalleryPage = () => {
                 fontSize: { xs: "1.25rem", sm: "1.5rem" }
               }}
             >
-              Gallery Registry{" "}
-              {activeType !== "all"
-                ? `(${activeType.charAt(0).toUpperCase() + activeType.slice(1)})`
-                : "(All Items)"}
+              Gallery Registry
             </Typography>
             <Typography
               sx={{ mt: 0.75, color: "#8d7f7b", fontSize: { xs: "0.875rem", sm: "1rem" } }}
             >
-              View and manage gallery items.
+              View and manage gallery photos and videos.
             </Typography>
           </Box>
 
           <Stack
             direction={{ xs: "column", sm: "row" }}
-            spacing={2}
-            sx={{
-              width: { xs: "100%", sm: "auto" },
-              alignItems: "stretch", // Stretch to match heights
-              flexGrow: { xs: 0, sm: 1 },
-              maxWidth: { xs: "100%", sm: "600px" }
-            }}
+            spacing={1.5}
+            sx={{ width: { xs: "100%", sm: "auto" } }}
           >
-            <TextField
-              value={searchTerm}
-              onChange={(event) => {
-                setSearchTerm(event.target.value);
-              }}
-              placeholder="Search owner name..."
-              fullWidth
-              size="small"
-              sx={{
-                "& .MuiInputBase-root": { height: "48px", borderRadius: "12px" }
-              }}
-              slotProps={{
-                input: {
-                  startAdornment: <Search size={16} style={{ color: "#b19f99", marginRight: 8 }} />
-                }
-              }}
-            />
             <Button
               variant="contained"
               startIcon={<Plus size={18} />}
               onClick={() => navigate("/gallery/create")}
               sx={{
                 height: "48px",
-                px: 4,
+                px: 3,
                 borderRadius: "12px",
                 whiteSpace: "nowrap",
-                minWidth: { xs: "100%", sm: "200px" }, // Give it more width as requested
                 textTransform: "none",
                 fontWeight: 700,
-                boxShadow: "0 8px 20px rgba(246, 118, 94, 0.25)",
-                "&:hover": {
-                  boxShadow: "0 10px 25px rgba(246, 118, 94, 0.35)"
-                }
+                boxShadow: "0 8px 20px rgba(246,118,94,0.25)",
+                "&:hover": { boxShadow: "0 10px 25px rgba(246,118,94,0.35)" }
               }}
             >
               Add gallery item
@@ -236,49 +218,42 @@ export const GalleryPage = () => {
           </Stack>
         </Stack>
 
+        {/* Grid */}
         <Box sx={{ px: { xs: 2, md: 3 }, pb: { xs: 2, md: 3 } }}>
           {isLoading ? (
             <Box
               sx={{
                 display: "grid",
-                gridTemplateColumns: {
-                  xs: "1fr",
-                  sm: "repeat(2, minmax(0, 1fr))",
-                  lg: "repeat(3, minmax(0, 1fr))"
-                },
+                gridTemplateColumns: { xs: "1fr", sm: "repeat(2,1fr)", lg: "repeat(3,1fr)" },
                 gap: 2
               }}
             >
-              {[...Array(6)].map((_, index) => (
+              {[...Array(rowsPerPage)].map((_, i) => (
                 <Paper
-                  key={index}
+                  key={i}
                   elevation={0}
-                  sx={{
-                    borderRadius: "20px",
-                    border: "1px solid #f0ddd5",
-                    overflow: "hidden",
-                    background: "white"
-                  }}
+                  sx={{ borderRadius: "20px", border: "1px solid #f0ddd5", overflow: "hidden" }}
                 >
                   <Skeleton
                     variant="rectangular"
-                    height={240}
+                    height={220}
                     sx={{ borderRadius: "20px 20px 0 0" }}
                   />
-                  <Box sx={{ p: 2.5 }}>
-                    <Skeleton variant="text" width="70%" height={28} sx={{ mb: 1 }} />
-                    <Skeleton variant="text" width="50%" height={20} />
-                    <Stack direction="row" spacing={1} sx={{ mt: 3, justifyContent: "flex-end" }}>
+                  <Box sx={{ p: 2 }}>
+                    <Skeleton variant="text" width="70%" height={24} sx={{ mb: 0.5 }} />
+                    <Skeleton variant="text" width="50%" height={18} sx={{ mb: 0.5 }} />
+                    <Skeleton variant="text" width="40%" height={16} />
+                    <Stack direction="row" spacing={1} sx={{ mt: 2, justifyContent: "flex-end" }}>
                       <Skeleton
                         variant="rectangular"
-                        width={70}
-                        height={36}
+                        width={65}
+                        height={32}
                         sx={{ borderRadius: "10px" }}
                       />
                       <Skeleton
                         variant="rectangular"
-                        width={80}
-                        height={36}
+                        width={75}
+                        height={32}
                         sx={{ borderRadius: "10px" }}
                       />
                     </Stack>
@@ -286,19 +261,15 @@ export const GalleryPage = () => {
                 </Paper>
               ))}
             </Box>
-          ) : filteredItems.length > 0 ? (
+          ) : displayItems.length > 0 ? (
             <Box
               sx={{
                 display: "grid",
-                gridTemplateColumns: {
-                  xs: "1fr",
-                  sm: "repeat(2, minmax(0, 1fr))",
-                  lg: "repeat(3, minmax(0, 1fr))"
-                },
+                gridTemplateColumns: { xs: "1fr", sm: "repeat(2,1fr)", lg: "repeat(3,1fr)" },
                 gap: 2
               }}
             >
-              {filteredItems.map((item) => (
+              {displayItems.map((item) => (
                 <Paper
                   key={item._id}
                   elevation={0}
@@ -306,34 +277,32 @@ export const GalleryPage = () => {
                     borderRadius: "20px",
                     border: "1px solid #f0ddd5",
                     overflow: "hidden",
-                    background:
-                      "linear-gradient(180deg, rgba(255,255,255,1) 0%, rgba(255,250,248,1) 100%)",
-                    boxShadow: "0 20px 50px rgba(56, 36, 29, 0.08)",
+                    background: "linear-gradient(180deg,#fff 0%,#fffaf8 100%)",
+                    boxShadow: "0 20px 50px rgba(56,36,29,0.08)",
                     transition: "transform 0.25s ease, box-shadow 0.25s ease",
+                    display: "flex",
+                    flexDirection: "column",
                     "&:hover": {
                       transform: "translateY(-4px)",
-                      boxShadow: "0 28px 65px rgba(56, 36, 29, 0.12)"
+                      boxShadow: "0 28px 65px rgba(56,36,29,0.12)"
                     }
                   }}
                 >
+                  {/* Thumbnail */}
                   <Box
                     sx={{
-                      height: { xs: 220, sm: 240 }, // Fixed exact height for consistency
+                      height: { xs: 200, sm: 220 },
                       position: "relative",
                       background: item.imageUrl
                         ? `url("${item.imageUrl}")`
-                        : `linear-gradient(180deg, rgba(24,18,18,0.2) 0%, rgba(24,18,18,0.56) 100%), url("${galleryHero}")`,
+                        : "linear-gradient(135deg,#1a1a2e 0%,#16213e 50%,#0f3460 100%)",
                       backgroundSize: "cover",
                       backgroundPosition: "center",
                       cursor: "pointer",
                       display: "flex",
                       alignItems: "center",
                       justifyContent: "center",
-                      transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
-                      "&:hover": {
-                        "& .view-overlay": { opacity: 1 },
-                        "& .play-icon": { transform: "scale(1.1)" }
-                      }
+                      "&:hover .view-overlay": { opacity: 1 }
                     }}
                     onClick={() =>
                       handleViewMedia(
@@ -342,7 +311,7 @@ export const GalleryPage = () => {
                       )
                     }
                   >
-                    {/* Glassy View Overlay */}
+                    {/* Hover overlay */}
                     <Box
                       className="view-overlay"
                       sx={{
@@ -359,93 +328,165 @@ export const GalleryPage = () => {
                     >
                       {item.videoUrl ? (
                         <Box
-                          className="play-icon"
                           sx={{
-                            width: 48,
-                            height: 48,
+                            width: 52,
+                            height: 52,
                             borderRadius: "50%",
                             backgroundColor: "rgba(255,255,255,0.2)",
                             backdropFilter: "blur(12px)",
                             display: "flex",
                             alignItems: "center",
                             justifyContent: "center",
-                            border: "1px solid rgba(255,255,255,0.4)",
-                            transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)"
+                            border: "1px solid rgba(255,255,255,0.4)"
                           }}
                         >
-                          <Play size={24} color="white" fill="white" />
+                          <Play size={26} color="white" fill="white" />
                         </Box>
                       ) : (
                         <Box
                           sx={{
                             backgroundColor: "rgba(255,255,255,0.2)",
                             backdropFilter: "blur(12px)",
-                            px: 2,
-                            py: 0.75,
+                            px: 2.5,
+                            py: 1,
                             borderRadius: "20px",
                             border: "1px solid rgba(255,255,255,0.3)",
                             color: "white",
                             fontWeight: 600,
-                            fontSize: "0.875rem"
+                            fontSize: "0.875rem",
+                            display: "flex",
+                            alignItems: "center",
+                            gap: 1
                           }}
                         >
-                          View Image
+                          <Image size={16} /> View Image
                         </Box>
                       )}
                     </Box>
 
-                    <Stack
-                      direction="row"
-                      spacing={0.75}
-                      useFlexGap
-                      sx={{
-                        position: "absolute",
-                        top: 12,
-                        left: 12,
-                        zIndex: 2
-                      }}
-                    >
+                    {/* No media placeholder */}
+                    {!item.imageUrl && !item.videoUrl && (
+                      <Stack
+                        alignItems="center"
+                        spacing={0.75}
+                        sx={{ color: "rgba(255,255,255,0.4)" }}
+                      >
+                        <Image size={36} />
+                        <Typography sx={{ fontSize: 12, color: "rgba(255,255,255,0.4)" }}>
+                          No media
+                        </Typography>
+                      </Stack>
+                    )}
+
+                    {/* ownerType badge (Commented out as requested) */}
+                    {/* {item.ownerType && (
                       <Chip
                         size="small"
                         label={item.ownerType}
                         sx={{
-                          backgroundColor: "#53c7c5",
-                          color: "white",
-                          fontWeight: 700,
-                          backdropFilter: "blur(4px)"
+                          position: "absolute", top: 10, left: 10, zIndex: 2,
+                          backgroundColor: "#53c7c5", color: "white",
+                          fontWeight: 700, textTransform: "capitalize"
                         }}
                       />
-                    </Stack>
+                    )} */}
+
+                    {/* Video badge */}
+                    {item.videoUrl && (
+                      <Chip
+                        size="small"
+                        label="Video"
+                        sx={{
+                          position: "absolute",
+                          top: 10,
+                          right: 10,
+                          zIndex: 2,
+                          backgroundColor: "rgba(246,118,94,0.9)",
+                          color: "white",
+                          fontWeight: 700
+                        }}
+                      />
+                    )}
                   </Box>
 
+                  {/* Card body — only API fields */}
                   <Stack
-                    spacing={1.25}
-                    sx={{
-                      p: 2,
-                      position: "relative"
-                    }}
+                    spacing={0.5}
+                    sx={{ p: 2, flex: 1, display: "flex", flexDirection: "column" }}
                   >
-                    <Typography sx={{ fontSize: 16, fontWeight: 700, color: "#2f2829" }}>
-                      {item.ownerName || "Unknown Owner"}
+                    {/* title (API field) */}
+                    <Typography sx={{ fontSize: 15, fontWeight: 700, color: "#2f2829" }}>
+                      {item.title || "—"}
                     </Typography>
 
-                    <Typography sx={{ color: "#7e716d", fontSize: 12 }}>
-                      {new Date(item.createdAt).toLocaleDateString()}
+                    {/* about (API field) */}
+                    {item.about && (
+                      <Typography
+                        sx={{
+                          fontSize: 13,
+                          color: "#7e716d",
+                          lineHeight: 1.5,
+                          overflow: "hidden",
+                          textOverflow: "ellipsis",
+                          display: "-webkit-box",
+                          WebkitLineClamp: 2,
+                          WebkitBoxOrient: "vertical"
+                        }}
+                      >
+                        {item.about}
+                      </Typography>
+                    )}
+
+                    {/* ownerName (API field) */}
+                    {item.ownerName && (
+                      <Typography sx={{ fontSize: 12, color: "#9e8c87", fontWeight: 600 }}>
+                        {item.ownerName}
+                      </Typography>
+                    )}
+
+                    {/* createdAt (API field) */}
+                    <Typography sx={{ fontSize: 11, color: "#b8a8a4" }}>
+                      {item.createdAt ? new Date(item.createdAt).toLocaleDateString() : "—"}
                     </Typography>
 
-                    <Stack
-                      direction="row"
-                      spacing={1}
-                      sx={{
-                        mt: 2,
-                        justifyContent: "flex-end"
-                      }}
-                    >
+                    <Stack direction="row" spacing={1} sx={{ mt: "auto", pt: 1.5 }}>
+                      <Button
+                        size="small"
+                        variant="outlined"
+                        startIcon={<Eye size={14} />}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          navigate(`/gallery/${item._id}`);
+                        }}
+                        sx={{
+                          flex: 1,
+                          borderRadius: "10px",
+                          textTransform: "none",
+                          fontWeight: 600,
+                          borderColor: "#53c7c5",
+                          color: "#2a6a82",
+                          "&:hover": {
+                            borderColor: "#0ea5d5",
+                            backgroundColor: "rgba(83,199,197,0.1)"
+                          }
+                        }}
+                      >
+                        View
+                      </Button>
                       <Button
                         size="small"
                         variant="outlined"
                         startIcon={<PencilLine size={14} />}
-                        onClick={() => navigate(`/gallery/${item._id}/edit`)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          navigate(`/gallery/${item._id}/edit`);
+                        }}
+                        sx={{
+                          flex: 1,
+                          borderRadius: "10px",
+                          textTransform: "none",
+                          fontWeight: 600
+                        }}
                       >
                         Edit
                       </Button>
@@ -453,10 +494,18 @@ export const GalleryPage = () => {
                         size="small"
                         variant="contained"
                         startIcon={<Trash2 size={14} />}
-                        onClick={() => setPendingDeleteItem(item)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setPendingDeleteItem(item);
+                        }}
                         sx={{
+                          flex: 1,
+                          borderRadius: "10px",
+                          textTransform: "none",
+                          fontWeight: 600,
                           backgroundColor: "#f6765e",
-                          "&:hover": { backgroundColor: "#ea6b54" }
+                          "&:hover": { backgroundColor: "#ea6b54", boxShadow: "none" },
+                          boxShadow: "none"
                         }}
                       >
                         Delete
@@ -473,40 +522,38 @@ export const GalleryPage = () => {
                 p: { xs: 3, sm: 5 },
                 borderRadius: "22px",
                 textAlign: "center",
-                color: "#978a86"
+                color: "#978a86",
+                border: "1px dashed #f0ddd5"
               }}
             >
-              No gallery items found.
+              <Stack alignItems="center" spacing={1}>
+                <Image size={40} style={{ opacity: 0.35 }} />
+                <Typography>No gallery items found.</Typography>
+              </Stack>
             </Paper>
           )}
         </Box>
 
         <TablePagination
           component="div"
-          count={pagination?.total || 0}
+          count={totalCount}
           page={page}
-          onPageChange={(_, nextPage) => setPage(nextPage)}
+          onPageChange={(_, next) => setPage(next)}
           rowsPerPage={rowsPerPage}
-          onRowsPerPageChange={(event) => {
-            setRowsPerPage(parseInt(event.target.value, 10));
+          onRowsPerPageChange={(e) => {
+            setRowsPerPage(parseInt(e.target.value, 10));
             setPage(0);
           }}
           rowsPerPageOptions={[6, 9, 12]}
-          sx={{
-            "& .MuiTablePagination-toolbar": {
-              flexDirection: { xs: "column", sm: "row" },
-              alignItems: { xs: "center", sm: "center" },
-              gap: { xs: 1, sm: 0 }
-            }
-          }}
         />
       </Paper>
 
+      {/* Confirm Delete */}
       <ConfirmDeleteModal
         open={Boolean(pendingDeleteItem)}
         title="Delete gallery item"
-        itemLabel={pendingDeleteItem?.ownerName}
-        description="This item will be permanently removed. You can’t undo this action."
+        itemLabel={pendingDeleteItem?.title || pendingDeleteItem?.ownerName || "this item"}
+        description="This item will be permanently removed from the gallery. You can't undo this action."
         onClose={() => setPendingDeleteItem(null)}
         onConfirm={handleDelete}
       />
@@ -524,10 +571,9 @@ export const GalleryPage = () => {
             backgroundImage: "none",
             maxWidth: selectedMedia?.type === "video" ? "900px" : "600px",
             margin: { xs: 2, sm: 4 },
-            overflow: "hidden", // Remove all scrollbars
-            "&::-webkit-scrollbar": { display: "none" }, // Safari/Chrome
-            msOverflowStyle: "none", // IE/Edge
-            scrollbarWidth: "none" // Firefox
+            overflow: "hidden",
+            scrollbarWidth: "none",
+            "&::-webkit-scrollbar": { display: "none" }
           }
         }}
       >
@@ -543,17 +589,16 @@ export const GalleryPage = () => {
             overflow: "hidden"
           }}
         >
-          {/* Internal Close Button - Positioned in the corner of the media */}
           <IconButton
             onClick={() => setViewerOpen(false)}
             sx={{
               position: "absolute",
               top: 12,
               right: 12,
-              backgroundColor: "rgba(0,0,0,0.4)",
+              backgroundColor: "rgba(0,0,0,0.45)",
               backdropFilter: "blur(8px)",
               color: "white",
-              "&:hover": { backgroundColor: "rgba(0,0,0,0.6)" },
+              "&:hover": { backgroundColor: "rgba(0,0,0,0.65)" },
               zIndex: 100,
               border: "1px solid rgba(255,255,255,0.2)",
               p: 0.5
@@ -567,8 +612,7 @@ export const GalleryPage = () => {
               sx={{
                 width: "100%",
                 aspectRatio: "16/9",
-                position: "relative",
-                backgroundColor: "white",
+                backgroundColor: "black",
                 borderRadius: "16px",
                 overflow: "hidden",
                 boxShadow: "0 24px 50px rgba(0,0,0,0.5)"
@@ -580,24 +624,17 @@ export const GalleryPage = () => {
                 autoPlay
                 playsInline
                 controlsList="nodownload"
-                style={{
-                  width: "100%",
-                  height: "100%",
-                  objectFit: "contain"
-                }}
-              >
-                Your browser does not support the video tag.
-              </video>
+                style={{ width: "100%", height: "100%", objectFit: "contain" }}
+              />
             </Box>
           ) : (
             <Box
               sx={{
                 width: "100%",
-                position: "relative",
                 borderRadius: "16px",
                 overflow: "hidden",
                 boxShadow: "0 24px 50px rgba(0,0,0,0.5)",
-                backgroundColor: "#ffffff",
+                backgroundColor: "#fff",
                 display: "flex",
                 justifyContent: "center",
                 alignItems: "center",
@@ -610,8 +647,6 @@ export const GalleryPage = () => {
                 style={{
                   maxWidth: "100%",
                   maxHeight: "85vh",
-                  width: "auto",
-                  height: "auto",
                   objectFit: "contain",
                   display: "block"
                 }}

@@ -6,6 +6,7 @@ import { ClubMembersPage } from "@/features/admin/clubs/pages/ClubMembersPage";
 import { ClubMemberFormPage } from "@/features/admin/clubs/pages/ClubMemberFormPage";
 import { GalleryFormPage } from "@/features/admin/gallery/pages/GalleryFormPage";
 import { GalleryPage } from "@/features/admin/gallery/pages/GalleryPage";
+import { GalleryDetailPage } from "@/features/admin/gallery/pages/GalleryDetailPage";
 import { DistrictFormPage } from "@/features/admin/districts/pages/DistrictFormPage";
 import { DistrictMemberFormPage } from "@/features/admin/districts/pages/DistrictMemberFormPage";
 import { DistrictMembersPage } from "@/features/admin/districts/pages/DistrictMembersPage";
@@ -29,6 +30,15 @@ import { LoginPage } from "@/features/auth/pages/LoginPage";
 import { ProfilePage } from "@/features/admin/pages/ProfilePage";
 import { ContactUsPage } from "@/features/admin/contact-us/pages/ContactUsPage";
 import { FeedbackPage } from "@/features/admin/feedback/pages/FeedbackPage";
+import { FeedbackDetailPage } from "@/features/admin/feedback/pages/FeedbackDetailPage";
+import { DisciplinesPage } from "@/features/admin/disciplines/pages/DisciplinesPage";
+import { DisciplineFormPage } from "@/features/admin/disciplines/pages/DisciplineFormPage";
+import { DisciplineDetailPage } from "@/features/admin/disciplines/pages/DisciplineDetailPage";
+import { AboutPage } from "@/features/admin/about/pages/AboutPage";
+import { AboutFormPage } from "@/features/admin/about/pages/AboutFormPage";
+import { CircularsPage } from "@/features/admin/circulars/pages/CircularsPage";
+import { CircularFormPage } from "@/features/admin/circulars/pages/CircularFormPage";
+import { CircularDetailPage } from "@/features/admin/circulars/pages/CircularDetailPage";
 import { MainLayout } from "@/layouts/MainLayout";
 import { NotFoundPage } from "@/pages/NotFoundPage";
 import CertificateManagement from "../features/admin/certification/pages/CertificateManagement";
@@ -43,6 +53,18 @@ export const AppRoutes = () => {
         <Route path="/profile" element={<ProfilePage />} />
         <Route path="/contact-us" element={<ContactUsPage />} />
         <Route path="/feedback" element={<FeedbackPage />} />
+        <Route path="/feedback/:feedbackId" element={<FeedbackDetailPage />} />
+        <Route path="/disciplines" element={<DisciplinesPage />} />
+        <Route path="/disciplines/create" element={<DisciplineFormPage />} />
+        <Route path="/disciplines/:disciplineId" element={<DisciplineDetailPage />} />
+        <Route path="/disciplines/:disciplineId/edit" element={<DisciplineFormPage />} />
+        <Route path="/about" element={<AboutPage />} />
+        <Route path="/about/create" element={<AboutFormPage />} />
+        <Route path="/about/edit" element={<AboutFormPage />} />
+        <Route path="/circulars" element={<CircularsPage />} />
+        <Route path="/circulars/create" element={<CircularFormPage />} />
+        <Route path="/circulars/:circularId" element={<CircularDetailPage />} />
+        <Route path="/circulars/:circularId/edit" element={<CircularFormPage />} />
         <Route path="/officials" element={<OfficialsPage />} />
         <Route path="/officials/create" element={<OfficialFormPage />} />
         <Route path="/officials/:officialId/edit" element={<OfficialFormPage />} />
@@ -60,6 +82,7 @@ export const AppRoutes = () => {
         <Route path="/events/:eventId/edit" element={<EventFormPage />} />
         <Route path="/gallery" element={<GalleryPage />} />
         <Route path="/gallery/create" element={<GalleryFormPage />} />
+        <Route path="/gallery/:itemId" element={<GalleryDetailPage />} />
         <Route path="/gallery/:itemId/edit" element={<GalleryFormPage />} />
         <Route path="/districts" element={<DistrictsPage />} />
         <Route path="/districts/create" element={<DistrictFormPage />} />
