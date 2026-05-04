@@ -1,5 +1,6 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
+  Avatar,
   Box,
   Breadcrumbs,
   Button,
@@ -19,8 +20,18 @@ import {
   TextField,
   Typography
 } from "@mui/material";
-import VisibilityOutlinedIcon from "@mui/icons-material/VisibilityOutlined";
-import { ChevronRight, PencilLine, Plus, Search, ShieldCheck, Trash2, Trophy } from "lucide-react";
+
+import {
+  ChevronRight,
+  PencilLine,
+  Plus,
+  Search,
+  ShieldCheck,
+  Trash2,
+  Trophy,
+  UserPlus,
+  Users
+} from "lucide-react";
 import { Link as RouterLink, useNavigate } from "react-router-dom";
 import clubHero from "@/assets/Club_header.jpg";
 import { ConfirmDeleteModal } from "@/components/ui/ConfirmDeleteModal";
@@ -38,47 +49,59 @@ const DetailItem = ({ label, value }) => (
 export const ClubsPage = () => {
   const navigate = useNavigate();
   const clubs = useClubsStore((state) => state.clubs);
+  const fetchClubs = useClubsStore((state) => state.fetchClubs);
   const deleteClub = useClubsStore((state) => state.deleteClub);
+  const pagination = useClubsStore((state) => state.pagination);
 
   const [searchTerm, setSearchTerm] = useState("");
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(5);
   const [pendingDeleteClub, setPendingDeleteClub] = useState(null);
 
-  const filteredClubs = useMemo(() => {
-    const normalizedSearch = searchTerm.trim().toLowerCase();
+  useEffect(() => {
+    // Determine if pagination is supported by checking if we have a limit param
+    fetchClubs({
+      page: page + 1,
+      limit: rowsPerPage,
+      search: searchTerm
+    });
+  }, [fetchClubs, page, rowsPerPage, searchTerm]);
 
-    if (!normalizedSearch) {
+  // If backend pagination is not returned, we fallback to frontend logic.
+  // Note: if backend returns paginated data, `clubs` will be length <= rowsPerPage
+  const isBackendPagination = !!pagination;
+
+  const displayClubs = useMemo(() => {
+    if (isBackendPagination) {
       return clubs;
     }
-
-    return clubs.filter((club) =>
-      [
-        club.krsaClubId,
-        club.clubLogin,
-        club.clubName,
-        club.district,
-        club.rosNumber,
-        club.registrationAddress,
-        club.clubPresidentName,
-        club.clubPresidentPhone,
-        club.clubSecretaryName,
-        club.clubSecretaryPhone,
-        club.trackAddress,
-        club.trackMeasurements,
-        club.documents?.name,
-        club.rosCertificate?.name
-      ]
-        .join(" ")
-        .toLowerCase()
-        .includes(normalizedSearch)
-    );
-  }, [clubs, searchTerm]);
-
-  const paginatedClubs = useMemo(() => {
+    const normalizedSearch = searchTerm.trim().toLowerCase();
+    const filtered = normalizedSearch
+      ? clubs.filter((club) =>
+          [club.clubId, club.name, club.districtName]
+            .join(" ")
+            .toLowerCase()
+            .includes(normalizedSearch)
+        )
+      : clubs;
     const start = page * rowsPerPage;
-    return filteredClubs.slice(start, start + rowsPerPage);
-  }, [filteredClubs, page, rowsPerPage]);
+    return filtered.slice(start, start + rowsPerPage);
+  }, [clubs, isBackendPagination, page, rowsPerPage, searchTerm]);
+
+  const totalCount = useMemo(() => {
+    if (isBackendPagination) {
+      return pagination.total || 0;
+    }
+    const normalizedSearch = searchTerm.trim().toLowerCase();
+    return normalizedSearch
+      ? clubs.filter((club) =>
+          [club.clubId, club.name, club.districtName]
+            .join(" ")
+            .toLowerCase()
+            .includes(normalizedSearch)
+        ).length
+      : clubs.length;
+  }, [clubs, isBackendPagination, pagination, searchTerm]);
 
   const openDeleteDialog = (club) => {
     setPendingDeleteClub(club);
@@ -92,7 +115,6 @@ export const ClubsPage = () => {
     if (!pendingDeleteClub) {
       return;
     }
-
     deleteClub(pendingDeleteClub.id);
     closeDeleteDialog();
   };
@@ -217,7 +239,7 @@ export const ClubsPage = () => {
             <TextField
               value={searchTerm}
               onChange={handleSearchChange}
-              placeholder="Search by club name, district, club ID, president..."
+              placeholder="Search by club name, district, club ID..."
               slotProps={{
                 input: {
                   startAdornment: (
@@ -242,8 +264,8 @@ export const ClubsPage = () => {
         <Divider />
 
         <Stack spacing={2} sx={{ display: { xs: "flex", md: "none" }, p: 2 }}>
-          {paginatedClubs.length > 0 ? (
-            paginatedClubs.map((club) => (
+          {displayClubs.length > 0 ? (
+            displayClubs.map((club) => (
               <Paper
                 key={club.id}
                 elevation={0}
@@ -255,17 +277,18 @@ export const ClubsPage = () => {
                 }}
               >
                 <Stack spacing={1.5}>
-                  <div className="flex items-start justify-between gap-3">
-                    <div>
-                      <Typography sx={{ mt: 0.5, fontWeight: 700, color: "#2f2829" }}>
-                        {club.clubName}
+                  <div className="flex items-center gap-3">
+                    <Avatar src={club.img} sx={{ width: 48, height: 48 }} alt={club.name} />
+                    <div className="flex-1">
+                      <Typography sx={{ fontWeight: 700, color: "#2f2829" }}>
+                        {club.name}
                       </Typography>
                       <Typography sx={{ mt: 0.5, fontSize: 12, fontWeight: 700, color: "#f6765e" }}>
-                        {club.krsaClubId}
+                        {club.clubId}
                       </Typography>
                     </div>
                     <Chip
-                      label={club.district}
+                      label={club.districtName}
                       size="small"
                       sx={{
                         backgroundColor: "#fff1eb",
@@ -276,22 +299,19 @@ export const ClubsPage = () => {
                   </div>
 
                   <div className="grid grid-cols-2 gap-3">
-                    <DetailItem label="District" value={club.district} />
-                    <DetailItem label="President" value={club.clubPresidentName} />
-                    <DetailItem label="President number" value={club.clubPresidentPhone} />
-                    <DetailItem label="Club login" value={club.clubLogin} />
-                    <DetailItem label="ROS number" value={club.rosNumber} />
+                    <Box
+                      onClick={() => navigate(`/clubs/${club.id}/members`)}
+                      sx={{ cursor: "pointer", "&:hover": { opacity: 0.8 } }}
+                    >
+                      <DetailItem label="Members" value={club.memberCount} />
+                    </Box>
+                    <DetailItem label="Status" value={club.districtStatus || "-"} />
+                    <Box sx={{ gridColumn: "span 2" }}>
+                      <DetailItem label="Address" value={club.officeAddress} />
+                    </Box>
                   </div>
 
                   <Stack direction="row" spacing={1}>
-                    <Button
-                      variant="outlined"
-                      startIcon={<VisibilityOutlinedIcon sx={{ fontSize: 18 }} />}
-                      onClick={() => navigate(`/clubs/${club.id}`)}
-                      fullWidth
-                    >
-                      View
-                    </Button>
                     <Button
                       variant="outlined"
                       startIcon={<PencilLine size={16} />}
@@ -329,17 +349,18 @@ export const ClubsPage = () => {
         </Stack>
 
         <TableContainer className="custom-scrollbar" sx={{ display: { xs: "none", md: "block" } }}>
-          <Table sx={{ minWidth: 1120 }}>
+          <Table sx={{ minWidth: 900 }}>
             <TableHead>
               <TableRow sx={{ backgroundColor: "#fdf7f3" }}>
                 {[
-                  "KRSA Club ID",
+                  "Icon",
+                  "Club ID",
                   "Club Name",
                   "District",
-                  "President Name",
-                  "President Number",
-                  "Club Login",
-                  "ROS Number",
+                  "District Status",
+                  "Members",
+                  "Address",
+                  "About",
                   "Actions"
                 ].map((column) => (
                   <TableCell
@@ -359,40 +380,147 @@ export const ClubsPage = () => {
             </TableHead>
 
             <TableBody>
-              {paginatedClubs.length > 0 ? (
-                paginatedClubs.map((club) => (
+              {displayClubs.length > 0 ? (
+                displayClubs.map((club) => (
                   <TableRow
                     key={club.id}
                     hover
                     sx={{
                       "& .MuiTableCell-root": {
                         borderBottom: "1px solid #f5e9e3",
-                        verticalAlign: "top"
+                        verticalAlign: "middle"
                       }
                     }}
                   >
-                    <TableCell sx={{ fontWeight: 700, color: "#f6765e", whiteSpace: "nowrap" }}>
-                      {club.krsaClubId}
-                    </TableCell>
-                    <TableCell>{club.clubName}</TableCell>
-                    <TableCell>{club.district}</TableCell>
-                    <TableCell>{club.clubPresidentName}</TableCell>
-                    <TableCell>{club.clubPresidentPhone}</TableCell>
-                    <TableCell>{club.clubLogin || "-"}</TableCell>
-                    <TableCell>{club.rosNumber || "-"}</TableCell>
                     <TableCell>
-                      <Stack direction="row" spacing={1}>
-                        <IconButton
-                          onClick={() => navigate(`/clubs/${club.id}`)}
-                          sx={{ border: "1px solid #efe2dc", backgroundColor: "#fff8f4" }}
-                          aria-label={`View ${club.clubName}`}
+                      <Avatar src={club.img} alt={club.name} />
+                    </TableCell>
+                    <TableCell sx={{ fontWeight: 700, color: "#f6765e", whiteSpace: "nowrap" }}>
+                      {club.clubId}
+                    </TableCell>
+                    <TableCell sx={{ fontWeight: 600 }}>{club.name}</TableCell>
+                    <TableCell>{club.districtName || "-"}</TableCell>
+                    <TableCell>
+                      <Chip
+                        label={club.districtStatus || "-"}
+                        size="small"
+                        sx={{
+                          fontWeight: 600,
+                          fontSize: 11,
+                          backgroundColor:
+                            club.districtStatus === "join"
+                              ? "#e8f5e9"
+                              : club.districtStatus === "apply"
+                                ? "#fff8e1"
+                                : club.districtStatus === "leave"
+                                  ? "#fce4ec"
+                                  : "#f5f5f5",
+                          color:
+                            club.districtStatus === "join"
+                              ? "#2e7d32"
+                              : club.districtStatus === "apply"
+                                ? "#f57f17"
+                                : club.districtStatus === "leave"
+                                  ? "#c62828"
+                                  : "#666"
+                        }}
+                      />
+                    </TableCell>
+                    <TableCell>
+                      <Stack
+                        direction="row"
+                        spacing={0.75}
+                        alignItems="center"
+                        onClick={() => navigate(`/clubs/${club.id}/members`)}
+                        sx={{
+                          cursor: "pointer",
+                          "&:hover .members-icon": { backgroundColor: "#ffe0d9" }
+                        }}
+                      >
+                        <Box
+                          className="members-icon"
+                          sx={{
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            width: 32,
+                            height: 32,
+                            borderRadius: "8px",
+                            backgroundColor: "#fff0ed",
+                            border: "1px solid #f2d9d1",
+                            transition: "background-color 0.2s"
+                          }}
                         >
-                          <VisibilityOutlinedIcon sx={{ fontSize: 18 }} />
+                          <Users size={15} color="#f6765e" />
+                        </Box>
+                        <Typography sx={{ fontWeight: 700, fontSize: 14, color: "#2f2829" }}>
+                          {club.memberCount}
+                        </Typography>
+                      </Stack>
+                    </TableCell>
+                    <TableCell
+                      sx={{
+                        maxWidth: 200,
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
+                        whiteSpace: "nowrap"
+                      }}
+                    >
+                      <Typography
+                        title={club.officeAddress}
+                        sx={{
+                          fontSize: 13,
+                          color: "#6d5c57",
+                          whiteSpace: "nowrap",
+                          overflow: "hidden",
+                          textOverflow: "ellipsis"
+                        }}
+                      >
+                        {club.officeAddress || "-"}
+                      </Typography>
+                    </TableCell>
+                    <TableCell
+                      sx={{
+                        maxWidth: 220,
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
+                        whiteSpace: "nowrap"
+                      }}
+                    >
+                      <Typography
+                        title={club.about}
+                        sx={{
+                          fontSize: 13,
+                          color: "#6d5c57",
+                          whiteSpace: "nowrap",
+                          overflow: "hidden",
+                          textOverflow: "ellipsis",
+                          maxWidth: 200
+                        }}
+                      >
+                        {club.about || "-"}
+                      </Typography>
+                    </TableCell>
+                    <TableCell>
+                      <Stack direction="row" spacing={0.75}>
+                        <IconButton
+                          onClick={() => navigate(`/clubs/${club.id}/members/create`)}
+                          sx={{
+                            border: "1px solid #dce8fb",
+                            color: "#3b82f6",
+                            backgroundColor: "#eff6ff",
+                            "&:hover": { backgroundColor: "#dbeafe" }
+                          }}
+                          aria-label={`Add member to ${club.name}`}
+                          title="Add Member"
+                        >
+                          <UserPlus size={16} />
                         </IconButton>
                         <IconButton
                           onClick={() => navigate(`/clubs/${club.id}/edit`)}
                           sx={{ border: "1px solid #efe2dc", backgroundColor: "#fff8f4" }}
-                          aria-label={`Edit ${club.clubName}`}
+                          aria-label={`Edit ${club.name}`}
+                          title="Edit"
                         >
                           <PencilLine size={16} />
                         </IconButton>
@@ -403,7 +531,8 @@ export const ClubsPage = () => {
                             color: "#e06f58",
                             backgroundColor: "#fff6f2"
                           }}
-                          aria-label={`Delete ${club.clubName}`}
+                          aria-label={`Delete ${club.name}`}
+                          title="Delete"
                         >
                           <Trash2 size={16} />
                         </IconButton>
@@ -413,7 +542,7 @@ export const ClubsPage = () => {
                 ))
               ) : (
                 <TableRow>
-                  <TableCell colSpan={8} sx={{ py: 6, textAlign: "center", color: "#978a86" }}>
+                  <TableCell colSpan={9} sx={{ py: 6, textAlign: "center", color: "#978a86" }}>
                     No clubs found for the current search.
                   </TableCell>
                 </TableRow>
@@ -424,7 +553,7 @@ export const ClubsPage = () => {
 
         <TablePagination
           component="div"
-          count={filteredClubs.length}
+          count={totalCount}
           page={page}
           onPageChange={handleChangePage}
           rowsPerPage={rowsPerPage}
@@ -436,7 +565,7 @@ export const ClubsPage = () => {
       <ConfirmDeleteModal
         open={Boolean(pendingDeleteClub)}
         title="Delete club"
-        itemLabel={pendingDeleteClub?.clubName}
+        itemLabel={pendingDeleteClub?.name}
         description="This will permanently remove the club record from the registry. You can’t undo this action."
         onClose={closeDeleteDialog}
         onConfirm={handleDelete}

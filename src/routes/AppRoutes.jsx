@@ -2,6 +2,8 @@ import { Navigate, Route, Routes } from "react-router-dom";
 import { ClubDetailsPage } from "@/features/admin/clubs/pages/ClubDetailsPage";
 import { ClubFormPage } from "@/features/admin/clubs/pages/ClubFormPage";
 import { ClubsPage } from "@/features/admin/clubs/pages/ClubsPage";
+import { ClubMembersPage } from "@/features/admin/clubs/pages/ClubMembersPage";
+import { ClubMemberFormPage } from "@/features/admin/clubs/pages/ClubMemberFormPage";
 import { GalleryFormPage } from "@/features/admin/gallery/pages/GalleryFormPage";
 import { GalleryPage } from "@/features/admin/gallery/pages/GalleryPage";
 import { DistrictFormPage } from "@/features/admin/districts/pages/DistrictFormPage";
@@ -25,6 +27,8 @@ import { SkaterDetailsPage } from "@/features/admin/skaters/pages/SkaterDetailsP
 import { SkatersPage } from "@/features/admin/skaters/pages/SkatersPage";
 import { LoginPage } from "@/features/auth/pages/LoginPage";
 import { ProfilePage } from "@/features/admin/pages/ProfilePage";
+import { ContactUsPage } from "@/features/admin/contact-us/pages/ContactUsPage";
+import { FeedbackPage } from "@/features/admin/feedback/pages/FeedbackPage";
 import { MainLayout } from "@/layouts/MainLayout";
 import { NotFoundPage } from "@/pages/NotFoundPage";
 
@@ -36,6 +40,8 @@ export const AppRoutes = () => {
       <Route element={<MainLayout />}>
         <Route path="/dashboard" element={<AdminDashboard />} />
         <Route path="/profile" element={<ProfilePage />} />
+        <Route path="/contact-us" element={<ContactUsPage />} />
+        <Route path="/feedback" element={<FeedbackPage />} />
         <Route path="/officials" element={<OfficialsPage />} />
         <Route path="/officials/create" element={<OfficialFormPage />} />
         <Route path="/officials/:officialId/edit" element={<OfficialFormPage />} />
@@ -45,6 +51,9 @@ export const AppRoutes = () => {
         <Route path="/clubs/create" element={<ClubFormPage />} />
         <Route path="/clubs/:clubId" element={<ClubDetailsPage />} />
         <Route path="/clubs/:clubId/edit" element={<ClubFormPage />} />
+        <Route path="/clubs/:clubId/members" element={<ClubMembersPage />} />
+        <Route path="/clubs/:clubId/members/create" element={<ClubMemberFormPage />} />
+        <Route path="/clubs/:clubId/members/:memberId/edit" element={<ClubMemberFormPage />} />
         <Route path="/events" element={<EventsPage />} />
         <Route path="/events/create" element={<EventFormPage />} />
         <Route path="/events/:eventId/edit" element={<EventFormPage />} />
