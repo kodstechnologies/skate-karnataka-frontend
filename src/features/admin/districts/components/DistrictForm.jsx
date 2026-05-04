@@ -1,8 +1,8 @@
 import ApartmentOutlinedIcon from "@mui/icons-material/ApartmentOutlined";
-import BadgeOutlinedIcon from "@mui/icons-material/BadgeOutlined";
-import InsightsOutlinedIcon from "@mui/icons-material/InsightsOutlined";
-import { Box, MenuItem, Paper, Stack, TextField, Typography } from "@mui/material";
-import { districtStatusOptions } from "@/features/admin/districts/components/districtFormConfig";
+import ImageOutlinedIcon from "@mui/icons-material/ImageOutlined";
+import { Avatar, Box, Button, Paper, Stack, TextField, Typography } from "@mui/material";
+import { Upload, X } from "lucide-react";
+import { useRef } from "react";
 
 const sectionCardStyles = {
   p: { xs: 2.25, md: 2.75 },
@@ -50,13 +50,27 @@ const SectionCard = ({ icon, title, description, children }) => (
   </Paper>
 );
 
-export const DistrictForm = ({ formData, errors, onFieldChange, stateOptions }) => {
+export const DistrictForm = ({ formData, errors, onFieldChange, onFileChange }) => {
+  const fileInputRef = useRef(null);
+
+  const handleFileSelect = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    onFileChange(file);
+  };
+
+  const handleRemoveImage = () => {
+    onFileChange(null);
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  };
+
   return (
     <Stack spacing={2.5}>
+      {/* Section 1 — District Info */}
       <SectionCard
         icon={<ApartmentOutlinedIcon />}
-        title="District Identity"
-        description="Register district code, state mapping, and office details."
+        title="District Information"
+        description="Enter the district name, a brief description, and office address."
       >
         <Box
           sx={{
@@ -66,7 +80,7 @@ export const DistrictForm = ({ formData, errors, onFieldChange, stateOptions }) 
           }}
         >
           <TextField
-            label="District name"
+            label="District name *"
             value={formData.districtName}
             onChange={onFieldChange("districtName")}
             error={Boolean(errors.districtName)}
@@ -75,141 +89,115 @@ export const DistrictForm = ({ formData, errors, onFieldChange, stateOptions }) 
             sx={inputStyles}
           />
           <TextField
-            label="District code"
-            value={formData.districtCode}
-            onChange={onFieldChange("districtCode")}
-            fullWidth
-            sx={inputStyles}
-          />
-          <TextField
-            select
-            label="State"
-            value={formData.stateName}
-            onChange={onFieldChange("stateName")}
-            error={Boolean(errors.stateName)}
-            helperText={errors.stateName}
-            fullWidth
-            disabled
-            sx={inputStyles}
-          >
-            {stateOptions.map((stateName) => (
-              <MenuItem key={stateName} value={stateName}>
-                {stateName}
-              </MenuItem>
-            ))}
-          </TextField>
-          <TextField
             label="Office address"
             value={formData.officeAddress}
             onChange={onFieldChange("officeAddress")}
-            fullWidth
-            sx={inputStyles}
-          />
-        </Box>
-      </SectionCard>
-
-      <SectionCard
-        icon={<BadgeOutlinedIcon />}
-        title="Coordinator Contacts"
-        description="Capture district coordinator and assistant contact details."
-      >
-        <Box
-          sx={{
-            display: "grid",
-            gridTemplateColumns: { xs: "1fr", md: "repeat(2, minmax(0, 1fr))" },
-            gap: 2
-          }}
-        >
-          <TextField
-            label="Coordinator name"
-            value={formData.coordinatorName}
-            onChange={onFieldChange("coordinatorName")}
-            error={Boolean(errors.coordinatorName)}
-            helperText={errors.coordinatorName}
+            error={Boolean(errors.officeAddress)}
+            helperText={errors.officeAddress}
             fullWidth
             sx={inputStyles}
           />
           <TextField
-            label="Coordinator phone"
-            value={formData.coordinatorPhone}
-            onChange={onFieldChange("coordinatorPhone")}
-            error={Boolean(errors.coordinatorPhone)}
-            helperText={errors.coordinatorPhone}
-            fullWidth
-            sx={inputStyles}
-          />
-          <TextField
-            label="Assistant coordinator name"
-            value={formData.assistantCoordinatorName}
-            onChange={onFieldChange("assistantCoordinatorName")}
-            fullWidth
-            sx={inputStyles}
-          />
-          <TextField
-            label="Assistant coordinator phone"
-            value={formData.assistantCoordinatorPhone}
-            onChange={onFieldChange("assistantCoordinatorPhone")}
-            error={Boolean(errors.assistantCoordinatorPhone)}
-            helperText={errors.assistantCoordinatorPhone}
-            fullWidth
-            sx={inputStyles}
-          />
-        </Box>
-      </SectionCard>
-
-      <SectionCard
-        icon={<InsightsOutlinedIcon />}
-        title="Coverage and Status"
-        description="Track district metrics and operational status."
-      >
-        <Box
-          sx={{
-            display: "grid",
-            gridTemplateColumns: { xs: "1fr", md: "repeat(2, minmax(0, 1fr))" },
-            gap: 2
-          }}
-        >
-          <TextField
-            label="Total clubs"
-            type="number"
-            value={formData.totalClubs}
-            onChange={onFieldChange("totalClubs")}
-            fullWidth
-            sx={inputStyles}
-          />
-          <TextField
-            label="Total skaters"
-            type="number"
-            value={formData.totalSkaters}
-            onChange={onFieldChange("totalSkaters")}
-            fullWidth
-            sx={inputStyles}
-          />
-          <TextField
-            select
-            label="Status"
-            value={formData.status}
-            onChange={onFieldChange("status")}
-            fullWidth
-            sx={inputStyles}
-          >
-            {districtStatusOptions.map((option) => (
-              <MenuItem key={option.value} value={option.value}>
-                {option.label}
-              </MenuItem>
-            ))}
-          </TextField>
-          <Stack />
-          <TextField
-            label="Notes"
-            value={formData.notes}
-            onChange={onFieldChange("notes")}
+            label="About"
+            value={formData.about}
+            onChange={onFieldChange("about")}
             multiline
             minRows={3}
             fullWidth
             sx={{ ...inputStyles, gridColumn: { md: "span 2" } }}
           />
         </Box>
+      </SectionCard>
+
+      {/* Section 2 — District Image */}
+      <SectionCard
+        icon={<ImageOutlinedIcon />}
+        title="District Image"
+        description="Upload a representative image for this district (optional)."
+      >
+        <Stack spacing={2}>
+          {formData.imgPreview ? (
+            <Stack direction="row" spacing={2} alignItems="center">
+              <Avatar
+                src={formData.imgPreview}
+                variant="rounded"
+                sx={{ width: 80, height: 80, borderRadius: "16px", border: "1px solid #f0e4dd" }}
+              />
+              <Stack spacing={1}>
+                <Typography sx={{ fontSize: 13, color: "#5a4f4c", fontWeight: 600 }}>
+                  {formData.imgFile ? formData.imgFile.name : "Current image"}
+                </Typography>
+                <Stack direction="row" spacing={1}>
+                  <Button
+                    size="small"
+                    variant="outlined"
+                    startIcon={<Upload size={14} />}
+                    onClick={() => fileInputRef.current?.click()}
+                    sx={{ borderRadius: "12px", fontSize: 12 }}
+                  >
+                    Change
+                  </Button>
+                  <Button
+                    size="small"
+                    variant="outlined"
+                    color="error"
+                    startIcon={<X size={14} />}
+                    onClick={handleRemoveImage}
+                    sx={{ borderRadius: "12px", fontSize: 12 }}
+                  >
+                    Remove
+                  </Button>
+                </Stack>
+              </Stack>
+            </Stack>
+          ) : (
+            <Box
+              onClick={() => fileInputRef.current?.click()}
+              sx={{
+                border: "2px dashed rgba(246,118,94,0.35)",
+                borderRadius: "20px",
+                p: 4,
+                textAlign: "center",
+                cursor: "pointer",
+                backgroundColor: "rgba(246,118,94,0.03)",
+                transition: "all 0.2s",
+                "&:hover": {
+                  borderColor: "#f6765e",
+                  backgroundColor: "rgba(246,118,94,0.07)"
+                }
+              }}
+            >
+              <Box
+                sx={{
+                  width: 52,
+                  height: 52,
+                  borderRadius: "16px",
+                  backgroundColor: "rgba(246,118,94,0.12)",
+                  display: "grid",
+                  placeItems: "center",
+                  mx: "auto",
+                  mb: 1.5
+                }}
+              >
+                <Upload size={22} color="#f6765e" />
+              </Box>
+              <Typography sx={{ fontWeight: 700, color: "#2f2829", mb: 0.5 }}>
+                Click to upload image
+              </Typography>
+              <Typography sx={{ fontSize: 13, color: "#8d7f7b" }}>
+                PNG, JPG, JPEG supported
+              </Typography>
+            </Box>
+          )}
+
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/*"
+            style={{ display: "none" }}
+            onChange={handleFileSelect}
+          />
+        </Stack>
       </SectionCard>
     </Stack>
   );

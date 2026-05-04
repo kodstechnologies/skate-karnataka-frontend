@@ -11,7 +11,10 @@ export const AppHeader = () => {
   const sidebarOpen = useUiStore((state) => state.sidebarOpen);
   const toggleSidebar = useUiStore((state) => state.toggleSidebar);
   const toggleMobileSidebar = useUiStore((state) => state.toggleMobileSidebar);
-  const { user, getProfile, logout, isLoading } = useAuthStore();
+  const user = useAuthStore((state) => state.user);
+  const getProfile = useAuthStore((state) => state.getProfile);
+  const logout = useAuthStore((state) => state.logout);
+  const isLoading = useAuthStore((state) => state.isLoading);
   const navigate = useNavigate();
   const [query, setQuery] = useState("");
   const [anchorEl, setAnchorEl] = useState(null);

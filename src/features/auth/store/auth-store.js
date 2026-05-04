@@ -12,35 +12,58 @@ export const useAuthStore = create()(
       isLoading: false,
       refreshToken: null,
 
-      login: async (email, password) => {
+      requestLoginOtp: async (identifier) => {
         set({ isLoading: true });
         try {
-          const response = await authApi.login({ email, password });
+          const response = await authApi.requestLoginOtp(identifier);
+          if (response.success) {
+            toast.success(response.message || "OTP sent successfully");
+            set({ isLoading: false });
+            return response.data; // { id, type, identifier }
+          } else {
+            throw new Error(response.message || "Failed to send OTP");
+          }
+        } catch (error) {
+          const errorMessage =
+            error.response?.data?.message || error.message || "Failed to send OTP";
+          toast.error(errorMessage);
+          set({ isLoading: false });
+          throw error;
+        }
+      },
+
+      verifyLoginOtp: async (userId, otp, firebaseTokens = null) => {
+        set({ isLoading: true });
+        try {
+          const response = await authApi.verifyLoginOtp({
+            userId,
+            otp,
+            firebaseTokens
+          });
 
           if (response.success) {
-            const { accessToken, refreshToken, admin: adminData } = response.data;
+            const { accessToken, refreshToken, role } = response.data.result;
 
-            // Store tokens
             localStorage.setItem("accessToken", accessToken);
             localStorage.setItem("refreshToken", refreshToken);
 
             set({
-              user: adminData,
-              role: adminData.role,
+              role,
               isAuthenticated: true,
-              refreshToken // Store it in state for logout body
+              refreshToken
             });
 
             await get().getProfile();
 
             toast.success(response.message || "Logged in successfully");
             set({ isLoading: false });
-            return adminData.role;
+            return response.data.result;
           } else {
-            throw new Error(response.message || "Login failed");
+            throw new Error(response.message || "OTP verification failed");
           }
         } catch (error) {
-          const errorMessage = error.response?.data?.message || error.message || "Login failed";
+          const errorMessage =
+            error.response?.data?.message || error.message || "OTP verification failed";
           toast.error(errorMessage);
           set({ isLoading: false });
           throw error;
@@ -49,17 +72,25 @@ export const useAuthStore = create()(
 
       logout: async () => {
         try {
-          const { refreshToken } = get();
-          await authApi.logout(refreshToken);
+          const { refreshToken, isAuthenticated } = get();
+
+          // Only attempt network logout if we are currently authenticated
+          if (isAuthenticated && refreshToken) {
+            await authApi.logout(refreshToken);
+          }
         } catch (error) {
-          console.error("Logout API failed:", error);
+          // Ignore 401 errors from logout (expected if session is already dead)
+          if (error.response?.status !== 401) {
+            console.error("Logout API failed:", error);
+          }
         } finally {
-          // Clear tokens
+          // Clear everything locally regardless of network success/failure
           localStorage.removeItem("accessToken");
           localStorage.removeItem("refreshToken");
-
           set({ user: null, role: null, isAuthenticated: false, refreshToken: null });
-          toast.success("Logged out successfully");
+
+          // Prevent toast spam by assigning a fixed ID (will overwrite existing toast instead of stacking)
+          toast.success("Logged out successfully", { id: "auth-logout" });
         }
       },
 
@@ -101,66 +132,6 @@ export const useAuthStore = create()(
           const errorMessage =
             error.response?.data?.message || error.message || "Failed to update profile";
           toast.error(errorMessage);
-          throw error;
-        }
-      },
-
-      sendOtp: async (email) => {
-        set({ isLoading: true });
-        try {
-          const response = await authApi.sendOtp(email);
-          if (response.success) {
-            toast.success(response.message || "OTP sent successfully");
-            set({ isLoading: false });
-            return response.data;
-          } else {
-            throw new Error(response.message || "Failed to send OTP");
-          }
-        } catch (error) {
-          const errorMessage =
-            error.response?.data?.message || error.message || "Failed to send OTP";
-          toast.error(errorMessage);
-          set({ isLoading: false });
-          throw error;
-        }
-      },
-
-      verifyOtp: async (email, otp) => {
-        set({ isLoading: true });
-        try {
-          const response = await authApi.verifyOtp(email, otp);
-          if (response.success) {
-            toast.success(response.message || "OTP verified successfully");
-            set({ isLoading: false });
-            return response.data;
-          } else {
-            throw new Error(response.message || "Failed to verify OTP");
-          }
-        } catch (error) {
-          const errorMessage =
-            error.response?.data?.message || error.message || "Failed to verify OTP";
-          toast.error(errorMessage);
-          set({ isLoading: false });
-          throw error;
-        }
-      },
-
-      resetPassword: async (data) => {
-        set({ isLoading: true });
-        try {
-          const response = await authApi.resetPassword(data);
-          if (response.success) {
-            toast.success(response.message || "Password reset successfully");
-            set({ isLoading: false });
-            return response.data;
-          } else {
-            throw new Error(response.message || "Failed to reset password");
-          }
-        } catch (error) {
-          const errorMessage =
-            error.response?.data?.message || error.message || "Failed to reset password";
-          toast.error(errorMessage);
-          set({ isLoading: false });
           throw error;
         }
       }

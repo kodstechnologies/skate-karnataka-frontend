@@ -22,6 +22,8 @@ api.interceptors.request.use(
   }
 );
 
+let isLoggingOut = false;
+
 // Response Interceptor
 api.interceptors.response.use(
   (response) => {
@@ -29,16 +31,29 @@ api.interceptors.response.use(
     return response.data;
   },
   (error) => {
-    // Centralized error handling
-    if (error.response?.status === 401) {
-      // If 401 occurs, it means tokens are invalid or expired
-      // You might want to clear the store and redirect to login
-      useAuthStore.getState().logout();
-      console.warn("Session expired or unauthorized");
+    const originalRequest = error.config;
+    const isLogoutEndpoint = originalRequest?.url?.includes("/logout");
+
+    // Centralized error handling for 401 Unauthorized
+    if (error.response?.status === 401 && !isLogoutEndpoint) {
+      const authState = useAuthStore.getState();
+      if (authState.isAuthenticated && !isLoggingOut) {
+        isLoggingOut = true;
+        console.warn("Session expired. Logging out...");
+
+        // Trigger the logout flow and release the lock when done
+        authState.logout().finally(() => {
+          isLoggingOut = false;
+        });
+      }
     }
 
-    const message = error.response?.data?.message || "Something went wrong";
-    console.error("API Error:", message);
+    // Suppress console errors specifically for expected 401s during the logout call itself
+    if (!(isLogoutEndpoint && error.response?.status === 401)) {
+      const message = error.response?.data?.message || "Something went wrong";
+      console.error("API Error:", message);
+    }
+
     return Promise.reject(error);
   }
 );
