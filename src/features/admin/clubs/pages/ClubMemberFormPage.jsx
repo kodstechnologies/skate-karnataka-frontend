@@ -16,7 +16,7 @@ import {
   Typography
 } from "@mui/material";
 import { ChevronRight, Mail, MapPin, Phone, Save, User, Users } from "lucide-react";
-import { Link as RouterLink, useNavigate, useParams } from "react-router-dom";
+import { Link as RouterLink, useNavigate, useParams, useLocation } from "react-router-dom";
 import clubHero from "@/assets/Club_header.jpg";
 import { useClubMembersStore } from "@/features/admin/clubs/store/club-members-store";
 import { useClubsStore } from "@/features/admin/clubs/store/clubs-store";
@@ -50,6 +50,8 @@ const validate = (form) => {
 export const ClubMemberFormPage = () => {
   const navigate = useNavigate();
   const { clubId, memberId } = useParams();
+  const location = useLocation();
+  const returnTo = location.state?.returnTo || `/clubs/${clubId}/members`;
   const isEditing = Boolean(memberId);
 
   const clubs = useClubsStore((s) => s.clubs);
@@ -124,7 +126,7 @@ export const ClubMemberFormPage = () => {
     const fd = buildFormData();
     const ok = isEditing ? await updateMember(memberId, fd) : await addMember(clubId, fd);
 
-    if (ok) navigate(`/clubs/${clubId}/members`);
+    if (ok) navigate(returnTo);
   };
 
   const clubName = club?.name || "Club";
@@ -135,12 +137,8 @@ export const ClubMemberFormPage = () => {
         <Typography variant="h5" sx={{ fontWeight: 700, color: "#2f2829" }}>
           Member not found
         </Typography>
-        <Button
-          sx={{ mt: 3 }}
-          variant="contained"
-          onClick={() => navigate(`/clubs/${clubId}/members`)}
-        >
-          Back to members
+        <Button sx={{ mt: 3 }} variant="contained" onClick={() => navigate(returnTo)}>
+          Back to {returnTo === "/clubs" ? "clubs" : "members"}
         </Button>
       </Paper>
     );
@@ -438,7 +436,7 @@ export const ClubMemberFormPage = () => {
             <Divider sx={{ my: 1 }} />
 
             <Stack direction={{ xs: "column", sm: "row" }} spacing={1.5} justifyContent="flex-end">
-              <Button variant="outlined" onClick={() => navigate(`/clubs/${clubId}/members`)}>
+              <Button variant="outlined" onClick={() => navigate(returnTo)}>
                 Cancel
               </Button>
               <Button

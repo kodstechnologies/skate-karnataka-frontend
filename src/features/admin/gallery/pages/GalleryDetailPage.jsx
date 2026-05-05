@@ -442,7 +442,11 @@ export const GalleryDetailPage = () => {
         </Box>
 
         <Divider sx={{ borderColor: "#f0e1da" }} />
-        <Box sx={{ p: { xs: 2.5, md: 3 }, display: "flex", justifyContent: "space-between" }}>
+        <Stack
+          direction={{ xs: "column", sm: "row" }}
+          spacing={1.5}
+          sx={{ p: { xs: 2.5, md: 3 }, justifyContent: "flex-end" }}
+        >
           <Button
             variant="outlined"
             onClick={() => navigate("/gallery")}
@@ -463,7 +467,7 @@ export const GalleryDetailPage = () => {
           >
             Edit Item
           </Button>
-        </Box>
+        </Stack>
       </Paper>
     </Box>
   );

@@ -520,7 +520,11 @@ export const ClubsPage = () => {
                     <TableCell>
                       <Stack direction="row" spacing={0.75}>
                         <IconButton
-                          onClick={() => navigate(`/clubs/${club.id}/members/create`)}
+                          onClick={() =>
+                            navigate(`/clubs/${club.id}/members/create`, {
+                              state: { returnTo: "/clubs" }
+                            })
+                          }
                           sx={{
                             border: "1px solid #dce8fb",
                             color: "#3b82f6",
