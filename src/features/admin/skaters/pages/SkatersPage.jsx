@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useState, useCallback, useMemo } from "react";
 import {
   Box,
   Breadcrumbs,
@@ -17,7 +17,8 @@ import {
   TablePagination,
   TableRow,
   TextField,
-  Typography
+  Typography,
+  CircularProgress
 } from "@mui/material";
 import VisibilityOutlinedIcon from "@mui/icons-material/VisibilityOutlined";
 import { ChevronRight, Search, ShieldCheck, Trophy } from "lucide-react";
@@ -25,41 +26,24 @@ import { Link as RouterLink, useNavigate } from "react-router-dom";
 import skatersHero from "@/assets/Skating_header.jpg";
 import { useSkatersStore } from "@/features/admin/skaters/store/skaters-store";
 
-const calculateAge = (dob) => {
-  const birthDate = new Date(dob);
-
-  if (Number.isNaN(birthDate.getTime())) {
-    return "-";
-  }
-
-  const today = new Date();
-  let age = today.getFullYear() - birthDate.getFullYear();
-  const monthDelta = today.getMonth() - birthDate.getMonth();
-
-  if (monthDelta < 0 || (monthDelta === 0 && today.getDate() < birthDate.getDate())) {
-    age -= 1;
-  }
-
-  return age;
-};
-
-const formatDate = (dateValue) => {
-  if (!dateValue) {
-    return "-";
-  }
-
-  return new Intl.DateTimeFormat("en-IN", {
-    day: "2-digit",
-    month: "short",
-    year: "numeric"
-  }).format(new Date(dateValue));
-};
+// Custom useDebounce hook
+function useDebounce(value, delay) {
+  const [debouncedValue, setDebouncedValue] = useState(value);
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedValue(value);
+    }, delay);
+    return () => {
+      clearTimeout(handler);
+    };
+  }, [value, delay]);
+  return debouncedValue;
+}
 
 const formatGender = (gender) => {
   if (!gender) {
     return "-";
   }
-
   return gender.charAt(0).toUpperCase() + gender.slice(1);
 };
 
@@ -74,41 +58,41 @@ const DetailItem = ({ label, value }) => (
 
 export const SkatersPage = () => {
   const navigate = useNavigate();
-  const skaters = useSkatersStore((state) => state.skaters);
+  const { skaters, fetchSkaters, pagination, isLoading } = useSkatersStore();
 
   const [searchTerm, setSearchTerm] = useState("");
+  const debouncedSearchTerm = useDebounce(searchTerm, 500);
   const [page, setPage] = useState(0);
-  const [rowsPerPage, setRowsPerPage] = useState(5);
+  const [rowsPerPage, setRowsPerPage] = useState(10);
 
-  const filteredSkaters = useMemo(() => {
-    const normalizedSearch = searchTerm.trim().toLowerCase();
-
-    if (!normalizedSearch) {
-      return skaters;
-    }
-
-    return skaters.filter((skater) =>
-      [
-        skater.krsaId,
-        skater.fullName,
-        skater.phone,
-        skater.rsfiId,
-        skater.gender,
-        skater.category,
-        skater.discipline,
-        skater.district,
-        skater.club
-      ]
-        .join(" ")
-        .toLowerCase()
-        .includes(normalizedSearch)
-    );
-  }, [searchTerm, skaters]);
+  const loadSkaters = useCallback(() => {
+    fetchSkaters({
+      page: page + 1,
+      limit: rowsPerPage,
+      search: debouncedSearchTerm
+    });
+  }, [fetchSkaters, page, rowsPerPage, debouncedSearchTerm]);
 
   const paginatedSkaters = useMemo(() => {
-    const start = page * rowsPerPage;
-    return filteredSkaters.slice(start, start + rowsPerPage);
-  }, [filteredSkaters, page, rowsPerPage]);
+    // If backend returns pagination data, assume it handles slicing
+    if (pagination && pagination.total !== undefined) {
+      return skaters;
+    }
+    // Fallback: Frontend pagination
+    const startIndex = page * rowsPerPage;
+    return skaters.slice(startIndex, startIndex + rowsPerPage);
+  }, [skaters, pagination, page, rowsPerPage]);
+
+  const totalSkatersCount = useMemo(() => {
+    if (pagination && pagination.total !== undefined) {
+      return pagination.total;
+    }
+    return skaters.length;
+  }, [skaters, pagination]);
+
+  useEffect(() => {
+    loadSkaters();
+  }, [loadSkaters]);
 
   const handleChangePage = (_, nextPage) => {
     setPage(nextPage);
@@ -184,8 +168,8 @@ export const SkatersPage = () => {
               Skater Resource Hub
             </Typography>
             <Typography sx={{ color: "rgba(255,255,255,0.86)", maxWidth: 620, lineHeight: 1.7 }}>
-              Manage KRSA skater registrations, update athlete details, and keep club and district
-              records together in one clean workspace.
+              Manage KRSA skater registrations, update athlete details, and keep records together in
+              one clean workspace.
             </Typography>
 
             <Stack direction="row" spacing={1.25} useFlexGap sx={{ mt: 3, flexWrap: "wrap" }}>
@@ -230,7 +214,7 @@ export const SkatersPage = () => {
             <TextField
               value={searchTerm}
               onChange={handleSearchChange}
-              placeholder="Search by KRSA ID, name, discipline, district..."
+              placeholder="Search by ID, name, district..."
               slotProps={{
                 input: {
                   startAdornment: (
@@ -248,10 +232,14 @@ export const SkatersPage = () => {
         <Divider />
 
         <Stack spacing={2} sx={{ display: { xs: "flex", md: "none" }, p: 2 }}>
-          {paginatedSkaters.length > 0 ? (
+          {isLoading ? (
+            <Box sx={{ display: "flex", justifyContent: "center", p: 4 }}>
+              <CircularProgress sx={{ color: "#f6765e" }} />
+            </Box>
+          ) : paginatedSkaters.length > 0 ? (
             paginatedSkaters.map((skater) => (
               <Paper
-                key={skater.id}
+                key={skater._id}
                 elevation={0}
                 sx={{
                   p: 2,
@@ -264,37 +252,26 @@ export const SkatersPage = () => {
                   <div className="flex items-start justify-between gap-3">
                     <div>
                       <Typography sx={{ fontSize: 12, fontWeight: 700, color: "#f6765e" }}>
-                        {skater.krsaId}
+                        {skater.krsaId || "-"}
                       </Typography>
                       <Typography sx={{ mt: 0.5, fontWeight: 700, color: "#2f2829" }}>
                         {skater.fullName}
                       </Typography>
                     </div>
-                    <Chip
-                      label={skater.category || "-"}
-                      size="small"
-                      sx={{
-                        backgroundColor: skater.category === "Junior" ? "#edf8ef" : "#fff1eb",
-                        color: skater.category === "Junior" ? "#4da667" : "#f6765e",
-                        fontWeight: 700
-                      }}
-                    />
                   </div>
 
                   <div className="grid grid-cols-2 gap-3">
                     <DetailItem label="Phone" value={skater.phone} />
-                    <DetailItem label="Age" value={String(calculateAge(skater.dob))} />
+                    <DetailItem label="Email" value={skater.email} />
                     <DetailItem label="Gender" value={formatGender(skater.gender)} />
-                    <DetailItem label="Discipline" value={skater.discipline} />
-                    <DetailItem label="District" value={skater.district} />
-                    <DetailItem label="Club" value={skater.club} />
+                    <DetailItem label="District" value={skater.district?.name} />
                   </div>
 
                   <Stack direction="row" spacing={1}>
                     <Button
                       variant="outlined"
                       startIcon={<VisibilityOutlinedIcon sx={{ fontSize: 18 }} />}
-                      onClick={() => navigate(`/skaters/${skater.id}`)}
+                      onClick={() => navigate(`/skaters/${skater._id}`)}
                       fullWidth
                     >
                       View details
@@ -317,38 +294,36 @@ export const SkatersPage = () => {
           <Table sx={{ minWidth: 1080 }}>
             <TableHead>
               <TableRow sx={{ backgroundColor: "#fdf7f3" }}>
-                {[
-                  "KRSA ID",
-                  "Full Name",
-                  "Phone",
-                  "DOB",
-                  "Category",
-                  "Discipline",
-                  "District",
-                  "Club",
-                  "Actions"
-                ].map((column) => (
-                  <TableCell
-                    key={column}
-                    sx={{
-                      borderBottom: "1px solid #f0e1da",
-                      color: "#7e716d",
-                      fontWeight: 700,
-                      fontSize: 13,
-                      whiteSpace: "nowrap"
-                    }}
-                  >
-                    {column}
-                  </TableCell>
-                ))}
+                {["KRSA ID", "Full Name", "Phone", "Email", "Gender", "District", "Actions"].map(
+                  (column) => (
+                    <TableCell
+                      key={column}
+                      sx={{
+                        borderBottom: "1px solid #f0e1da",
+                        color: "#7e716d",
+                        fontWeight: 700,
+                        fontSize: 13,
+                        whiteSpace: "nowrap"
+                      }}
+                    >
+                      {column}
+                    </TableCell>
+                  )
+                )}
               </TableRow>
             </TableHead>
 
             <TableBody>
-              {paginatedSkaters.length > 0 ? (
+              {isLoading ? (
+                <TableRow>
+                  <TableCell colSpan={7} sx={{ py: 6, textAlign: "center" }}>
+                    <CircularProgress sx={{ color: "#f6765e" }} />
+                  </TableCell>
+                </TableRow>
+              ) : paginatedSkaters.length > 0 ? (
                 paginatedSkaters.map((skater) => (
                   <TableRow
-                    key={skater.id}
+                    key={skater._id}
                     hover
                     sx={{
                       "& .MuiTableCell-root": {
@@ -358,29 +333,17 @@ export const SkatersPage = () => {
                     }}
                   >
                     <TableCell sx={{ fontWeight: 700, color: "#f6765e", whiteSpace: "nowrap" }}>
-                      {skater.krsaId}
+                      {skater.krsaId || "-"}
                     </TableCell>
                     <TableCell>{skater.fullName}</TableCell>
-                    <TableCell>{skater.phone}</TableCell>
-                    <TableCell sx={{ whiteSpace: "nowrap" }}>{formatDate(skater.dob)}</TableCell>
-                    <TableCell>
-                      <Chip
-                        label={skater.category || "-"}
-                        size="small"
-                        sx={{
-                          backgroundColor: skater.category === "Junior" ? "#edf8ef" : "#fff1eb",
-                          color: skater.category === "Junior" ? "#4da667" : "#f6765e",
-                          fontWeight: 700
-                        }}
-                      />
-                    </TableCell>
-                    <TableCell>{skater.discipline}</TableCell>
-                    <TableCell>{skater.district}</TableCell>
-                    <TableCell>{skater.club}</TableCell>
+                    <TableCell>{skater.phone || "-"}</TableCell>
+                    <TableCell>{skater.email || "-"}</TableCell>
+                    <TableCell>{formatGender(skater.gender)}</TableCell>
+                    <TableCell>{skater.district?.name || "-"}</TableCell>
                     <TableCell>
                       <Stack direction="row" spacing={1}>
                         <IconButton
-                          onClick={() => navigate(`/skaters/${skater.id}`)}
+                          onClick={() => navigate(`/skaters/${skater._id}`)}
                           sx={{
                             border: "1px solid #efe2dc",
                             backgroundColor: "#fff8f4"
@@ -395,7 +358,7 @@ export const SkatersPage = () => {
                 ))
               ) : (
                 <TableRow>
-                  <TableCell colSpan={9} sx={{ py: 6, textAlign: "center", color: "#978a86" }}>
+                  <TableCell colSpan={7} sx={{ py: 6, textAlign: "center", color: "#978a86" }}>
                     No skaters found for the current search.
                   </TableCell>
                 </TableRow>
@@ -406,7 +369,7 @@ export const SkatersPage = () => {
 
         <TablePagination
           component="div"
-          count={filteredSkaters.length}
+          count={totalSkatersCount}
           page={page}
           onPageChange={handleChangePage}
           rowsPerPage={rowsPerPage}

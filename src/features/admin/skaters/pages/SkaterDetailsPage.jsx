@@ -1,25 +1,22 @@
-import { Box, Breadcrumbs, Button, Chip, Paper, Stack, Typography } from "@mui/material";
+import { useEffect } from "react";
+import {
+  Box,
+  Breadcrumbs,
+  Button,
+  Chip,
+  Paper,
+  Stack,
+  Typography,
+  CircularProgress
+} from "@mui/material";
 import BadgeOutlinedIcon from "@mui/icons-material/BadgeOutlined";
-import EventOutlinedIcon from "@mui/icons-material/EventOutlined";
-import SportsOutlinedIcon from "@mui/icons-material/SportsOutlined";
 import LocationOnOutlinedIcon from "@mui/icons-material/LocationOnOutlined";
+import EmailOutlinedIcon from "@mui/icons-material/EmailOutlined";
+import PhoneOutlinedIcon from "@mui/icons-material/PhoneOutlined";
 import { ChevronRight } from "lucide-react";
-import { useMemo } from "react";
 import { Link as RouterLink, useNavigate, useParams } from "react-router-dom";
 import skatersHero from "@/assets/Skating_header.jpg";
 import { useSkatersStore } from "@/features/admin/skaters/store/skaters-store";
-
-const formatDate = (dateValue) => {
-  if (!dateValue) {
-    return "-";
-  }
-
-  return new Intl.DateTimeFormat("en-IN", {
-    day: "2-digit",
-    month: "short",
-    year: "numeric"
-  }).format(new Date(dateValue));
-};
 
 const formatGender = (gender) => {
   if (!gender) {
@@ -116,11 +113,21 @@ const SectionCard = ({ title, description, children }) => (
 export const SkaterDetailsPage = () => {
   const navigate = useNavigate();
   const { skaterId } = useParams();
-  const skaters = useSkatersStore((state) => state.skaters);
-  const skater = useMemo(
-    () => skaters.find((item) => item.id === skaterId) ?? null,
-    [skaterId, skaters]
-  );
+  const { selectedSkater: skater, isLoadingDetail, fetchSkaterById } = useSkatersStore();
+
+  useEffect(() => {
+    if (skaterId) {
+      fetchSkaterById(skaterId);
+    }
+  }, [skaterId, fetchSkaterById]);
+
+  if (isLoadingDetail) {
+    return (
+      <Box sx={{ display: "flex", justifyContent: "center", py: 8 }}>
+        <CircularProgress sx={{ color: "#f6765e" }} />
+      </Box>
+    );
+  }
 
   if (!skater) {
     return (
@@ -192,18 +199,16 @@ export const SkaterDetailsPage = () => {
               {skater.fullName}
             </Typography>
             <Typography sx={{ color: "rgba(255,255,255,0.86)", maxWidth: 660, lineHeight: 1.7 }}>
-              Complete registered profile details for this athlete, including identity, parent,
-              school, and discipline information.
+              Complete registered profile details for this athlete, including identity and
+              associated club information.
             </Typography>
             <Stack direction="row" spacing={1.25} useFlexGap sx={{ mt: 2, flexWrap: "wrap" }}>
-              <Chip
-                label={skater.krsaId}
-                sx={{ color: "white", backgroundColor: "rgba(255,255,255,0.14)" }}
-              />
-              <Chip
-                label={skater.category || "-"}
-                sx={{ color: "white", backgroundColor: "rgba(255,255,255,0.14)" }}
-              />
+              {skater.krsaId && (
+                <Chip
+                  label={skater.krsaId}
+                  sx={{ color: "white", backgroundColor: "rgba(255,255,255,0.14)" }}
+                />
+              )}
               <Chip
                 label={formatGender(skater.gender)}
                 sx={{ color: "white", backgroundColor: "rgba(255,255,255,0.14)" }}
@@ -231,21 +236,21 @@ export const SkaterDetailsPage = () => {
           accent="#f6765e"
         />
         <SummaryCard
-          icon={<SportsOutlinedIcon sx={{ fontSize: 24 }} />}
-          label="Discipline"
-          value={skater.discipline}
+          icon={<PhoneOutlinedIcon sx={{ fontSize: 24 }} />}
+          label="Phone"
+          value={skater.phone}
           accent="#2aa876"
         />
         <SummaryCard
           icon={<LocationOnOutlinedIcon sx={{ fontSize: 24 }} />}
           label="District"
-          value={skater.district}
+          value={skater.district?.name}
           accent="#9c5cff"
         />
         <SummaryCard
-          icon={<EventOutlinedIcon sx={{ fontSize: 24 }} />}
-          label="DOB"
-          value={formatDate(skater.dob)}
+          icon={<EmailOutlinedIcon sx={{ fontSize: 24 }} />}
+          label="Email"
+          value={skater.email}
           accent="#c86f3d"
         />
       </Box>
@@ -285,7 +290,7 @@ export const SkaterDetailsPage = () => {
         <Stack spacing={2.5}>
           <SectionCard
             title="Identity and Registration"
-            description="Core identity, registration, and sport classification details."
+            description="Core identity and contact details."
           >
             <Box
               sx={{
@@ -297,19 +302,15 @@ export const SkaterDetailsPage = () => {
               <DetailItem label="KRSA ID" value={skater.krsaId} />
               <DetailItem label="Full name" value={skater.fullName} />
               <DetailItem label="Phone" value={skater.phone} />
-              <DetailItem label="RSFI ID" value={skater.rsfiId} />
-              <DetailItem label="DOB" value={formatDate(skater.dob)} />
-              <DetailItem label="Aadhaar Number" value={skater.aadharNumber} />
+              <DetailItem label="Email" value={skater.email} />
               <DetailItem label="Gender" value={formatGender(skater.gender)} />
-              <DetailItem label="Category" value={skater.category} />
-              <DetailItem label="Discipline" value={skater.discipline} />
-              <DetailItem label="Blood Group" value={skater.bloodGroup} />
+              <DetailItem label="Country Code" value={skater.countryCode} />
             </Box>
           </SectionCard>
 
           <SectionCard
-            title="Club and Family"
-            description="Associated district/club and guardian information."
+            title="Location and Affiliation"
+            description="Associated district and club information."
           >
             <Box
               sx={{
@@ -318,27 +319,9 @@ export const SkaterDetailsPage = () => {
                 gap: 2
               }}
             >
-              <DetailItem label="District" value={skater.district} />
-              <DetailItem label="Club" value={skater.club} />
-              <DetailItem label="Parent" value={skater.parent} />
+              <DetailItem label="District" value={skater.district?.name} />
+              <DetailItem label="Club" value={skater.club?.name} />
               <DetailItem label="Address" value={skater.address} />
-            </Box>
-          </SectionCard>
-
-          <SectionCard
-            title="Education and Signature"
-            description="School and profile completeness details."
-          >
-            <Box
-              sx={{
-                display: "grid",
-                gridTemplateColumns: { xs: "1fr", md: "repeat(2, minmax(0, 1fr))" },
-                gap: 2
-              }}
-            >
-              <DetailItem label="School" value={skater.school} />
-              <DetailItem label="Grade" value={skater.grade} />
-              <DetailItem label="Signature" value={skater.signature} />
             </Box>
           </SectionCard>
         </Stack>
