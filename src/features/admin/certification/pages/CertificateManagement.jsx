@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef, Fragment, useMemo } from "react";
+import { useNavigate } from "react-router-dom";
 import { Award, UploadCloud, CheckCircle, Loader2, FileText, Settings } from "lucide-react";
 import axios from "axios";
 import api from "@/lib/axios";
@@ -513,12 +514,23 @@ function TemplateCoordsEditor({ previewUrl, layout, onLayoutChange, onUpdateLayo
 // TemplateSettings modal — unchanged API: { isOpen, onClose }
 // handleSave and layout state structure are identical to the original.
 // ---------------------------------------------------------------------------
-const TemplateSettings = ({ isOpen, onClose }) => {
+// ---------------------------------------------------------------------------
+// TemplateSettings modal
+// Props:
+//   isOpen      — boolean, renders nothing when false
+//   onClose     — called after successful save OR explicit close
+//   templateId  — null → create mode, string ObjectId → edit mode
+//   templateName — pre-filled name when in edit mode
+// ---------------------------------------------------------------------------
+const TemplateSettings = ({ isOpen, onClose, templateId, templateName: initialName }) => {
+  const isEditMode = Boolean(templateId);
   const [template, setTemplate] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(isEditMode); // only load in edit mode
   const [saving, setSaving] = useState(false);
+  const [activating, setActivating] = useState(false);
   const [file, setFile] = useState(null);
   const [layout, setLayout] = useState(DEFAULT_TEMPLATE_LAYOUT);
+  const [name, setName] = useState(initialName || "");
 
   // Derive the object URL from `file` synchronously — no setState needed.
   // useMemo recomputes whenever `file` changes (file is state, so the
@@ -534,38 +546,25 @@ const TemplateSettings = ({ isOpen, onClose }) => {
   }, [previewObjectUrl]);
 
   const fetchTemplate = useCallback(async () => {
+    if (!templateId) return; // create mode — nothing to fetch
     try {
       setLoading(true);
-      const res = await api.get("/certificate/v1/template");
+      const res = await api.get(`/certificate/v1/template/${templateId}`);
       if (res?.data) {
         setTemplate(res.data);
+        if (res.data.name) setName(res.data.name);
         if (res.data.textLayout && Object.keys(res.data.textLayout).length > 0) {
           const incomingLayout = res.data.textLayout;
           setLayout({
-            name: {
-              ...DEFAULT_TEMPLATE_LAYOUT.name,
-              ...(incomingLayout.name || {})
-            },
+            name: { ...DEFAULT_TEMPLATE_LAYOUT.name, ...(incomingLayout.name || {}) },
             issueDate: {
               ...DEFAULT_TEMPLATE_LAYOUT.issueDate,
               ...(incomingLayout.issueDate || {})
             },
-            field: {
-              ...DEFAULT_TEMPLATE_LAYOUT.field,
-              ...(incomingLayout.field || {})
-            },
-            clubName: {
-              ...DEFAULT_TEMPLATE_LAYOUT.clubName,
-              ...(incomingLayout.clubName || {})
-            },
-            Rank: {
-              ...DEFAULT_TEMPLATE_LAYOUT.Rank,
-              ...(incomingLayout.Rank || {})
-            },
-            signature: {
-              ...DEFAULT_TEMPLATE_LAYOUT.signature,
-              ...(incomingLayout.signature || {})
-            }
+            field: { ...DEFAULT_TEMPLATE_LAYOUT.field, ...(incomingLayout.field || {}) },
+            clubName: { ...DEFAULT_TEMPLATE_LAYOUT.clubName, ...(incomingLayout.clubName || {}) },
+            Rank: { ...DEFAULT_TEMPLATE_LAYOUT.Rank, ...(incomingLayout.Rank || {}) },
+            signature: { ...DEFAULT_TEMPLATE_LAYOUT.signature, ...(incomingLayout.signature || {}) }
           });
         } else {
           setLayout(DEFAULT_TEMPLATE_LAYOUT);
@@ -573,10 +572,11 @@ const TemplateSettings = ({ isOpen, onClose }) => {
       }
     } catch (err) {
       console.error("Failed to fetch template:", err);
+      toast.error("Failed to load template data");
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [templateId]);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -598,29 +598,34 @@ const TemplateSettings = ({ isOpen, onClose }) => {
   };
 
   const handleSave = async () => {
-    if (!file && !template) {
-      toast.error("Please select a PDF template file first.");
+    if (!name.trim()) {
+      toast.error("Please enter a template name.");
+      return;
+    }
+    if (!isEditMode && !file) {
+      toast.error("Please upload a PDF template file.");
       return;
     }
     setSaving(true);
     try {
       const formData = new FormData();
-      if (file) {
-        formData.append("pdf", file);
-      }
-      const payloadLayout = {
-        ...layout
-      };
-      formData.append("layout", JSON.stringify(payloadLayout));
+      formData.append("name", name.trim());
+      formData.append("layout", JSON.stringify(layout));
+      if (file) formData.append("pdf", file);
 
-      await api.post("/certificate/v1/template", formData, {
-        headers: {
-          "Content-Type": "multipart/form-data"
-        }
-      });
-      toast.success("Certificate template updated successfully!");
-      fetchTemplate();
+      if (isEditMode) {
+        await api.put(`/certificate/v1/template/${templateId}`, formData, {
+          headers: { "Content-Type": "multipart/form-data" }
+        });
+        toast.success("Template updated successfully!");
+      } else {
+        await api.post("/certificate/v1/template", formData, {
+          headers: { "Content-Type": "multipart/form-data" }
+        });
+        toast.success("Template created successfully!");
+      }
       setFile(null);
+      onClose(true); // pass true → caller should refresh the list
     } catch (err) {
       console.error("Failed to save template:", err);
       toast.error(err?.response?.data?.message || "Failed to save template");
@@ -629,12 +634,28 @@ const TemplateSettings = ({ isOpen, onClose }) => {
     }
   };
 
+  const handleSetActive = async () => {
+    if (!templateId) return;
+    setActivating(true);
+    try {
+      await api.patch(`/certificate/v1/template/${templateId}/activate`);
+      toast.success("Template set as active for certificate generation!");
+      onClose(true);
+    } catch (err) {
+      toast.error(err?.response?.data?.message || "Failed to set active template");
+    } finally {
+      setActivating(false);
+    }
+  };
+
   if (!isOpen) return null;
 
   return (
     <div className="space-y-6 p-1">
       <p className="text-sm text-stone-500 -mt-2">
-        This template is used for <b>automatic</b> certificates issued upon course completion.
+        {isEditMode
+          ? "Edit the layout and PDF for this certificate template."
+          : "Create a new certificate template. Upload a PDF and set field positions."}
       </p>
 
       {loading ? (
@@ -643,10 +664,24 @@ const TemplateSettings = ({ isOpen, onClose }) => {
         </div>
       ) : (
         <div className="space-y-6">
+          {/* Template Name */}
+          <div className="space-y-1.5">
+            <label className="block text-sm font-bold text-stone-700">
+              Template Name <span className="text-red-500">*</span>
+            </label>
+            <input
+              type="text"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="e.g. State Championship 2025"
+              className="w-full px-3 py-2.5 border border-stone-200 rounded-xl text-sm focus:ring-2 focus:ring-amber-500/30 outline-none font-medium bg-white shadow-sm"
+            />
+          </div>
+
           {/* File Upload */}
           <div className="space-y-3">
             <label className="block text-sm font-bold text-stone-700">
-              Background PDF Template
+              Background PDF Template{!isEditMode && <span className="text-red-500"> *</span>}
             </label>
             <div className="relative group">
               <input
@@ -656,23 +691,25 @@ const TemplateSettings = ({ isOpen, onClose }) => {
                 className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
               />
               <div
-                className={`p-6 border-2 border-dashed rounded-2xl text-center transition-all ${file ? "border-emerald-300 bg-emerald-50" : "border-stone-200 group-hover:border-amber-400 group-hover:bg-amber-50/30"}`}
+                className={`p-6 border-2 border-dashed rounded-2xl text-center transition-all ${
+                  file
+                    ? "border-emerald-300 bg-emerald-50"
+                    : "border-stone-200 group-hover:border-amber-400 group-hover:bg-amber-50/30"
+                }`}
               >
                 {file ? (
                   <div className="flex flex-col items-center gap-2">
                     <CheckCircle className="text-emerald-500" size={28} />
                     <span className="text-emerald-700 font-bold text-sm">{file.name}</span>
                     <span className="text-emerald-600/70 text-[10px] uppercase font-bold">
-                      New file ready — save to activate
+                      New file ready — save to apply
                     </span>
                   </div>
                 ) : template ? (
                   <div className="flex flex-col items-center gap-2">
                     <FileText className="text-amber-500" size={28} />
-                    <span className="text-stone-700 font-bold text-sm">
-                      Current Template Active
-                    </span>
-                    <span className="text-stone-400 text-[10px]">CLICK TO REPLACE</span>
+                    <span className="text-stone-700 font-bold text-sm">Current PDF Active</span>
+                    <span className="text-stone-400 text-[10px]">CLICK TO REPLACE (OPTIONAL)</span>
                   </div>
                 ) : (
                   <div className="flex flex-col items-center gap-2 text-stone-400">
@@ -685,7 +722,7 @@ const TemplateSettings = ({ isOpen, onClose }) => {
             </div>
           </div>
 
-          {/* Coordinate Editor — visual drag or fallback manual inputs */}
+          {/* Coordinate Editor */}
           <TemplateCoordsEditor
             previewUrl={previewObjectUrl ?? template?.pdfTemplateUrl ?? null}
             layout={layout}
@@ -693,14 +730,29 @@ const TemplateSettings = ({ isOpen, onClose }) => {
             onUpdateLayout={handleUpdateLayout}
           />
 
-          <div className="pt-2 flex justify-end">
+          <div className="pt-2 flex items-center justify-between gap-3 flex-wrap">
+            {/* Set as Active — only in edit mode */}
+            {isEditMode && (
+              <button
+                onClick={handleSetActive}
+                disabled={activating || template?.isActive}
+                className="flex items-center gap-2 px-5 py-2.5 border-2 border-emerald-500 text-emerald-700 text-sm font-bold rounded-lg hover:bg-emerald-50 transition-all shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {activating ? (
+                  <Loader2 className="animate-spin" size={16} />
+                ) : (
+                  <CheckCircle size={16} />
+                )}
+                {template?.isActive ? "Currently Active" : "Set as Active"}
+              </button>
+            )}
             <button
               onClick={handleSave}
               disabled={saving}
-              className="flex items-center gap-2 px-6 py-2.5 bg-stone-900 text-white text-sm font-bold rounded-lg hover:bg-stone-800 transition-all shadow-md disabled:opacity-50"
+              className="flex items-center gap-2 px-6 py-2.5 bg-stone-900 text-white text-sm font-bold rounded-lg hover:bg-stone-800 transition-all shadow-md disabled:opacity-50 ml-auto"
             >
               {saving ? <Loader2 className="animate-spin" size={16} /> : <Award size={16} />}
-              {template ? "Update Template" : "Save Template"}
+              {isEditMode ? "Update Template" : "Save Template"}
             </button>
           </div>
         </div>
@@ -730,29 +782,78 @@ const downloadPDF = async () => {
 };
 
 function CertificateManagement() {
-  const [isTempleteSettingsOpen, setIsTemplateSettingsOpen] = useState(true);
+  const navigate = useNavigate();
+  const [templates, setTemplates] = useState([]);
+  const [loadingTemplates, setLoadingTemplates] = useState(true);
+
+  const fetchAllTemplates = useCallback(async () => {
+    try {
+      setLoadingTemplates(true);
+      const res = await api.get("/certificate/v1/templates");
+      setTemplates(Array.isArray(res.data) ? res.data : []);
+    } catch (err) {
+      console.error("Failed to fetch templates:", err);
+      toast.error("Failed to load template list");
+    } finally {
+      setLoadingTemplates(false);
+    }
+  }, []);
+
+  // useEffect(() => { fetchAllTemplates(); }, [fetchAllTemplates]);
+
   return (
-    <div>
-      <div className="flex items-center justify-between mb-4">
-        <h1 className="text-2xl font-bold">Certificate Management</h1>
+    <div className="p-1">
+      {/* Header */}
+      <div className="flex items-center justify-between mb-6">
+        <h1 className="text-2xl font-bold text-stone-900">Certificate Management</h1>
         <button
-          onClick={downloadPDF}
-          className="flex items-center gap-2 px-4 py-2 bg-stone-900 text-white text-sm font-bold rounded-lg hover:bg-stone-800 transition-all shadow-md"
+          onClick={() => navigate("/certification/create")}
+          className="flex items-center gap-2 px-4 py-2.5 bg-stone-900 text-white text-sm font-bold rounded-lg hover:bg-stone-800 transition-all shadow-md"
         >
-          <Settings
-            title="Add new"
-            className="text-amber-500 hover:text-amber-600 transition-colors"
-            size={24}
-          />
+          <span className="text-lg leading-none">+</span> New Template
         </button>
       </div>
 
-      {isTempleteSettingsOpen && (
-        <TemplateSettings
-          isOpen={isTempleteSettingsOpen}
-          onClose={() => setIsTemplateSettingsOpen(false)}
-        />
-      )}
+      {/* Templates List */}
+      <div className="mb-6">
+        <label className="block text-sm font-bold text-stone-700 mb-2">
+          All Certificate Templates
+        </label>
+        {loadingTemplates ? (
+          <div className="flex items-center gap-2 py-4 text-stone-400 text-sm">
+            <Loader2 className="animate-spin" size={18} /> Loading templates…
+          </div>
+        ) : templates.length === 0 ? (
+          <div className="py-6 text-center rounded-2xl border-2 border-dashed border-stone-200 text-stone-400 text-sm">
+            No templates yet. Click <b>New Template</b> to create one.
+          </div>
+        ) : (
+          <div className="flex flex-col gap-2">
+            {templates.map((tpl) => (
+              <button
+                key={tpl._id}
+                onClick={() => navigate(`/certification/${tpl._id}/edit`)}
+                className="flex items-center justify-between w-full px-4 py-3 bg-white border rounded-xl hover:border-amber-400 hover:bg-amber-50/30 transition-all shadow-sm text-left group"
+              >
+                <div className="flex items-center gap-3">
+                  <FileText size={18} className="text-amber-500 flex-shrink-0" />
+                  <span className="text-sm font-semibold text-stone-800 group-hover:text-amber-700 transition-colors">
+                    {tpl.name}
+                  </span>
+                  {tpl.isActive && (
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-700 border border-emerald-200">
+                      <CheckCircle size={10} /> Active
+                    </span>
+                  )}
+                </div>
+                <span className="text-xs text-stone-400 group-hover:text-amber-600 font-medium">
+                  Edit →
+                </span>
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   );
 }

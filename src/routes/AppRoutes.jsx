@@ -32,6 +32,7 @@ import { FeedbackPage } from "@/features/admin/feedback/pages/FeedbackPage";
 import { MainLayout } from "@/layouts/MainLayout";
 import { NotFoundPage } from "@/pages/NotFoundPage";
 import CertificateManagement from "../features/admin/certification/pages/CertificateManagement";
+import CertificateTemplateFormPage from "../features/admin/certification/pages/CertificateTemplateFormPage";
 import NewsPage from "../features/admin/news/newsPage/NewsPage";
 import { NewsDetailPage } from "../features/admin/news/newsPage/NewsDetailPage";
 import { NewsFormPage } from "../features/admin/news/newsPage/NewsFormPage";
@@ -91,6 +92,8 @@ export const AppRoutes = () => {
         <Route path="/reports/academy" element={<AcademyRequestsPage />} />
         <Route path="/reports/academy/:requestId" element={<AcademyRequestDetailsPage />} />
         <Route path="/certification" element={<CertificateManagement />} />
+        <Route path="/certification/create" element={<CertificateTemplateFormPage />} />
+        <Route path="/certification/:templateId/edit" element={<CertificateTemplateFormPage />} />
         <Route path="/news" element={<NewsPage />} />
         <Route path="/news/create" element={<NewsFormPage />} />
         <Route path="/news/:newsId/edit" element={<NewsFormPage />} />
