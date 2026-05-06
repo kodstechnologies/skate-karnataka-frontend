@@ -1,7 +1,3 @@
-import AccessTimeOutlinedIcon from "@mui/icons-material/AccessTimeOutlined";
-import EventAvailableOutlinedIcon from "@mui/icons-material/EventAvailableOutlined";
-import FmdGoodOutlinedIcon from "@mui/icons-material/FmdGoodOutlined";
-import PaidOutlinedIcon from "@mui/icons-material/PaidOutlined";
 import {
   Box,
   Breadcrumbs,
@@ -11,45 +7,39 @@ import {
   Stack,
   TablePagination,
   TextField,
-  Typography
+  Typography,
+  CircularProgress
 } from "@mui/material";
 import { ChevronRight, PencilLine, Plus, Search, Trash2 } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Link as RouterLink, useNavigate } from "react-router-dom";
 import eventsHero from "@/assets/Events_header.jpg";
 import { ConfirmDeleteModal } from "@/components/ui/ConfirmDeleteModal";
-import { useEventsStore } from "@/features/admin/events/store/events-store";
+import { eventsApi } from "@/api/events-api";
+import toast from "react-hot-toast";
 
-const formatDateTime = (value) => {
-  if (!value) {
-    return "-";
-  }
+/** Format a date string like "2025-06-10" → "10 Jun 2025" */
+const fmtDate = (v) => {
+  if (!v) return "-";
+  const d = new Date(v);
+  if (Number.isNaN(d.getTime())) return v;
+  return d.toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" });
+};
 
-  const date = new Date(value);
-
-  if (Number.isNaN(date.getTime())) {
-    return value;
-  }
-
-  return date.toLocaleString("en-IN", {
-    year: "numeric",
-    month: "short",
-    day: "numeric",
-    hour: "2-digit",
-    minute: "2-digit"
-  });
+/** Format a time string like "09:30" → "09:30 AM" */
+const fmtTime = (v) => {
+  if (!v) return null;
+  const [h, m] = v.split(":").map(Number);
+  if (isNaN(h)) return v;
+  const period = h >= 12 ? "PM" : "AM";
+  const hour = h % 12 || 12;
+  return `${String(hour).padStart(2, "0")}:${String(m).padStart(2, "0")} ${period}`;
 };
 
 const formatCurrency = (value) => {
-  if (!value) {
-    return "Free";
-  }
-
+  if (!value) return "Free";
   const amount = Number(value);
-  if (Number.isNaN(amount)) {
-    return value;
-  }
-
+  if (Number.isNaN(amount)) return value;
   return new Intl.NumberFormat("en-IN", {
     style: "currency",
     currency: "INR",
@@ -57,60 +47,103 @@ const formatCurrency = (value) => {
   }).format(amount);
 };
 
-const formatScope = (eventType) => {
-  if (!eventType) {
-    return "-";
+const getStatusLabel = (status) => {
+  switch (status) {
+    case "coming_soon":
+      return "Coming Soon";
+    case "active":
+      return "Active";
+    case "cancelled":
+      return "Cancelled";
+    case "completed":
+      return "Completed";
+    default:
+      return status || "Unknown";
   }
-  return `${eventType.charAt(0).toUpperCase()}${eventType.slice(1)}`;
+};
+
+const getStatusColor = (status) => {
+  switch (status) {
+    case "active":
+      return "#22c55e"; // Green
+    case "coming_soon":
+      return "#f59e0b"; // Orange
+    case "cancelled":
+      return "#ef4444"; // Red
+    case "completed":
+      return "#3b82f6"; // Blue
+    default:
+      return "#8b7e7a"; // Gray
+  }
 };
 
 export const EventsPage = () => {
   const navigate = useNavigate();
-  const events = useEventsStore((state) => state.events);
-  const deleteEvent = useEventsStore((state) => state.deleteEvent);
+
+  const [events, setEvents] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   const [searchTerm, setSearchTerm] = useState("");
   const [page, setPage] = useState(0);
-  const [rowsPerPage, setRowsPerPage] = useState(6);
+  const [rowsPerPage, setRowsPerPage] = useState(10);
+  const [totalCount, setTotalCount] = useState(0);
+
   const [pendingDeleteEvent, setPendingDeleteEvent] = useState(null);
+  const [deleting, setDeleting] = useState(false);
 
-  const filteredEvents = useMemo(() => {
-    const normalizedSearch = searchTerm.trim().toLowerCase();
+  const searchDebounceRef = useRef(null);
 
-    if (!normalizedSearch) {
-      return events;
+  const fetchEvents = useCallback(async (search = "", currentPage = 1, limit = 10) => {
+    setLoading(true);
+    setError(null);
+    try {
+      const { data } = await eventsApi.getAll(search, currentPage, limit);
+      console.log("Fetched news data:", data);
+      setEvents(data?.data || []);
+      setTotalCount(data?.pagination?.total || 0);
+    } catch (err) {
+      setError(err?.response?.data?.message || err.message || "Failed to fetch events");
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    fetchEvents(searchTerm, page + 1, rowsPerPage);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [page, rowsPerPage]);
+
+  const handleSearchChange = (event) => {
+    const value = event.target.value;
+    setSearchTerm(value);
+    setPage(0);
+
+    if (searchDebounceRef.current) {
+      clearTimeout(searchDebounceRef.current);
     }
 
-    return events.filter((event) =>
-      [
-        event.title,
-        event.description,
-        event.address,
-        event.eventType,
-        event.eventFor,
-        event.status,
-        event.price
-      ]
-        .join(" ")
-        .toLowerCase()
-        .includes(normalizedSearch)
-    );
-  }, [events, searchTerm]);
-
-  const paginatedEvents = useMemo(() => {
-    const start = page * rowsPerPage;
-    return filteredEvents.slice(start, start + rowsPerPage);
-  }, [filteredEvents, page, rowsPerPage]);
-
-  const handleDelete = () => {
-    if (!pendingDeleteEvent) {
-      return;
-    }
-
-    deleteEvent(pendingDeleteEvent.id);
-    setPendingDeleteEvent(null);
+    searchDebounceRef.current = setTimeout(() => {
+      fetchEvents(value, 1, rowsPerPage);
+    }, 400);
   };
 
+  const handleDelete = async () => {
+    if (!pendingDeleteEvent) return;
+    setDeleting(true);
+    try {
+      await eventsApi.delete(pendingDeleteEvent._id || pendingDeleteEvent.id);
+      toast.success("Event deleted successfully");
+      fetchEvents(searchTerm, page + 1, rowsPerPage);
+    } catch (err) {
+      console.error("Failed to delete event", err);
+      toast.error(err?.response?.data?.message || "Failed to delete event");
+    } finally {
+      setDeleting(false);
+      setPendingDeleteEvent(null);
+    }
+  };
   return (
     <Box className="space-y-5">
       <Paper
@@ -169,15 +202,7 @@ export const EventsPage = () => {
 
             <Stack direction="row" spacing={1} useFlexGap sx={{ mt: 2.5, flexWrap: "wrap" }}>
               <Chip
-                label={`${events.length} Total`}
-                sx={{ color: "white", backgroundColor: "rgba(255,255,255,0.14)" }}
-              />
-              <Chip
-                label={`${events.filter((event) => event.status === "public").length} Public`}
-                sx={{ color: "white", backgroundColor: "rgba(255,255,255,0.14)" }}
-              />
-              <Chip
-                label={`${events.filter((event) => event.status === "draft").length} Draft`}
+                label={`${totalCount} Total`}
                 sx={{ color: "white", backgroundColor: "rgba(255,255,255,0.14)" }}
               />
             </Stack>
@@ -213,10 +238,7 @@ export const EventsPage = () => {
           <Stack direction={{ xs: "column", sm: "row" }} spacing={1.5}>
             <TextField
               value={searchTerm}
-              onChange={(event) => {
-                setSearchTerm(event.target.value);
-                setPage(0);
-              }}
+              onChange={handleSearchChange}
               placeholder="Search by title, type, status, location..."
               sx={{ minWidth: { xs: "100%", sm: 320 } }}
               slotProps={{
@@ -236,7 +258,21 @@ export const EventsPage = () => {
         </Stack>
 
         <Box sx={{ px: 3, pb: 3 }}>
-          {paginatedEvents.length > 0 ? (
+          {loading ? (
+            <Box sx={{ display: "flex", justifyContent: "center", py: 8 }}>
+              <CircularProgress sx={{ color: "#f6765e" }} />
+            </Box>
+          ) : error ? (
+            <Paper
+              elevation={0}
+              sx={{ p: 5, borderRadius: "22px", textAlign: "center", backgroundColor: "#fff5f5" }}
+            >
+              <Typography color="error">{error}</Typography>
+              <Button onClick={() => fetchEvents(searchTerm, page + 1, rowsPerPage)} sx={{ mt: 2 }}>
+                Retry
+              </Button>
+            </Paper>
+          ) : events.length > 0 ? (
             <Box
               sx={{
                 display: "grid",
@@ -248,16 +284,16 @@ export const EventsPage = () => {
                 gap: 2
               }}
             >
-              {paginatedEvents.map((event) => (
+              {events.map((event) => (
                 <Paper
-                  key={event.id}
+                  key={event._id || event.id}
                   elevation={0}
                   sx={{
                     borderRadius: "24px",
                     border: "1px solid #f0ddd5",
                     overflow: "hidden",
-                    background:
-                      "linear-gradient(180deg, rgba(255,255,255,1) 0%, rgba(255,250,248,1) 100%)",
+                    background: `linear-gradient(135deg, ${event.colorOne || "#fff1eb"} 0%, ${event.colorTwo || "#fce3d9"} 100%)`,
+
                     boxShadow: "0 20px 50px rgba(56, 36, 29, 0.08)",
                     transition: "transform 0.25s ease, box-shadow 0.25s ease",
                     "&:hover": {
@@ -266,105 +302,106 @@ export const EventsPage = () => {
                     }
                   }}
                 >
-                  <Box
+                  <Stack
                     sx={{
-                      height: 180,
-                      position: "relative",
-                      background: event.coverImage?.dataUrl
-                        ? `linear-gradient(180deg, rgba(24,18,18,0.14) 0%, rgba(24,18,18,0.56) 100%), url("${event.coverImage.dataUrl}")`
-                        : `linear-gradient(180deg, rgba(24,18,18,0.18) 0%, rgba(24,18,18,0.46) 100%), url("${eventsHero}")`,
-                      backgroundSize: "cover",
-                      backgroundPosition: "center"
+                      display: "flex",
+                      flexDirection: "row",
+                      gap: 1.5,
+                      px: 2,
+                      py: 1.5,
+                      alignItems: "center",
+                      justifyContent: "space-between", // ✅ correct property
+                      width: "100%"
                     }}
                   >
-                    <Stack
-                      direction="row"
-                      spacing={1}
-                      sx={{ position: "absolute", top: 12, left: 12 }}
-                    >
-                      <Chip
-                        size="small"
-                        label={event.status === "public" ? "Public" : "Draft"}
-                        sx={{
-                          backgroundColor: event.status === "public" ? "#22c55e" : "#8b7e7a",
-                          color: "white",
-                          fontWeight: 700
-                        }}
-                      />
-                      <Chip
-                        size="small"
-                        label={`${formatScope(event.eventType)} • ${event.eventFor || "-"}`}
-                        sx={{
-                          backgroundColor: "rgba(255,255,255,0.86)",
-                          color: "#473e3c",
-                          fontWeight: 700
-                        }}
-                      />
-                    </Stack>
-                  </Box>
+                    <Chip
+                      size="small"
+                      label={getStatusLabel(event.status)}
+                      sx={{
+                        backgroundColor: getStatusColor(event.status),
+                        color: "white",
+                        fontWeight: 700
+                      }}
+                    />
+                  </Stack>
 
                   <Stack spacing={1.35} sx={{ p: 2.25 }}>
                     <Typography
-                      sx={{ fontSize: 19, fontWeight: 800, color: "#2f2829", lineHeight: 1.3 }}
+                      sx={{
+                        fontSize: 19,
+                        fontWeight: 800,
+                        color: event.textColor || "#2f2829",
+                        lineHeight: 1.3
+                      }}
                     >
-                      {event.title}
+                      {event.header}
                     </Typography>
-                    <Typography sx={{ color: "#7e716d", lineHeight: 1.7, minHeight: 52 }}>
-                      {event.description || "No description provided."}
+                    <Typography
+                      sx={{ color: event.textColor || "#7e716d", lineHeight: 1.7, minHeight: 52 }}
+                    >
+                      {event.about || "No description provided."}
                     </Typography>
 
-                    <Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
-                      <FmdGoodOutlinedIcon sx={{ fontSize: 18, color: "#f6765e", flexShrink: 0 }} />
+                    {/* Schedule block */}
+                    <Box
+                    // sx={{
+                    //   borderRadius: "12px",
+                    //   border: "1px solid rgba(246,118,94,0.18)",
+                    //   backgroundColor: "rgba(255,241,235,0.5)",
+                    //   px: 1.5,
+                    //   py: 1
+                    // }}
+                    >
                       <Typography
                         sx={{
-                          color: "#5f5552",
-                          display: "-webkit-box",
-                          WebkitLineClamp: 1,
-                          WebkitBoxOrient: "vertical",
-                          overflow: "hidden"
+                          fontSize: 11,
+                          fontWeight: 700,
+                          color: event.textColor || "#f6765e",
+                          mb: 0.5,
+                          textTransform: "uppercase",
+                          letterSpacing: "0.05em"
                         }}
                       >
-                        {event.address || "-"}
+                        Registration
                       </Typography>
-                    </Stack>
-                    <Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
-                      <EventAvailableOutlinedIcon
-                        sx={{ fontSize: 18, color: "#f6765e", flexShrink: 0 }}
-                      />
-                      <Typography sx={{ color: "#5f5552" }}>
-                        {formatScope(event.eventType)}: {event.eventFor || "-"}
+                      <Typography sx={{ fontSize: 12, color: event.textColor || "#5f5552" }}>
+                        {fmtDate(event.registerStartDate)} → {fmtDate(event.registerEndDate)}
                       </Typography>
-                    </Stack>
-                    <Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
-                      <AccessTimeOutlinedIcon sx={{ fontSize: 18, color: "#f6765e" }} />
-                      <Typography sx={{ color: "#5f5552" }}>
-                        {formatDateTime(event.registrationStartDateTime)} -{" "}
-                        {formatDateTime(event.eventEndDateTime)}
-                      </Typography>
-                    </Stack>
 
-                    <Stack
-                      direction="row"
-                      sx={{ pt: 0.75, justifyContent: "space-between", alignItems: "center" }}
-                    >
-                      <Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
-                        <PaidOutlinedIcon sx={{ fontSize: 18, color: "#f6765e" }} />
-                        <Typography sx={{ color: "#2f2829", fontWeight: 700 }}>
-                          {formatCurrency(event.price)}
+                      <Typography
+                        sx={{
+                          fontSize: 11,
+                          fontWeight: 700,
+                          color: event.textColor || "#f6765e",
+                          mt: 1,
+                          mb: 0.5,
+                          textTransform: "uppercase",
+                          letterSpacing: "0.05em"
+                        }}
+                      >
+                        Event
+                      </Typography>
+                      <Typography sx={{ fontSize: 12, color: event.textColor || "#5f5552" }}>
+                        {fmtDate(event.eventStartDate)} → {fmtDate(event.eventEndDate)}
+                      </Typography>
+
+                      {(event.eventStartTime || event.eventEndTime) && (
+                        <Typography
+                          sx={{ fontSize: 12, color: event.textColor || "#5f5552", mt: 0.5 }}
+                        >
+                          🕐 {fmtTime(event.eventStartTime)}
+                          {event.eventEndTime ? ` – ${fmtTime(event.eventEndTime)}` : ""}
                         </Typography>
-                      </Stack>
-                      <Chip
-                        size="small"
-                        label={formatDateTime(event.eventStartDateTime)}
-                        sx={{ backgroundColor: "#fff1eb", color: "#f6765e", fontWeight: 700 }}
-                      />
-                    </Stack>
+                      )}
+                    </Box>
 
                     <Stack direction="row" spacing={1} sx={{ pt: 1 }}>
                       <Button
                         variant="outlined"
                         startIcon={<PencilLine size={16} />}
-                        onClick={() => navigate(`/events/${event.id}/edit`)}
+                        onClick={() =>
+                          navigate(`/events/${event._id || event.id}/edit`, { state: { event } })
+                        }
                         fullWidth
                       >
                         Edit
@@ -398,7 +435,7 @@ export const EventsPage = () => {
 
         <TablePagination
           component="div"
-          count={filteredEvents.length}
+          count={totalCount}
           page={page}
           onPageChange={(_, nextPage) => setPage(nextPage)}
           rowsPerPage={rowsPerPage}
@@ -413,8 +450,9 @@ export const EventsPage = () => {
       <ConfirmDeleteModal
         open={Boolean(pendingDeleteEvent)}
         title="Delete event"
-        itemLabel={pendingDeleteEvent?.title}
+        itemLabel={pendingDeleteEvent?.header}
         description="This event will be permanently removed. You can’t undo this action."
+        confirmLabel={deleting ? "Deleting..." : "Delete"}
         onClose={() => setPendingDeleteEvent(null)}
         onConfirm={handleDelete}
       />

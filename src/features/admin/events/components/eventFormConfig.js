@@ -1,52 +1,40 @@
-export const eventTypeOptions = [
-  { value: "state", label: "State" },
-  { value: "district", label: "District" },
-  { value: "club", label: "Club" }
-];
-
 export const eventStatusOptions = [
-  { value: "draft", label: "Draft" },
-  { value: "public", label: "Public" }
-];
-
-export const stateOptions = ["Karnataka"];
-
-export const districtOptions = [
-  "Bengaluru Urban",
-  "Mysuru",
-  "Udupi",
-  "Shivamogga",
-  "Belagavi",
-  "Dakshina Kannada",
-  "Ballari"
+  { value: "coming_soon", label: "Coming Soon" },
+  { value: "active", label: "Active" },
+  { value: "cancelled", label: "Cancelled" },
+  { value: "completed", label: "Completed" }
 ];
 
 export const initialEventFormValues = {
-  title: "",
-  description: "",
+  header: "",
+  about: "",
   address: "",
-  registrationStartDateTime: "",
-  registrationEndDateTime: "",
-  eventStartDateTime: "",
-  eventEndDateTime: "",
-  eventType: "",
-  eventFor: "",
-  status: "draft",
-  price: "",
-  coverImage: null
+  registerStartDate: "",
+  registerEndDate: "",
+  eventStartDate: "",
+  eventEndDate: "",
+  eventStartTime: "",
+  eventEndTime: "",
+  status: "coming_soon",
+  entryFee: "",
+  colorOne: "#f117d5",
+  colorTwo: "#1838e3",
+  textColor: "#000000"
 };
 
 export const createEventFormValues = (event = {}) => ({
-  title: event.title ?? "",
-  description: event.description ?? "",
+  header: event.header ?? "",
+  about: event.about ?? "",
   address: event.address ?? "",
-  registrationStartDateTime: event.registrationStartDateTime ?? "",
-  registrationEndDateTime: event.registrationEndDateTime ?? "",
-  eventStartDateTime: event.eventStartDateTime ?? "",
-  eventEndDateTime: event.eventEndDateTime ?? "",
-  eventType: event.eventType ?? "",
-  eventFor: event.eventFor ?? "",
-  status: event.status ?? "draft",
-  price: event.price ?? "",
-  coverImage: event.coverImage ?? null
+  registerStartDate: event.registerStartDate ?? "",
+  registerEndDate: event.registerEndDate ?? "",
+  eventStartDate: event.eventStartDate ?? "",
+  eventEndDate: event.eventEndDate ?? "",
+  eventStartTime: event.eventStartTime ?? "",
+  eventEndTime: event.eventEndTime ?? "",
+  status: event.status ?? "coming_soon",
+  entryFee: event.entryFee ?? "",
+  colorOne: event.colorOne ?? "#ffffff",
+  colorTwo: event.colorTwo ?? "#ffffff",
+  textColor: event.textColor ?? "#000000"
 });

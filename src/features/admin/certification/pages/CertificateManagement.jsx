@@ -739,7 +739,11 @@ function CertificateManagement() {
           onClick={downloadPDF}
           className="flex items-center gap-2 px-4 py-2 bg-stone-900 text-white text-sm font-bold rounded-lg hover:bg-stone-800 transition-all shadow-md"
         >
-          <Settings className="text-amber-500 hover:text-amber-600 transition-colors" size={24} />
+          <Settings
+            title="Add new"
+            className="text-amber-500 hover:text-amber-600 transition-colors"
+            size={24}
+          />
         </button>
       </div>
 

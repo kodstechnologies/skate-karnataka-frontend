@@ -7,7 +7,22 @@ import WorkspacePremiumIcon from "@mui/icons-material/WorkspacePremium";
 import BusinessIcon from "@mui/icons-material/Business";
 import AdminPanelSettingsIcon from "@mui/icons-material/AdminPanelSettings";
 import FamilyRestroomIcon from "@mui/icons-material/FamilyRestroom";
-import { LayoutDashboard, Inbox, Image, Award, Newspaper } from "lucide-react";
+import {
+  LayoutDashboard,
+  Inbox,
+  Image,
+  Headphones,
+  MessageSquare,
+  Award,
+  Newspaper,
+  Handshake,
+  HeartHandshake,
+  HelpingHand,
+  Grid,
+  Folder,
+  Tags,
+  Layers
+} from "lucide-react";
 
 export const navigationGroups = [
   {
@@ -31,7 +46,17 @@ export const navigationGroups = [
       { slug: "districts", to: "/districts", label: "Districts", icon: LocationCityIcon },
       { slug: "clubs", to: "/clubs", label: "Clubs", icon: Groups2Icon },
       { slug: "skaters", to: "/skaters", label: "Skaters", icon: RollerSkatingIcon },
-      { slug: "events", to: "/events", label: "Events", icon: EventIcon },
+      // { slug: "events", to: "/events", label: "Events", icon: EventIcon },
+      {
+        slug: "events",
+        to: "/event",
+        label: "Events",
+        icon: Folder,
+        children: [
+          { slug: "events-category", to: "/events/category", label: "Events-Category", icon: Tags },
+          { slug: "events", to: "/events/detail", label: "Events", icon: Layers }
+        ]
+      },
       {
         slug: "news",
         to: "/news",
@@ -39,6 +64,8 @@ export const navigationGroups = [
         icon: Newspaper
       },
       { slug: "gallery", to: "/gallery", label: "Gallery", icon: Image },
+      { slug: "contact-us", to: "/contact-us", label: "Contact Us", icon: Headphones },
+      { slug: "feedback", to: "/feedback", label: "Feedback", icon: MessageSquare },
       {
         slug: "Certification",
         to: "/certification",
@@ -69,6 +96,26 @@ export const navigationGroups = [
             to: "/reports/academy",
             label: "Academy",
             icon: BusinessIcon
+          }
+        ]
+      },
+      {
+        slug: "Support-Hub",
+        to: "/support-hub",
+        label: "Support-Hub",
+        icon: HelpingHand,
+        children: [
+          {
+            slug: "Donation",
+            to: "/support-hub/donation",
+            label: "Donation",
+            icon: HeartHandshake
+          },
+          {
+            slug: "sponsorship",
+            to: "/support-hub/sponsorship",
+            label: "sponsorship",
+            icon: Handshake
           }
         ]
       }
