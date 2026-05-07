@@ -5,31 +5,37 @@ import api from "@/lib/axios";
 import toast from "react-hot-toast";
 
 // ── PDF canvas constants ─────────────────────────────────────────────────────
-const PDF_W_PT = 842;
-const PDF_H_PT = 595;
+const PDF_W_PT = 595;
+const PDF_H_PT = 842;
 
 const FIELD_META = {
   name: { label: "Name", color: "#3B82F6", bg: "#EFF6FF", border: "#BFDBFE" },
   issueDate: { label: "Issue Date", color: "#10B981", bg: "#ECFDF5", border: "#A7F3D0" },
-  field: { label: "Field/Event", color: "#F59E0B", bg: "#FFFBEB", border: "#FDE68A" },
+  ageGroup: { label: "Age Group", color: "#F59E0B", bg: "#FFFBEB", border: "#FDE68A" },
   clubName: { label: "Club Name", color: "#8B5CF6", bg: "#F5F3FF", border: "#DDD6FE" },
-  Rank: { label: "Rank", color: "#EF4444", bg: "#FEF2F2", border: "#FECACA" },
   signature: { label: "Signature", color: "#EC4899", bg: "#FDF2F8", border: "#FBCFE8" }
 };
 
+// Event-table meta (separate from text FIELD_META — no size/color keys)
+const TABLE_META = { label: "Event Table", color: "#0EA5E9", bg: "#F0F9FF", border: "#BAE6FD" };
+// Column ratios must match backend COL_RATIOS exactly
+const TABLE_COL_RATIOS = [0.25, 0.2, 0.35, 0.2];
+const TABLE_HEADERS = ["EVENT", "DISCIPLINE", "DISTANCE", "PLACEMENT"];
+
 const TEXT_COLOR_OPTIONS = [
-  { value: "white", label: "White" },
-  { value: "darkBlue", label: "Dark Blue" },
-  { value: "darkYellow", label: "Dark Yellow" }
+  { value: "dark", label: "Dark" },
+  { value: "lightDark", label: "Light Dark" },
+  { value: "gray", label: "Gray" },
+  { value: "darkGray", label: "Dark Gray" }
 ];
 
 const DEFAULT_LAYOUT = {
-  name: { x: 300, y: 420, size: 12, color: "darkBlue" },
-  issueDate: { x: 300, y: 100, size: 12, color: "darkBlue" },
-  field: { x: 300, y: 380, size: 12, color: "darkBlue" },
-  clubName: { x: 300, y: 340, size: 12, color: "darkBlue" },
-  Rank: { x: 300, y: 300, size: 14, color: "darkBlue" },
-  signature: { x: 500, y: 150, size: 20, color: "darkBlue", text: "Authorized Signatory" }
+  name: { x: 298, y: 590, size: 12, color: "dark" },
+  issueDate: { x: 298, y: 140, size: 12, color: "dark" },
+  ageGroup: { x: 298, y: 530, size: 12, color: "dark" },
+  clubName: { x: 298, y: 480, size: 12, color: "dark" },
+  signature: { x: 350, y: 210, size: 12, color: "dark", text: "Authorized Signatory" },
+  eventTable: { x: 72, y: 463, width: 450 }
 };
 
 const getDisplayColor = (v, fallback) =>
@@ -123,7 +129,7 @@ function TemplateCoordsEditor({ previewUrl, layout, onLayoutChange, onUpdateLayo
         [capturedField]: {
           ...prev[capturedField],
           x: Math.round(Math.max(0, Math.min(PDF_W_PT, origX + dPtX))),
-          y: Math.round(Math.max(0, Math.min(PDF_H_PT, origY + dPtY + fieldSize * 0.3)))
+          y: Math.round(Math.max(0, Math.min(PDF_H_PT, origY + dPtY)))
         }
       }));
     },
@@ -220,42 +226,82 @@ function TemplateCoordsEditor({ previewUrl, layout, onLayoutChange, onUpdateLayo
                       zIndex: isDragging ? 30 : 20
                     }}
                   >
+                    {/* Crosshair indicator showing exact anchor point */}
+                    {(isDragging || isActive) && (
+                      <div
+                        className="absolute pointer-events-none"
+                        style={{ left: 0, top: 0, zIndex: 10 }}
+                      >
+                        {/* Vertical line going down */}
+                        <div
+                          style={{
+                            position: "absolute",
+                            left: "-1px",
+                            top: "0",
+                            width: "2px",
+                            height: "20px",
+                            background: liveColor,
+                            opacity: 0.8
+                          }}
+                        />
+                        {/* Horizontal line for baseline matching */}
+                        <div
+                          style={{
+                            position: "absolute",
+                            left: "-15px",
+                            top: "-1px",
+                            width: "30px",
+                            height: "2px",
+                            background: liveColor,
+                            opacity: 0.8
+                          }}
+                        />
+                        {/* Center dot */}
+                        <div
+                          style={{
+                            position: "absolute",
+                            left: "-3px",
+                            top: "-3px",
+                            width: "6px",
+                            height: "6px",
+                            borderRadius: "50%",
+                            background: "white",
+                            border: `2px solid ${liveColor}`
+                          }}
+                        />
+                      </div>
+                    )}
                     <div
                       onPointerDown={(e) => handlePointerDown(e, field)}
                       onMouseEnter={() => setTooltip(field)}
                       onMouseLeave={() => !dragging && setTooltip(null)}
                       style={{
-                        padding: isSmall ? "3px 8px" : "4px 12px",
-                        background: `${liveColor}20`,
-                        border: `2px dashed ${liveColor}`,
-                        borderBottom: `4px solid ${liveColor}`,
+                        padding: 0,
                         color: liveColor,
                         textShadow: liveColor === "#ffffff" ? "0 1px 2px rgba(0,0,0,0.8)" : "none",
-                        fontWeight: "bold",
-                        fontSize: `${Math.max(isSmall ? 9 : 10, pos.size * (isSmall ? 0.62 : 0.8))}px`,
-                        transform: "translate(-50%, -100%)",
+                        fontWeight: field === "signature" ? "normal" : "bold",
+                        fontStyle: "italic",
+                        fontFamily: '"Times New Roman", Times, serif',
+                        fontSize: `${pos.size * ((overlaySize?.width || PDF_W_PT) / PDF_W_PT)}px`,
+                        lineHeight: 1,
+                        transform: ["signature", "clubName", "ageGroup", "issueDate"].includes(
+                          field
+                        )
+                          ? "translate(0, -100%)"
+                          : "translate(-50%, -100%)",
                         cursor: isDragging ? "grabbing" : "grab",
                         whiteSpace: "nowrap",
                         userSelect: "none",
-                        backdropFilter: "blur(2px)",
-                        borderRadius: "6px",
-                        boxShadow: isDragging
-                          ? "0 8px 24px rgba(0,0,0,0.15)"
-                          : "0 4px 12px rgba(0,0,0,0.05)",
-                        transition: isDragging ? "none" : "box-shadow 0.15s, background 0.15s"
+                        borderBottom: `2px dashed ${liveColor}`
                       }}
                     >
                       <span
                         style={{
                           pointerEvents: "none",
-                          userSelect: "none",
-                          display: "flex",
-                          alignItems: "center",
-                          gap: isSmall ? "4px" : "6px"
+                          userSelect: "none"
                         }}
                       >
-                        <span style={{ fontSize: "0.8em", opacity: 0.7 }}>✛</span>
-                        {displayText} ({pos.size}pt)
+                        {displayText}
                       </span>
                     </div>
                     {(isActive || isDragging) && (
@@ -300,10 +346,144 @@ function TemplateCoordsEditor({ previewUrl, layout, onLayoutChange, onUpdateLayo
                   </div>
                 );
               })}
+              {/* ── Event Table Marker ───────────────────────────────────────── */}
+              {(() => {
+                const tPos = layout.eventTable;
+                if (!tPos) return null;
+                const tPx = ptToPx(tPos.x, tPos.y);
+                if (!tPx) return null;
+                const scaleRatio = (overlaySize?.width || PDF_W_PT) / PDF_W_PT;
+                const tW = Math.round((tPos.width || 500) * scaleRatio);
+                // row height mirrors backend: 8pt * 2.4, scaled
+                const rowH = Math.round(8 * 2.4 * scaleRatio);
+                const colWs = TABLE_COL_RATIOS.map((r) => Math.round(r * tW));
+                const isTableDragging = dragging === "eventTable";
+                return (
+                  <div
+                    key="eventTable"
+                    style={{
+                      position: "absolute",
+                      left: tPx.px,
+                      top: tPx.py,
+                      zIndex: isTableDragging ? 30 : 20
+                    }}
+                    onPointerDown={(e) => handlePointerDown(e, "eventTable")}
+                    onMouseEnter={() => setTooltip("eventTable")}
+                    onMouseLeave={() => !dragging && setTooltip(null)}
+                  >
+                    {/* Mini table grid */}
+                    <div
+                      style={{
+                        width: tW,
+                        border: `2px dashed ${TABLE_META.color}`,
+                        cursor: isTableDragging ? "grabbing" : "grab",
+                        userSelect: "none",
+                        background: `${TABLE_META.color}10`,
+                        pointerEvents: "auto"
+                      }}
+                    >
+                      {/* Header row */}
+                      <div
+                        style={{ display: "flex", borderBottom: `1px solid ${TABLE_META.color}` }}
+                      >
+                        {TABLE_HEADERS.map((h, i) => (
+                          <div
+                            key={h}
+                            style={{
+                              width: colWs[i],
+                              borderRight: i < 3 ? `1px solid ${TABLE_META.color}` : "none",
+                              fontSize: Math.max(7, 10 * scaleRatio),
+                              fontWeight: 800,
+                              color: TABLE_META.color,
+                              textAlign: "center",
+                              padding: "2px 1px",
+                              overflow: "hidden",
+                              whiteSpace: "nowrap"
+                            }}
+                          >
+                            {h}
+                          </div>
+                        ))}
+                      </div>
+                      {/* 2 sample data rows */}
+                      {["RINK - I", "RINK - II"].map((r) => (
+                        <div
+                          key={r}
+                          style={{
+                            display: "flex",
+                            borderBottom: `1px solid ${TABLE_META.color}40`
+                          }}
+                        >
+                          {TABLE_HEADERS.map((_, i) => (
+                            <div
+                              key={i}
+                              style={{
+                                width: colWs[i],
+                                borderRight: i < 3 ? `1px solid ${TABLE_META.color}40` : "none",
+                                fontSize: Math.max(6, 9 * scaleRatio),
+                                color: `${TABLE_META.color}cc`,
+                                textAlign: "center",
+                                padding: "2px 1px",
+                                overflow: "hidden",
+                                whiteSpace: "nowrap"
+                              }}
+                            >
+                              {i === 0 ? r : ""}
+                            </div>
+                          ))}
+                        </div>
+                      ))}
+                    </div>
+                    {/* Tooltip */}
+                    {(tooltip === "eventTable" || isTableDragging) && (
+                      <div
+                        style={{
+                          position: "absolute",
+                          top: "100%",
+                          left: 0,
+                          marginTop: 4,
+                          background: "white",
+                          border: `1.5px solid ${TABLE_META.border}`,
+                          borderRadius: 8,
+                          padding: "6px 10px",
+                          minWidth: 160,
+                          boxShadow: "0 4px 16px rgba(0,0,0,0.15)",
+                          pointerEvents: "none",
+                          zIndex: 40
+                        }}
+                      >
+                        <p
+                          style={{
+                            fontSize: 10,
+                            fontWeight: 800,
+                            color: TABLE_META.color,
+                            marginBottom: 4,
+                            textTransform: "uppercase"
+                          }}
+                        >
+                          Event Table
+                        </p>
+                        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 4 }}>
+                          <div style={{ fontSize: 10, color: "#78716c" }}>
+                            X: <b style={{ color: "#1c1917" }}>{tPos.x}pt</b>
+                          </div>
+                          <div style={{ fontSize: 10, color: "#78716c" }}>
+                            Y: <b style={{ color: "#1c1917" }}>{tPos.y}pt</b>
+                          </div>
+                          <div style={{ fontSize: 10, color: "#78716c" }}>
+                            W: <b style={{ color: "#1c1917" }}>{tPos.width}pt</b>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                );
+              })()}
             </div>
           </div>
         </div>
 
+        {/* Text field controls */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 pt-1">
           {Object.entries(layout).map(([field, pos]) => {
             const meta = FIELD_META[field];
@@ -366,6 +546,64 @@ function TemplateCoordsEditor({ previewUrl, layout, onLayoutChange, onUpdateLayo
             );
           })}
         </div>
+
+        {/* Event table width control */}
+        {layout.eventTable && (
+          <div
+            className="flex flex-col gap-1 p-2.5 rounded-xl border"
+            style={{ borderColor: TABLE_META.border, background: TABLE_META.bg }}
+          >
+            <label
+              className="text-[9px] font-bold uppercase tracking-widest"
+              style={{ color: TABLE_META.color }}
+            >
+              Event Table — Width (pt)
+            </label>
+            <input
+              type="number"
+              min={100}
+              max={842}
+              value={layout.eventTable.width || 500}
+              onChange={(e) => onUpdateLayout("eventTable", "width", e.target.value)}
+              className="w-40 px-2 py-1 bg-white border border-stone-200 rounded text-xs focus:ring-2 focus:ring-sky-400/20 outline-none font-semibold"
+            />
+            <label
+              className="text-[9px] font-bold uppercase tracking-widest mt-2"
+              style={{ color: TABLE_META.color }}
+            >
+              Event Table — Text Size (pt)
+            </label>
+            <input
+              type="number"
+              min={4}
+              max={24}
+              value={layout.eventTable.size || 8}
+              onChange={(e) => onUpdateLayout("eventTable", "size", e.target.value)}
+              className="w-40 px-2 py-1 bg-white border border-stone-200 rounded text-xs focus:ring-2 focus:ring-sky-400/20 outline-none font-semibold"
+            />
+            <label
+              className="text-[9px] font-bold uppercase tracking-widest mt-2"
+              style={{ color: TABLE_META.color }}
+            >
+              Event Table — Color
+            </label>
+            <select
+              value={layout.eventTable.color || "dark"}
+              onChange={(e) => onUpdateLayout("eventTable", "color", e.target.value)}
+              className="w-40 px-2 py-1 bg-white border border-stone-200 rounded text-xs focus:ring-2 focus:ring-sky-400/20 outline-none font-semibold"
+            >
+              {TEXT_COLOR_OPTIONS.map((o) => (
+                <option key={`et-${o.value}`} value={o.value}>
+                  {o.label}
+                </option>
+              ))}
+            </select>
+            <p className="text-[9px] text-stone-400 mt-1">
+              Drag the table box on the preview to set X/Y position.
+            </p>
+          </div>
+        )}
+
         <p className="text-[10px] text-stone-400 italic">
           ⚠ If the preview appears blank, your browser may be blocking the PDF embed.
         </p>
@@ -413,10 +651,10 @@ export default function CertificateTemplateFormPage() {
           setLayout({
             name: { ...DEFAULT_LAYOUT.name, ...(il.name || {}) },
             issueDate: { ...DEFAULT_LAYOUT.issueDate, ...(il.issueDate || {}) },
-            field: { ...DEFAULT_LAYOUT.field, ...(il.field || {}) },
+            ageGroup: { ...DEFAULT_LAYOUT.ageGroup, ...(il.ageGroup || il.field || {}) },
             clubName: { ...DEFAULT_LAYOUT.clubName, ...(il.clubName || {}) },
-            Rank: { ...DEFAULT_LAYOUT.Rank, ...(il.Rank || {}) },
-            signature: { ...DEFAULT_LAYOUT.signature, ...(il.signature || {}) }
+            signature: { ...DEFAULT_LAYOUT.signature, ...(il.signature || {}) },
+            eventTable: { ...DEFAULT_LAYOUT.eventTable, ...(il.eventTable || {}) }
           });
         }
       } catch (err) {

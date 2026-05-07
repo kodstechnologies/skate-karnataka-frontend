@@ -99,7 +99,7 @@ export const EventsPage = () => {
     setError(null);
     try {
       const { data } = await eventsApi.getAll(search, currentPage, limit);
-      console.log("Fetched news data:", data);
+
       setEvents(data?.data || []);
       setTotalCount(data?.pagination?.total || 0);
     } catch (err) {

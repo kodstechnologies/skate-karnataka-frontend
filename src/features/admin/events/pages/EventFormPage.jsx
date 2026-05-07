@@ -111,7 +111,7 @@ export const EventFormPage = () => {
         await eventsApi.create(payload);
         toast.success("Event created successfully");
       }
-      navigate("/events");
+      navigate(-1);
     } catch (err) {
       console.error("Failed to save event", err);
       toast.error(err?.response?.data?.message || "Failed to save event");

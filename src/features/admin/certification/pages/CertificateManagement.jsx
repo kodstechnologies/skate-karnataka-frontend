@@ -6,10 +6,10 @@ import api from "@/lib/axios";
 import toast from "react-hot-toast";
 
 // ---------------------------------------------------------------------------
-// PDF coordinate constants — A4 Landscape in PDF points (1 pt = 1/72 inch)
+// PDF coordinate constants — A4 Portrait in PDF points (1 pt = 1/72 inch)
 // ---------------------------------------------------------------------------
-const PDF_W_PT = 842;
-const PDF_H_PT = 595;
+const PDF_W_PT = 595;
+const PDF_H_PT = 842;
 
 const FIELD_META = {
   name: {
@@ -24,8 +24,8 @@ const FIELD_META = {
     bg: "#ECFDF5",
     border: "#A7F3D0"
   },
-  field: {
-    label: "Field/Event",
+  ageGroup: {
+    label: "Age Group",
     color: "#F59E0B",
     bg: "#FFFBEB",
     border: "#FDE68A"
@@ -36,12 +36,7 @@ const FIELD_META = {
     bg: "#F5F3FF",
     border: "#DDD6FE"
   },
-  Rank: {
-    label: "Rank",
-    color: "#EF4444",
-    bg: "#FEF2F2",
-    border: "#FECACA"
-  },
+
   signature: {
     label: "Signature",
     color: "#EC4899",
@@ -51,18 +46,18 @@ const FIELD_META = {
 };
 
 const TEXT_COLOR_OPTIONS = [
-  { value: "white", label: "White" },
-  { value: "darkBlue", label: "Dark Blue" },
-  { value: "darkYellow", label: "Dark Yellow" }
+  { value: "dark", label: "Dark" },
+  { value: "lightDark", label: "Light Dark" },
+  { value: "gray", label: "Gray" },
+  { value: "darkGray", label: "Dark Gray" }
 ];
 
 const DEFAULT_TEMPLATE_LAYOUT = {
-  name: { x: 300, y: 420, size: 12, color: "darkBlue" },
-  issueDate: { x: 300, y: 100, size: 12, color: "darkBlue" },
-  field: { x: 300, y: 380, size: 12, color: "darkBlue" },
-  clubName: { x: 300, y: 340, size: 12, color: "darkBlue" },
-  Rank: { x: 300, y: 300, size: 14, color: "darkBlue" },
-  signature: { x: 500, y: 150, size: 20, color: "darkBlue", text: "Authorized Signatory" }
+  name: { x: 298, y: 590, size: 12, color: "dark" },
+  issueDate: { x: 298, y: 140, size: 12, color: "dark" },
+  ageGroup: { x: 298, y: 530, size: 12, color: "dark" },
+  clubName: { x: 298, y: 480, size: 12, color: "dark" },
+  signature: { x: 350, y: 210, size: 20, color: "dark", text: "Authorized Signatory" }
 };
 
 const getDisplayColor = (colorValue, defaultColor) => {
@@ -354,8 +349,14 @@ function TemplateCoordsEditor({ previewUrl, layout, onLayoutChange, onUpdateLayo
                         color: liveColor,
                         textShadow: liveColor === "#ffffff" ? "0 1px 2px rgba(0,0,0,0.8)" : "none",
                         fontWeight: "bold",
-                        fontSize: `${Math.max(isSmallScreen ? 9 : 10, pos.size * (isSmallScreen ? 0.62 : 0.8))}px`, // Visual approximation
-                        transform: "translate(-50%, -100%)", // Centre of pill = pos.x → matches backend text-centre at realX
+                        fontStyle: "italic",
+                        fontFamily: '"Times New Roman", Times, serif',
+                        fontSize: `${pos.size * ((overlaySize?.width || PDF_W_PT) / PDF_W_PT)}px`,
+                        transform: ["signature", "clubName", "ageGroup", "issueDate"].includes(
+                          field
+                        )
+                          ? "translate(0, -100%)"
+                          : "translate(-50%, -100%)",
                         boxShadow: isDraggingThis
                           ? `0 8px 24px rgba(0,0,0,0.15)`
                           : `0 4px 12px rgba(0,0,0,0.05)`,
@@ -561,9 +562,11 @@ const TemplateSettings = ({ isOpen, onClose, templateId, templateName: initialNa
               ...DEFAULT_TEMPLATE_LAYOUT.issueDate,
               ...(incomingLayout.issueDate || {})
             },
-            field: { ...DEFAULT_TEMPLATE_LAYOUT.field, ...(incomingLayout.field || {}) },
+            ageGroup: {
+              ...DEFAULT_TEMPLATE_LAYOUT.ageGroup,
+              ...(incomingLayout.ageGroup || incomingLayout.field || {})
+            },
             clubName: { ...DEFAULT_TEMPLATE_LAYOUT.clubName, ...(incomingLayout.clubName || {}) },
-            Rank: { ...DEFAULT_TEMPLATE_LAYOUT.Rank, ...(incomingLayout.Rank || {}) },
             signature: { ...DEFAULT_TEMPLATE_LAYOUT.signature, ...(incomingLayout.signature || {}) }
           });
         } else {
@@ -761,45 +764,38 @@ const TemplateSettings = ({ isOpen, onClose, templateId, templateName: initialNa
   );
 };
 
-const downloadPDF = async () => {
-  try {
-    const response = await axios.get("http://localhost:8000/certificate/v1/generate", {
-      responseType: "blob"
-    });
-
-    const url = window.URL.createObjectURL(new Blob([response.data]));
-    const link = document.createElement("a");
-
-    link.href = url;
-    link.setAttribute("download", "my-file.pdf");
-    document.body.appendChild(link);
-    link.click();
-
-    link.remove();
-  } catch (error) {
-    console.error("Download failed", error);
-  }
-};
-
 function CertificateManagement() {
   const navigate = useNavigate();
   const [templates, setTemplates] = useState([]);
   const [loadingTemplates, setLoadingTemplates] = useState(true);
 
-  const fetchAllTemplates = useCallback(async () => {
-    try {
-      setLoadingTemplates(true);
-      const res = await api.get("/certificate/v1/templates");
-      setTemplates(Array.isArray(res.data) ? res.data : []);
-    } catch (err) {
-      console.error("Failed to fetch templates:", err);
-      toast.error("Failed to load template list");
-    } finally {
-      setLoadingTemplates(false);
-    }
-  }, []);
+  useEffect(() => {
+    let mounted = true;
 
-  // useEffect(() => { fetchAllTemplates(); }, [fetchAllTemplates]);
+    const fetchAllTemplates = async () => {
+      try {
+        setLoadingTemplates(true);
+
+        const { data } = await api.get("/certificate/v1/templates");
+
+        if (mounted) {
+          setTemplates(data || []);
+        }
+      } catch (err) {
+        toast.error("Failed to load template list");
+      } finally {
+        if (mounted) {
+          setLoadingTemplates(false);
+        }
+      }
+    };
+
+    fetchAllTemplates();
+
+    return () => {
+      mounted = false;
+    };
+  }, []);
 
   return (
     <div className="p-1">
