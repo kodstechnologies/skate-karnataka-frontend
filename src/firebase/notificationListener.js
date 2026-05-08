@@ -1,53 +1,40 @@
-import { onMessage } from "firebase/messaging";
-import { messagingPromise } from "./firebase";
-
 /**
- * Registers a foreground message listener for Firebase Cloud Messaging.
+ * FCM Notification Listener — SW postMessage relay
  *
- * When the app is open (foreground), FCM does NOT show a system notification
- * automatically — the app must handle it via onMessage(). We use
- * serviceWorker.ready → reg.showNotification() instead of new Notification()
- * so the notification appears as a real OS-level system tray popup, consistent
- * with background notifications from the service worker.
+ * The SW intercepts every raw push and relays it here via FCM_PUSH_RECEIVED.
  *
- * @returns {Function | undefined} Unsubscribe function to stop listening, or
- *   undefined if messaging is not supported in this browser.
+ * DISPLAY STRATEGY:
+ *  - OS-level system notifications are handled EXCLUSIVELY by firebase-messaging-sw.js.
+ *  - This listener handles in-app background logic (logging, data refresh, etc.).
+ *  - No UI popups (toasts) are shown here to keep the experience clean.
  */
-export const listenToNotifications = async () => {
-  const messaging = await messagingPromise;
-  if (!messaging) return undefined;
+export const listenToNotifications = () => {
+  if (!("serviceWorker" in navigator)) {
+    console.warn("[FCM] ServiceWorker not supported — cannot listen for push relay.");
+    return undefined;
+  }
 
-  // onMessage returns an unsubscribe function
-  const unsubscribe = onMessage(messaging, (payload) => {
-    console.log("[FCM] Foreground notification received:", payload);
+  const handleSWMessage = async (event) => {
+    // Ignore non-FCM messages (Vite HMR, workbox, etc.)
+    if (!event.data || event.data.type !== "FCM_PUSH_RECEIVED") return;
 
-    const { title = "Notification", body = "", image } = payload?.notification ?? {};
+    const { payload, title, body } = event.data;
 
-    // Use ServiceWorkerRegistration.showNotification() for a proper system
-    // tray popup (works on all OSes, consistent with background notifications).
-    if ("serviceWorker" in navigator) {
-      navigator.serviceWorker.ready
-        .then((registration) => {
-          registration.showNotification(title, {
-            body,
-            icon: image || "/logo192.png", // falls back gracefully if icon 404s
-            badge: "/logo192.png",
-            tag: "fcm-foreground", // deduplicates rapid notifications
-            data: payload?.data ?? {}
-          });
-        })
-        .catch((err) => {
-          console.error("[FCM] Failed to show system notification:", err);
-          // Fallback: raw Notification API
-          if (Notification.permission === "granted") {
-            new Notification(title, { body, icon: image });
-          }
-        });
-    } else if (Notification.permission === "granted") {
-      // No service worker support — use raw Notification as last resort
-      new Notification(title, { body, icon: image });
-    }
-  });
+    // ── Console log ──────────────────────────────────────────────────────
+    console.log("🔔 [FCM] *** PUSH MESSAGE RECEIVED (Relay) ***");
+    console.log("[FCM] Title  :", title);
+    console.log("[FCM] Body   :", body);
+    console.log("[FCM] Payload:", payload);
+    console.log("─────────────────────────────────────────────────────");
 
-  return unsubscribe;
+    // Note: Toasts were removed per user request to rely solely on System Notifications.
+  };
+
+  navigator.serviceWorker.addEventListener("message", handleSWMessage);
+  console.log("[FCM] ✅ Push relay listener ACTIVE — logging incoming events.");
+
+  return () => {
+    navigator.serviceWorker.removeEventListener("message", handleSWMessage);
+    console.log("[FCM] Push relay listener removed.");
+  };
 };

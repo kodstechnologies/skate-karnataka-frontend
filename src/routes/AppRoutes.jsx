@@ -43,6 +43,16 @@ import { CircularDetailPage } from "@/features/admin/circulars/pages/CircularDet
 import { MainLayout } from "@/layouts/MainLayout";
 import { NotFoundPage } from "@/pages/NotFoundPage";
 import CertificateManagement from "../features/admin/certification/pages/CertificateManagement";
+import CertificateTemplateFormPage from "../features/admin/certification/pages/CertificateTemplateFormPage";
+import NewsPage from "../features/admin/news/newsPage/NewsPage";
+import { NewsDetailPage } from "../features/admin/news/newsPage/NewsDetailPage";
+import { NewsFormPage } from "../features/admin/news/newsPage/NewsFormPage";
+import SponsorshipPage from "../features/admin/support-hub/SponsorshipPage/SponsorshipPage";
+import SponsorshipFormPage from "../features/admin/support-hub/SponsorshipPage/SponsorshipFormPage";
+import DonationPage from "../features/admin/support-hub/DonationPage/DonationPage";
+import DonationFormPage from "../features/admin/support-hub/DonationPage/DonationFormPage";
+import EventCategoryPage from "../features/admin/events/pages/EventCategoryPage";
+import EventCategoryFormPage from "../features/admin/events/pages/EventCategoryFormPage";
 
 export const AppRoutes = () => {
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
@@ -83,7 +93,10 @@ export const AppRoutes = () => {
         <Route path="/clubs/:clubId/members" element={<ClubMembersPage />} />
         <Route path="/clubs/:clubId/members/create" element={<ClubMemberFormPage />} />
         <Route path="/clubs/:clubId/members/:memberId/edit" element={<ClubMemberFormPage />} />
-        <Route path="/events" element={<EventsPage />} />
+        <Route path="/events/detail" element={<EventsPage />} />
+        <Route path="/events/category" element={<EventCategoryPage />} />
+        <Route path="/events/category/create" element={<EventCategoryFormPage />} />
+        <Route path="/events/category/:categoryId/edit" element={<EventCategoryFormPage />} />
         <Route path="/events/create" element={<EventFormPage />} />
         <Route path="/events/:eventId/edit" element={<EventFormPage />} />
         <Route path="/gallery" element={<GalleryPage />} />
@@ -108,6 +121,18 @@ export const AppRoutes = () => {
         <Route path="/reports/academy" element={<AcademyRequestsPage />} />
         <Route path="/reports/academy/:requestId" element={<AcademyRequestDetailsPage />} />
         <Route path="/certification" element={<CertificateManagement />} />
+        <Route path="/certification/create" element={<CertificateTemplateFormPage />} />
+        <Route path="/certification/:templateId/edit" element={<CertificateTemplateFormPage />} />
+        <Route path="/news" element={<NewsPage />} />
+        <Route path="/news/create" element={<NewsFormPage />} />
+        <Route path="/news/:newsId/edit" element={<NewsFormPage />} />
+        <Route path="/news/:newsId" element={<NewsDetailPage />} />
+        <Route path="/support-hub/sponsorship" element={<SponsorshipPage />} />
+        <Route path="/support-hub/sponsorship/create" element={<SponsorshipFormPage />} />
+        <Route path="/support-hub/sponsorship/:id/edit" element={<SponsorshipFormPage />} />
+        <Route path="/support-hub/donation" element={<DonationPage />} />
+        <Route path="/support-hub/donation/create" element={<DonationFormPage />} />
+        <Route path="/support-hub/donation/:id/edit" element={<DonationFormPage />} />
       </Route>
       <Route path="*" element={<NotFoundPage />} />
     </Routes>

@@ -1,30 +1,28 @@
-import { useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { Box, Breadcrumbs, Button, Paper, Stack, Typography } from "@mui/material";
 import { ChevronRight, Save } from "lucide-react";
-import { Link as RouterLink, useNavigate, useParams } from "react-router-dom";
+import { Link as RouterLink, useLocation, useNavigate, useParams } from "react-router-dom";
 import eventsHero from "@/assets/Events_header.jpg";
 import { EventForm } from "@/features/admin/events/components/EventForm";
 import {
   createEventFormValues,
   initialEventFormValues
 } from "@/features/admin/events/components/eventFormConfig";
-import { useEventsStore } from "@/features/admin/events/store/events-store";
-import { useClubsStore } from "@/features/admin/clubs/store/clubs-store";
+import { eventsApi } from "@/api/events-api";
+import toast from "react-hot-toast";
 
 const validateEventForm = (formData) => {
   const errors = {};
   const requiredFields = [
-    "title",
-    "description",
+    "header",
+    "about",
     "address",
-    "registrationStartDateTime",
-    "registrationEndDateTime",
-    "eventStartDateTime",
-    "eventEndDateTime",
-    "eventType",
-    "eventFor",
+    "registerStartDate",
+    "registerEndDate",
+    "eventStartDate",
+    "eventEndDate",
     "status",
-    "price"
+    "entryFee"
   ];
 
   requiredFields.forEach((field) => {
@@ -33,103 +31,90 @@ const validateEventForm = (formData) => {
     }
   });
 
-  if (formData.price && Number(formData.price) < 0) {
-    errors.price = "Price cannot be negative";
+  if (formData.entryFee && Number(formData.entryFee) < 0) {
+    errors.entryFee = "Entry fee cannot be negative";
   }
 
-  const registrationStart = Date.parse(formData.registrationStartDateTime || "");
-  const registrationEnd = Date.parse(formData.registrationEndDateTime || "");
-  const eventStart = Date.parse(formData.eventStartDateTime || "");
-  const eventEnd = Date.parse(formData.eventEndDateTime || "");
+  // Logical Date Validation
+  const regStart = formData.registerStartDate ? new Date(formData.registerStartDate) : null;
+  const regEnd = formData.registerEndDate ? new Date(formData.registerEndDate) : null;
+  const eventStart = formData.eventStartDate ? new Date(formData.eventStartDate) : null;
+  const eventEnd = formData.eventEndDate ? new Date(formData.eventEndDate) : null;
 
-  if (registrationStart && registrationEnd && registrationStart > registrationEnd) {
-    errors.registrationEndDateTime = "Registration end must be after registration start";
+  if (regStart && regEnd && regStart > regEnd) {
+    errors.registerEndDate = "Registration end date cannot be before start date";
   }
 
   if (eventStart && eventEnd && eventStart > eventEnd) {
-    errors.eventEndDateTime = "Event end must be after event start";
+    errors.eventEndDate = "Event end date cannot be before start date";
   }
 
-  if (registrationEnd && eventStart && registrationEnd > eventStart) {
-    errors.eventStartDateTime = "Event start must be after registration closes";
+  if (regEnd && eventStart && regEnd > eventStart) {
+    errors.registerEndDate = "Registration must end before or on the event start date";
+  }
+
+  // Same-day Time Validation
+  if (
+    formData.eventStartDate &&
+    formData.eventEndDate &&
+    new Date(formData.eventStartDate).toDateString() ===
+      new Date(formData.eventEndDate).toDateString()
+  ) {
+    if (formData.eventStartTime && formData.eventEndTime) {
+      if (formData.eventStartTime >= formData.eventEndTime) {
+        errors.eventEndTime = "End time must be strictly after start time for same-day events";
+      }
+    }
   }
 
   return errors;
 };
 
-const readFileAsDataUrl = (file) =>
-  new Promise((resolve, reject) => {
-    const reader = new FileReader();
-
-    reader.onload = () => resolve(reader.result);
-    reader.onerror = () => reject(new Error("Unable to read file"));
-    reader.readAsDataURL(file);
-  });
-
 export const EventFormPage = () => {
   const navigate = useNavigate();
   const { eventId } = useParams();
+  const { state } = useLocation();
+  const passedEvent = state?.event;
   const isEditing = Boolean(eventId);
-  const events = useEventsStore((state) => state.events);
-  const addEvent = useEventsStore((state) => state.addEvent);
-  const updateEvent = useEventsStore((state) => state.updateEvent);
-  const clubs = useClubsStore((state) => state.clubs);
-
-  const clubOptions = useMemo(() => clubs.map((club) => club.clubName).filter(Boolean), [clubs]);
-  const existingEvent = useMemo(
-    () => events.find((event) => event.id === eventId) ?? null,
-    [eventId, events]
-  );
+  const [existingEvent, setExistingEvent] = useState(passedEvent || null);
+  const [loading, setLoading] = useState(isEditing && !passedEvent);
+  const [saving, setSaving] = useState(false);
 
   const [formData, setFormData] = useState(
-    isEditing && existingEvent ? createEventFormValues(existingEvent) : initialEventFormValues
+    passedEvent ? createEventFormValues(passedEvent) : initialEventFormValues
   );
   const [errors, setErrors] = useState({});
+
+  useEffect(() => {
+    if (isEditing && !passedEvent) {
+      eventsApi
+        .getById(eventId)
+        .then(({ data }) => {
+          // Assuming data is in data.data or data itself
+          const ev = data?.data || data;
+          setExistingEvent(ev);
+          setFormData(createEventFormValues(ev));
+        })
+        .catch((err) => {
+          toast.error(err?.response?.data?.message || "Failed to load event");
+        })
+        .finally(() => {
+          setLoading(false);
+        });
+    }
+  }, [isEditing, eventId, passedEvent]);
 
   const handleFieldChange = (field) => (event) => {
     const value = event.target.value;
 
-    setFormData((current) => {
-      if (field === "eventType") {
-        return { ...current, eventType: value, eventFor: "" };
-      }
-      return { ...current, [field]: value };
-    });
+    setFormData((current) => ({ ...current, [field]: value }));
     setErrors((current) => ({
       ...current,
-      [field]: "",
-      ...(field === "eventType" ? { eventFor: "" } : {})
+      [field]: ""
     }));
   };
 
-  const handleCoverImageChange = async (event) => {
-    const file = event.target.files?.[0];
-
-    if (!file) {
-      return;
-    }
-
-    if (!file.type.startsWith("image/")) {
-      setErrors((current) => ({ ...current, coverImage: "Only image files are allowed" }));
-      return;
-    }
-
-    try {
-      const dataUrl = await readFileAsDataUrl(file);
-      setFormData((current) => ({
-        ...current,
-        coverImage: {
-          name: file.name,
-          dataUrl
-        }
-      }));
-      setErrors((current) => ({ ...current, coverImage: "" }));
-    } catch {
-      setErrors((current) => ({ ...current, coverImage: "Unable to read selected image" }));
-    }
-  };
-
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     const nextErrors = validateEventForm(formData);
 
     if (Object.keys(nextErrors).length > 0) {
@@ -137,16 +122,34 @@ export const EventFormPage = () => {
       return;
     }
 
-    if (isEditing && existingEvent) {
-      updateEvent(existingEvent.id, formData);
-    } else {
-      addEvent(formData);
-    }
+    setSaving(true);
+    try {
+      const payload = { ...formData };
 
-    navigate("/events");
+      if (isEditing && existingEvent) {
+        const { message } = await eventsApi.update(existingEvent._id || existingEvent.id, payload);
+        toast.success(message || "Event updated successfully");
+      } else {
+        const { message } = await eventsApi.create(payload);
+        toast.success(message || "Event created successfully");
+      }
+      navigate(-1);
+    } catch (err) {
+      toast.error(err?.response?.data?.message || "Failed to save event");
+    } finally {
+      setSaving(false);
+    }
   };
 
-  if (isEditing && !existingEvent) {
+  if (loading) {
+    return (
+      <Paper elevation={0} sx={{ p: 4, borderRadius: "28px", textAlign: "center" }}>
+        <Typography>Loading event details...</Typography>
+      </Paper>
+    );
+  }
+
+  if (isEditing && !existingEvent && !loading) {
     return (
       <Paper elevation={0} sx={{ p: 4, borderRadius: "28px", textAlign: "center" }}>
         <Typography variant="h5" sx={{ fontWeight: 700, color: "#2f2829" }}>
@@ -206,7 +209,7 @@ export const EventFormPage = () => {
             </Typography>
             <Typography
               component={RouterLink}
-              to="/events"
+              to="/events/detail"
               sx={{
                 color: "inherit",
                 textDecoration: "none",
@@ -246,8 +249,7 @@ export const EventFormPage = () => {
           formData={formData}
           errors={errors}
           onFieldChange={handleFieldChange}
-          onCoverImageChange={handleCoverImageChange}
-          clubOptions={clubOptions}
+          disabled={saving}
         />
 
         <Stack
@@ -260,11 +262,16 @@ export const EventFormPage = () => {
             justifyContent: "flex-end"
           }}
         >
-          <Button variant="outlined" onClick={() => navigate("/events")}>
+          <Button variant="outlined" onClick={() => navigate("/events/detail")} disabled={saving}>
             Cancel
           </Button>
-          <Button variant="contained" startIcon={<Save size={16} />} onClick={handleSubmit}>
-            {isEditing ? "Save changes" : "Create event"}
+          <Button
+            variant="contained"
+            startIcon={!saving && <Save size={16} />}
+            onClick={handleSubmit}
+            disabled={saving}
+          >
+            {saving ? "Processing..." : isEditing ? "Save changes" : "Create event"}
           </Button>
         </Stack>
       </Paper>

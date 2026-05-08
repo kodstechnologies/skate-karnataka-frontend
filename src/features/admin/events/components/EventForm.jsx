@@ -1,14 +1,11 @@
+import CalendarMonthOutlinedIcon from "@mui/icons-material/CalendarMonthOutlined";
 import EventAvailableOutlinedIcon from "@mui/icons-material/EventAvailableOutlined";
-import ImageOutlinedIcon from "@mui/icons-material/ImageOutlined";
+import PaletteOutlinedIcon from "@mui/icons-material/PaletteOutlined";
 import PlaceOutlinedIcon from "@mui/icons-material/PlaceOutlined";
-import UploadFileOutlinedIcon from "@mui/icons-material/UploadFileOutlined";
-import { Box, Button, MenuItem, Paper, Stack, TextField, Typography } from "@mui/material";
-import {
-  districtOptions,
-  eventStatusOptions,
-  eventTypeOptions,
-  stateOptions
-} from "@/features/admin/events/components/eventFormConfig";
+import { Box, MenuItem, Paper, Popover, Stack, TextField, Typography } from "@mui/material";
+import { useState } from "react";
+import { HexColorPicker } from "react-colorful";
+import { eventStatusOptions } from "@/features/admin/events/components/eventFormConfig";
 
 const sectionCardStyles = {
   p: { xs: 2.25, md: 2.75 },
@@ -25,6 +22,76 @@ const inputStyles = {
   }
 };
 
+/* ── Color picker ── */
+const ColorPickerField = ({ label, value, onChange, disabled }) => {
+  const [anchorEl, setAnchorEl] = useState(null);
+  const open = Boolean(anchorEl);
+
+  return (
+    <Box>
+      <Typography
+        variant="caption"
+        sx={{ color: "#8d7f7b", mb: 1, display: "block", fontWeight: 600 }}
+      >
+        {label}
+      </Typography>
+      <Stack direction="row" spacing={1} alignItems="center">
+        <Box
+          onClick={!disabled ? (e) => setAnchorEl(e.currentTarget) : undefined}
+          sx={{
+            width: 28,
+            height: 28,
+            borderRadius: "12px",
+            backgroundColor: value,
+            border: "2px solid #efe2dc",
+            cursor: disabled ? "default" : "pointer",
+            boxShadow: "0 4px 12px rgba(0,0,0,0.05)",
+            opacity: disabled ? 0.5 : 1,
+            transition: "transform 0.2s",
+            "&:hover": { transform: disabled ? "none" : "scale(1.05)" }
+          }}
+        />
+        <TextField
+          value={value}
+          onChange={onChange}
+          size="small"
+          disabled={disabled}
+          sx={{
+            ...inputStyles,
+            "& .MuiOutlinedInput-input": {
+              py: 1,
+              px: 1.5,
+              fontSize: "0.875rem",
+              fontFamily: "monospace"
+            }
+          }}
+        />
+      </Stack>
+      <Popover
+        open={open}
+        anchorEl={anchorEl}
+        onClose={() => setAnchorEl(null)}
+        anchorOrigin={{ vertical: "bottom", horizontal: "left" }}
+        transformOrigin={{ vertical: "top", horizontal: "left" }}
+        PaperProps={{
+          sx: {
+            p: 2,
+            borderRadius: "20px",
+            boxShadow: "0 12px 40px rgba(0,0,0,0.12)",
+            border: "1px solid #efe2dc"
+          }
+        }}
+      >
+        <HexColorPicker
+          color={value}
+          onChange={(color) => onChange({ target: { value: color } })}
+        />
+      </Popover>
+    </Box>
+  );
+};
+
+/* ── Section card wrapper ── */
 const SectionCard = ({ icon, title, description, children }) => (
   <Paper elevation={0} sx={sectionCardStyles}>
     <Stack direction="row" spacing={1.5} sx={{ mb: 2.5, alignItems: "flex-start" }}>
@@ -56,42 +123,15 @@ const SectionCard = ({ icon, title, description, children }) => (
   </Paper>
 );
 
-const getTargetLabel = (eventType) => {
-  if (eventType === "state") {
-    return "Select state";
-  }
-  if (eventType === "district") {
-    return "Select district";
-  }
-  if (eventType === "club") {
-    return "Select club";
-  }
-  return "Select target";
-};
-
-const getTargetOptions = (eventType, clubOptions) => {
-  if (eventType === "state") {
-    return stateOptions;
-  }
-  if (eventType === "district") {
-    return districtOptions;
-  }
-  if (eventType === "club") {
-    return clubOptions;
-  }
-  return [];
-};
-
-export const EventForm = ({ formData, errors, onFieldChange, onCoverImageChange, clubOptions }) => {
-  const targetOptions = getTargetOptions(formData.eventType, clubOptions);
-  const targetLabel = getTargetLabel(formData.eventType);
-
+/* ── Main form ── */
+export const EventForm = ({ formData, errors, onFieldChange, disabled }) => {
   return (
     <Stack spacing={2.5}>
+      {/* ── Event Information ── */}
       <SectionCard
         icon={<EventAvailableOutlinedIcon />}
         title="Event Information"
-        description="Enter event details, timeline, visibility status, and registration pricing."
+        description="Enter event details, visibility status, and registration pricing."
       >
         <Box
           sx={{
@@ -101,102 +141,27 @@ export const EventForm = ({ formData, errors, onFieldChange, onCoverImageChange,
           }}
         >
           <TextField
-            label="Event title"
-            value={formData.title}
-            onChange={onFieldChange("title")}
-            error={Boolean(errors.title)}
-            helperText={errors.title}
+            label="Event Title"
+            value={formData.header}
+            onChange={onFieldChange("header")}
+            error={Boolean(errors.header)}
+            helperText={errors.header}
             fullWidth
+            disabled={disabled}
             sx={{ ...inputStyles, gridColumn: { md: "span 2" } }}
           />
           <TextField
             label="Description"
-            value={formData.description}
-            onChange={onFieldChange("description")}
-            error={Boolean(errors.description)}
-            helperText={errors.description}
+            value={formData.about}
+            onChange={onFieldChange("about")}
+            error={Boolean(errors.about)}
+            helperText={errors.about}
             multiline
             minRows={3}
             fullWidth
+            disabled={disabled}
             sx={{ ...inputStyles, gridColumn: { md: "span 2" } }}
           />
-          <TextField
-            label="Registration start date & time"
-            type="datetime-local"
-            value={formData.registrationStartDateTime}
-            onChange={onFieldChange("registrationStartDateTime")}
-            error={Boolean(errors.registrationStartDateTime)}
-            helperText={errors.registrationStartDateTime}
-            slotProps={{ inputLabel: { shrink: true } }}
-            fullWidth
-            sx={inputStyles}
-          />
-          <TextField
-            label="Registration end date & time"
-            type="datetime-local"
-            value={formData.registrationEndDateTime}
-            onChange={onFieldChange("registrationEndDateTime")}
-            error={Boolean(errors.registrationEndDateTime)}
-            helperText={errors.registrationEndDateTime}
-            slotProps={{ inputLabel: { shrink: true } }}
-            fullWidth
-            sx={inputStyles}
-          />
-          <TextField
-            label="Event start date & time"
-            type="datetime-local"
-            value={formData.eventStartDateTime}
-            onChange={onFieldChange("eventStartDateTime")}
-            error={Boolean(errors.eventStartDateTime)}
-            helperText={errors.eventStartDateTime}
-            slotProps={{ inputLabel: { shrink: true } }}
-            fullWidth
-            sx={inputStyles}
-          />
-          <TextField
-            label="Event end date & time"
-            type="datetime-local"
-            value={formData.eventEndDateTime}
-            onChange={onFieldChange("eventEndDateTime")}
-            error={Boolean(errors.eventEndDateTime)}
-            helperText={errors.eventEndDateTime}
-            slotProps={{ inputLabel: { shrink: true } }}
-            fullWidth
-            sx={inputStyles}
-          />
-          <TextField
-            select
-            label="Event type"
-            value={formData.eventType}
-            onChange={onFieldChange("eventType")}
-            error={Boolean(errors.eventType)}
-            helperText={errors.eventType}
-            fullWidth
-            sx={inputStyles}
-          >
-            {eventTypeOptions.map((option) => (
-              <MenuItem key={option.value} value={option.value}>
-                {option.label}
-              </MenuItem>
-            ))}
-          </TextField>
-          <TextField
-            select
-            label={targetLabel}
-            value={formData.eventFor}
-            onChange={onFieldChange("eventFor")}
-            error={Boolean(errors.eventFor)}
-            helperText={errors.eventFor}
-            fullWidth
-            disabled={!formData.eventType}
-            sx={inputStyles}
-          >
-            {targetOptions.map((option) => (
-              <MenuItem key={option} value={option}>
-                {option}
-              </MenuItem>
-            ))}
-          </TextField>
           <TextField
             select
             label="Status"
@@ -205,6 +170,7 @@ export const EventForm = ({ formData, errors, onFieldChange, onCoverImageChange,
             error={Boolean(errors.status)}
             helperText={errors.status}
             fullWidth
+            disabled={disabled}
             sx={inputStyles}
           >
             {eventStatusOptions.map((option) => (
@@ -214,18 +180,113 @@ export const EventForm = ({ formData, errors, onFieldChange, onCoverImageChange,
             ))}
           </TextField>
           <TextField
-            label="Price"
+            label="Entry Fee (₹)"
             type="number"
-            value={formData.price}
-            onChange={onFieldChange("price")}
-            error={Boolean(errors.price)}
-            helperText={errors.price}
+            value={formData.entryFee}
+            onChange={onFieldChange("entryFee")}
+            error={Boolean(errors.entryFee)}
+            helperText={errors.entryFee}
             fullWidth
+            disabled={disabled}
             sx={inputStyles}
           />
         </Box>
       </SectionCard>
 
+      {/* ── Schedule ── */}
+      <SectionCard
+        icon={<CalendarMonthOutlinedIcon />}
+        title="Schedule"
+        description="Set the registration window, event dates, and daily start/end times."
+      >
+        <Box
+          sx={{
+            display: "grid",
+            gridTemplateColumns: { xs: "1fr", md: "repeat(2, minmax(0, 1fr))" },
+            gap: 2
+          }}
+        >
+          {/* Registration window */}
+          <TextField
+            label="Registration Start Date"
+            type="date"
+            value={formData.registerStartDate}
+            onChange={onFieldChange("registerStartDate")}
+            error={Boolean(errors.registerStartDate)}
+            helperText={errors.registerStartDate}
+            slotProps={{ inputLabel: { shrink: true } }}
+            fullWidth
+            disabled={disabled}
+            sx={inputStyles}
+          />
+          <TextField
+            label="Registration End Date"
+            type="date"
+            value={formData.registerEndDate}
+            onChange={onFieldChange("registerEndDate")}
+            error={Boolean(errors.registerEndDate)}
+            helperText={errors.registerEndDate}
+            slotProps={{ inputLabel: { shrink: true } }}
+            fullWidth
+            disabled={disabled}
+            sx={inputStyles}
+          />
+
+          {/* Event dates */}
+          <TextField
+            label="Event Start Date"
+            type="date"
+            value={formData.eventStartDate}
+            onChange={onFieldChange("eventStartDate")}
+            error={Boolean(errors.eventStartDate)}
+            helperText={errors.eventStartDate}
+            slotProps={{ inputLabel: { shrink: true } }}
+            fullWidth
+            disabled={disabled}
+            sx={inputStyles}
+          />
+          <TextField
+            label="Event End Date"
+            type="date"
+            value={formData.eventEndDate}
+            onChange={onFieldChange("eventEndDate")}
+            error={Boolean(errors.eventEndDate)}
+            helperText={errors.eventEndDate}
+            slotProps={{ inputLabel: { shrink: true } }}
+            fullWidth
+            disabled={disabled}
+            sx={inputStyles}
+          />
+
+          {/* Daily times */}
+          <TextField
+            label="Event Start Time"
+            type="time"
+            value={formData.eventStartTime}
+            onChange={onFieldChange("eventStartTime")}
+            error={Boolean(errors.eventStartTime)}
+            helperText={errors.eventStartTime}
+            slotProps={{ inputLabel: { shrink: true } }}
+            fullWidth
+            disabled={disabled}
+            sx={inputStyles}
+          />
+          <TextField
+            label="Event End Time"
+            type="time"
+            value={formData.eventEndTime}
+            onChange={onFieldChange("eventEndTime")}
+            error={Boolean(errors.eventEndTime)}
+            helperText={errors.eventEndTime}
+            slotProps={{ inputLabel: { shrink: true } }}
+            fullWidth
+            disabled={disabled}
+            sx={inputStyles}
+          />
+        </Box>
+      </SectionCard>
+
+      {/* ── Venue ── */}
       <SectionCard
         icon={<PlaceOutlinedIcon />}
         title="Venue"
@@ -240,45 +301,43 @@ export const EventForm = ({ formData, errors, onFieldChange, onCoverImageChange,
           multiline
           minRows={3}
           fullWidth
+          disabled={disabled}
           sx={inputStyles}
         />
       </SectionCard>
 
+      {/* ── Theme Colors ── */}
       <SectionCard
-        icon={<ImageOutlinedIcon />}
-        title="Cover Image (Optional)"
-        description="Upload an event cover image to make event cards more attractive."
+        icon={<PaletteOutlinedIcon />}
+        title="Event Theme Colors"
+        description="Choose background and text colors for the event card."
       >
-        <Stack spacing={1.5}>
-          <Button
-            component="label"
-            variant="outlined"
-            startIcon={<UploadFileOutlinedIcon />}
-            sx={{ alignSelf: "flex-start", borderRadius: "14px" }}
-          >
-            Choose Cover Image
-            <input type="file" accept="image/*" hidden onChange={onCoverImageChange} />
-          </Button>
-          {formData.coverImage?.name ? (
-            <div className="rounded-2xl border border-[#efe2dc] bg-white p-3 shadow-sm">
-              {formData.coverImage.dataUrl ? (
-                <img
-                  src={formData.coverImage.dataUrl}
-                  alt="Event cover preview"
-                  className="h-44 w-full rounded-xl object-cover"
-                />
-              ) : null}
-              <Typography sx={{ mt: 1, fontSize: 13, color: "#6f6462" }}>
-                {formData.coverImage.name}
-              </Typography>
-            </div>
-          ) : (
-            <Typography sx={{ color: "#9b8d88", fontSize: 13 }}>No cover image selected</Typography>
-          )}
-          <Typography sx={{ color: errors.coverImage ? "#d32f2f" : "#8d7f7b", fontSize: 12 }}>
-            {errors.coverImage || "Optional image file"}
-          </Typography>
-        </Stack>
+        <Box
+          sx={{
+            display: "grid",
+            gridTemplateColumns: { xs: "1fr", md: "repeat(3, 1fr)" },
+            gap: 3
+          }}
+        >
+          <ColorPickerField
+            label="Background Color 1"
+            value={formData.colorOne}
+            onChange={onFieldChange("colorOne")}
+            disabled={disabled}
+          />
+          <ColorPickerField
+            label="Background Color 2"
+            value={formData.colorTwo}
+            onChange={onFieldChange("colorTwo")}
+            disabled={disabled}
+          />
+          <ColorPickerField
+            label="Text Color"
+            value={formData.textColor}
+            onChange={onFieldChange("textColor")}
+            disabled={disabled}
+          />
+        </Box>
       </SectionCard>
     </Stack>
   );

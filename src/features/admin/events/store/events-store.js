@@ -39,7 +39,10 @@ const defaultEventFields = {
   eventFor: "",
   status: "draft",
   price: "",
-  coverImage: null
+  coverImage: null,
+  colorOne: "#f117d5",
+  colorTwo: "#1838e3",
+  textColor: "#000000"
 };
 
 const withDefaultFields = (event) => ({
@@ -110,6 +113,9 @@ const normalizePayload = (payload) => ({
   eventFor: payload.eventFor,
   status: payload.status,
   price: payload.price.trim(),
+  colorOne: payload.colorOne,
+  colorTwo: payload.colorTwo,
+  textColor: payload.textColor,
   coverImage: payload.coverImage ? normalizeImage(payload.coverImage) : null
 });
 
