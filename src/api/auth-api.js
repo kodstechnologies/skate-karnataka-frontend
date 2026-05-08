@@ -7,8 +7,8 @@ export const authApi = {
   verifyLoginOtp: async ({ userId, otp, firebaseTokens }) => {
     return api.post("/auth/verify-otp", { userId, otp, firebaseTokens });
   },
-  logout: async (refreshToken) => {
-    return api.post("/admin/v1/logout", { refreshToken });
+  logout: async (refreshTokens, firebaseTokens) => {
+    return api.post("/auth/logout", { refreshTokens, firebaseTokens });
   },
   getProfile: async () => {
     return api.get("/admin/v1/profile");

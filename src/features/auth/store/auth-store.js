@@ -17,7 +17,7 @@ export const useAuthStore = create()(
         try {
           const response = await authApi.requestLoginOtp(identifier);
           if (response.success) {
-            toast.success(response.message || "OTP sent successfully");
+            toast.success("OTP sent successfully");
             set({ isLoading: false });
             return response.data; // { id, type, identifier }
           } else {
@@ -73,10 +73,11 @@ export const useAuthStore = create()(
       logout: async () => {
         try {
           const { refreshToken, isAuthenticated } = get();
+          const firebaseTokens = localStorage.getItem("fcm_token") || null;
 
           // Only attempt network logout if we are currently authenticated
           if (isAuthenticated && refreshToken) {
-            await authApi.logout(refreshToken);
+            await authApi.logout(refreshToken, firebaseTokens);
           }
         } catch (error) {
           // Ignore 401 errors from logout (expected if session is already dead)
@@ -87,6 +88,7 @@ export const useAuthStore = create()(
           // Clear everything locally regardless of network success/failure
           localStorage.removeItem("accessToken");
           localStorage.removeItem("refreshToken");
+          localStorage.removeItem("fcm_token");
           set({ user: null, role: null, isAuthenticated: false, refreshToken: null });
 
           // Prevent toast spam by assigning a fixed ID (will overwrite existing toast instead of stacking)
