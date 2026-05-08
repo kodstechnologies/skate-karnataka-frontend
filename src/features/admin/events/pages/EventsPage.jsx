@@ -27,14 +27,33 @@ const fmtDate = (v) => {
   return d.toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" });
 };
 
-/** Format a time string like "09:30" → "09:30 AM" */
+/** Format a time string like "14:30" → "2:30 PM" or "09:30" → "9:30 AM" */
 const fmtTime = (v) => {
   if (!v) return null;
-  const [h, m] = v.split(":").map(Number);
-  if (isNaN(h)) return v;
-  const period = h >= 12 ? "PM" : "AM";
-  const hour = h % 12 || 12;
-  return `${String(hour).padStart(2, "0")}:${String(m).padStart(2, "0")} ${period}`;
+  try {
+    let date;
+    // Handle "HH:mm" or "HH:mm:ss" format
+    if (v.includes(":") && !v.includes("T")) {
+      const [h, m] = v.split(":");
+      date = new Date();
+      date.setHours(parseInt(h, 10), parseInt(m, 10), 0, 0);
+    } else {
+      // Handle ISO or other date-time strings
+      date = new Date(v);
+    }
+
+    if (isNaN(date.getTime())) return v;
+
+    return new Intl.DateTimeFormat("en-IN", {
+      hour: "numeric",
+      minute: "2-digit",
+      hour12: true
+    })
+      .format(date)
+      .toUpperCase();
+  } catch (err) {
+    return v;
+  }
 };
 
 const formatCurrency = (value) => {
@@ -398,15 +417,7 @@ export const EventsPage = () => {
                     </Typography>
 
                     {/* Schedule block */}
-                    <Box
-                    // sx={{
-                    //   borderRadius: "12px",
-                    //   border: "1px solid rgba(246,118,94,0.18)",
-                    //   backgroundColor: "rgba(255,241,235,0.5)",
-                    //   px: 1.5,
-                    //   py: 1
-                    // }}
-                    >
+                    <Box>
                       <Typography
                         sx={{
                           fontSize: 11,
@@ -440,12 +451,12 @@ export const EventsPage = () => {
                         {fmtDate(event.eventStartDate)} → {fmtDate(event.eventEndDate)}
                       </Typography>
 
-                      {(event.eventStartTime || event.eventEndTime) && (
+                      {event.eventStartTime && (
                         <Typography
                           sx={{ fontSize: 12, color: event.textColor || "#5f5552", mt: 0.5 }}
                         >
                           🕐 {fmtTime(event.eventStartTime)}
-                          {event.eventEndTime ? ` – ${fmtTime(event.eventEndTime)}` : ""}
+                          {event.eventEndTime && ` – ${fmtTime(event.eventEndTime)}`}
                         </Typography>
                       )}
                     </Box>

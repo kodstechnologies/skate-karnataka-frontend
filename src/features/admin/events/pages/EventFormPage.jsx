@@ -35,17 +35,40 @@ const validateEventForm = (formData) => {
     errors.entryFee = "Entry fee cannot be negative";
   }
 
+  // Logical Date Validation
+  const regStart = formData.registerStartDate ? new Date(formData.registerStartDate) : null;
+  const regEnd = formData.registerEndDate ? new Date(formData.registerEndDate) : null;
+  const eventStart = formData.eventStartDate ? new Date(formData.eventStartDate) : null;
+  const eventEnd = formData.eventEndDate ? new Date(formData.eventEndDate) : null;
+
+  if (regStart && regEnd && regStart > regEnd) {
+    errors.registerEndDate = "Registration end date cannot be before start date";
+  }
+
+  if (eventStart && eventEnd && eventStart > eventEnd) {
+    errors.eventEndDate = "Event end date cannot be before start date";
+  }
+
+  if (regEnd && eventStart && regEnd > eventStart) {
+    errors.registerEndDate = "Registration must end before or on the event start date";
+  }
+
+  // Same-day Time Validation
+  if (
+    formData.eventStartDate &&
+    formData.eventEndDate &&
+    new Date(formData.eventStartDate).toDateString() ===
+      new Date(formData.eventEndDate).toDateString()
+  ) {
+    if (formData.eventStartTime && formData.eventEndTime) {
+      if (formData.eventStartTime >= formData.eventEndTime) {
+        errors.eventEndTime = "End time must be strictly after start time for same-day events";
+      }
+    }
+  }
+
   return errors;
 };
-
-const readFileAsDataUrl = (file) =>
-  new Promise((resolve, reject) => {
-    const reader = new FileReader();
-
-    reader.onload = () => resolve(reader.result);
-    reader.onerror = () => reject(new Error("Unable to read file"));
-    reader.readAsDataURL(file);
-  });
 
 export const EventFormPage = () => {
   const navigate = useNavigate();
@@ -186,7 +209,7 @@ export const EventFormPage = () => {
             </Typography>
             <Typography
               component={RouterLink}
-              to="/events"
+              to="/events/detail"
               sx={{
                 color: "inherit",
                 textDecoration: "none",

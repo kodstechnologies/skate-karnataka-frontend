@@ -133,7 +133,7 @@ export default function EventCategoryPage() {
               </Typography>
               <Typography
                 component={RouterLink}
-                to="/events"
+                to="/events/detail"
                 sx={{
                   color: "inherit",
                   textDecoration: "none",
