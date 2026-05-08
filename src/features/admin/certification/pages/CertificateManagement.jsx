@@ -25,6 +25,7 @@ function CertificateManagement() {
 
   useEffect(() => {
     let isMount = true;
+    if (!isMount) return;
     async function fetchTemplates() {
       setLoading(true);
       try {
