@@ -39,7 +39,13 @@ export const CircularFormPage = () => {
 
   const existing = circulars.find((c) => c.id === circularId) ?? null;
 
-  const [formData, setFormData] = useState({ img: null, heading: "", text: "", date: "" });
+  const [formData, setFormData] = useState({
+    img: null,
+    heading: "",
+    text: "",
+    date: "",
+    relatedInformationImages: []
+  });
   const [errors, setErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -54,7 +60,8 @@ export const CircularFormPage = () => {
         img: null,
         heading: existing.heading ?? "",
         text: existing.text ?? "",
-        date: existing.date ? existing.date.split("T")[0] : ""
+        date: existing.date ? existing.date.split("T")[0] : "",
+        relatedInformationImages: []
       });
     }
   }, [existing]);
@@ -76,6 +83,28 @@ export const CircularFormPage = () => {
   };
 
   const handleRemoveImg = () => setFormData((p) => ({ ...p, img: null }));
+
+  const handleRelatedImages = (e) => {
+    const files = Array.from(e.target.files || []);
+    const imageFiles = files.filter((f) => f.type.startsWith("image/"));
+    if (imageFiles.length !== files.length) {
+      setErrors((p) => ({ ...p, relatedInformationImages: "Only image files allowed" }));
+    } else {
+      setErrors((p) => ({ ...p, relatedInformationImages: "" }));
+    }
+    setFormData((p) => ({
+      ...p,
+      relatedInformationImages: [...p.relatedInformationImages, ...imageFiles]
+    }));
+    e.target.value = "";
+  };
+
+  const handleRemoveRelatedImage = (index) => {
+    setFormData((p) => ({
+      ...p,
+      relatedInformationImages: p.relatedInformationImages.filter((_, i) => i !== index)
+    }));
+  };
 
   const validate = () => {
     const errs = {};
@@ -328,6 +357,134 @@ export const CircularFormPage = () => {
             )}
             {errors.img && (
               <Typography sx={{ mt: 1, fontSize: 12, color: "#d32f2f" }}>{errors.img}</Typography>
+            )}
+          </Box>
+
+          {/* ── Related Information Images ────────────────────── */}
+          <Box
+            sx={{
+              p: 2.25,
+              borderRadius: "22px",
+              border: "1px solid #f4e5de",
+              backgroundColor: "#fffaf8"
+            }}
+          >
+            <Typography
+              sx={{
+                mb: 1,
+                fontSize: 13,
+                fontWeight: 700,
+                color: "#7f706c",
+                textTransform: "uppercase",
+                letterSpacing: "0.08em"
+              }}
+            >
+              Related Information Images
+              <Typography
+                component="span"
+                sx={{
+                  ml: 1,
+                  fontSize: 11,
+                  fontWeight: 500,
+                  color: "#b09f99",
+                  textTransform: "none"
+                }}
+              >
+                (Optional — multiple allowed)
+              </Typography>
+            </Typography>
+
+            {/* Show existing images in edit mode when no new files are selected */}
+            {isEditing &&
+              existing?.relatedInformationImages?.length > 0 &&
+              formData.relatedInformationImages.length === 0 && (
+                <Box sx={{ mb: 2 }}>
+                  <Typography sx={{ mb: 1, fontSize: 12, color: "#8d7f7b" }}>
+                    Currently attached — will keep unless you add new ones
+                  </Typography>
+                  <Box sx={{ display: "flex", gap: 1, flexWrap: "wrap" }}>
+                    {existing.relatedInformationImages.map((url, idx) => (
+                      <Avatar
+                        key={idx}
+                        src={url}
+                        variant="rounded"
+                        sx={{
+                          width: 56,
+                          height: 56,
+                          borderRadius: "12px",
+                          border: "1px solid #efe2dc"
+                        }}
+                      />
+                    ))}
+                  </Box>
+                </Box>
+              )}
+
+            <Button
+              component="label"
+              variant="outlined"
+              startIcon={<UploadFileOutlinedIcon />}
+              sx={{ borderRadius: "14px" }}
+            >
+              Add Images
+              <input type="file" accept="image/*" multiple hidden onChange={handleRelatedImages} />
+            </Button>
+
+            {/* New file previews */}
+            {formData.relatedInformationImages.length > 0 && (
+              <Stack spacing={1} sx={{ mt: 1.5 }}>
+                {formData.relatedInformationImages.map((file, idx) => (
+                  <Box
+                    key={idx}
+                    sx={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 1.5,
+                      p: 1.5,
+                      borderRadius: "14px",
+                      border: "1px solid #efe2dc",
+                      backgroundColor: "white"
+                    }}
+                  >
+                    <ImageOutlinedIcon sx={{ fontSize: 20, color: "#f6765e", flexShrink: 0 }} />
+                    <Box sx={{ flex: 1, minWidth: 0 }}>
+                      <Typography
+                        sx={{
+                          fontSize: 13,
+                          fontWeight: 600,
+                          color: "#2f2829",
+                          overflow: "hidden",
+                          textOverflow: "ellipsis",
+                          whiteSpace: "nowrap"
+                        }}
+                      >
+                        {file.name}
+                      </Typography>
+                      <Typography sx={{ fontSize: 11, color: "#978883" }}>Ready to save</Typography>
+                    </Box>
+                    <Button
+                      size="small"
+                      startIcon={<X size={13} />}
+                      color="error"
+                      onClick={() => handleRemoveRelatedImage(idx)}
+                      sx={{
+                        borderRadius: "10px",
+                        textTransform: "none",
+                        fontSize: 12,
+                        flexShrink: 0
+                      }}
+                    >
+                      Remove
+                    </Button>
+                  </Box>
+                ))}
+              </Stack>
+            )}
+
+            {errors.relatedInformationImages && (
+              <Typography sx={{ mt: 1, fontSize: 12, color: "#d32f2f" }}>
+                {errors.relatedInformationImages}
+              </Typography>
             )}
           </Box>
 

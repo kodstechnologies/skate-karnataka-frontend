@@ -1,4 +1,5 @@
 import { Navigate, Route, Routes } from "react-router-dom";
+import { useAuthStore } from "@/features/auth/store/auth-store";
 import { ClubDetailsPage } from "@/features/admin/clubs/pages/ClubDetailsPage";
 import { ClubFormPage } from "@/features/admin/clubs/pages/ClubFormPage";
 import { ClubsPage } from "@/features/admin/clubs/pages/ClubsPage";
@@ -44,10 +45,15 @@ import { NotFoundPage } from "@/pages/NotFoundPage";
 import CertificateManagement from "../features/admin/certification/pages/CertificateManagement";
 
 export const AppRoutes = () => {
+  const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
+
   return (
     <Routes>
       <Route path="/login" element={<LoginPage />} />
-      <Route path="/" element={<Navigate to="/login" replace />} />
+      <Route
+        path="/"
+        element={<Navigate to={isAuthenticated ? "/dashboard" : "/login"} replace />}
+      />
       <Route element={<MainLayout />}>
         <Route path="/dashboard" element={<AdminDashboard />} />
         <Route path="/profile" element={<ProfilePage />} />

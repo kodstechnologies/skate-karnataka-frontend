@@ -300,6 +300,11 @@ export const LoginPage = () => {
     "& .MuiInputLabel-root.Mui-focused": { color: "#2e7d32" }
   };
 
+  // ── Render-level auth guard (fires before paint — eliminates login flash) ─
+  if (isAuthenticated) {
+    return <Navigate to="/dashboard" replace />;
+  }
+
   // ────────────────────────────────────────────────────────────────────────
   return (
     <Box className="min-h-screen w-full flex bg-white overflow-y-auto relative custom-scrollbar">

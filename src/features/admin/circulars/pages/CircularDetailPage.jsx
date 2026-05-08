@@ -287,6 +287,66 @@ export const CircularDetailPage = () => {
         </Box>
 
         <Divider sx={{ borderColor: "#f0e1da" }} />
+
+        {/* ── Related Information Images ─────────────────────── */}
+        {item?.relatedInformationImages?.length > 0 && (
+          <>
+            <Box sx={{ p: { xs: 2.5, md: 4 } }}>
+              <Typography
+                sx={{
+                  mb: 2.5,
+                  fontWeight: 700,
+                  fontSize: 17,
+                  color: "#2f2829",
+                  letterSpacing: "-0.03em"
+                }}
+              >
+                Related Information
+              </Typography>
+              <Box
+                sx={{
+                  display: "grid",
+                  gridTemplateColumns: {
+                    xs: "repeat(2, 1fr)",
+                    sm: "repeat(3, 1fr)",
+                    md: "repeat(4, 1fr)"
+                  },
+                  gap: 2
+                }}
+              >
+                {item.relatedInformationImages.map((url, idx) => (
+                  <Box
+                    key={idx}
+                    component="a"
+                    href={url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    sx={{ textDecoration: "none", display: "block" }}
+                  >
+                    <Avatar
+                      src={url}
+                      variant="rounded"
+                      alt={`Related image ${idx + 1}`}
+                      sx={{
+                        width: "100%",
+                        height: 120,
+                        borderRadius: "16px",
+                        border: "2px solid rgba(80,60,160,0.1)",
+                        transition: "transform 0.2s, box-shadow 0.2s",
+                        "&:hover": {
+                          transform: "scale(1.03)",
+                          boxShadow: "0 8px 32px rgba(48,30,24,0.14)"
+                        }
+                      }}
+                    />
+                  </Box>
+                ))}
+              </Box>
+            </Box>
+            <Divider sx={{ borderColor: "#f0e1da" }} />
+          </>
+        )}
+
         <Stack
           direction={{ xs: "column", sm: "row" }}
           spacing={1.5}

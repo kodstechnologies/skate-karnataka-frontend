@@ -8,6 +8,7 @@ const mapToFrontend = (d) => ({
   heading: d.heading || "",
   text: d.text || "",
   date: d.date || null,
+  relatedInformationImages: d.relatedInformation?.images || [],
   createdAt: d.createdAt || null,
   updatedAt: d.updatedAt || null
 });
@@ -18,6 +19,11 @@ const mapToBackend = (payload) => {
   if (payload.text?.trim()) fd.append("text", payload.text.trim());
   if (payload.date) fd.append("date", payload.date);
   if (payload.img instanceof File) fd.append("img", payload.img);
+  if (Array.isArray(payload.relatedInformationImages)) {
+    payload.relatedInformationImages.forEach((file) => {
+      if (file instanceof File) fd.append("relatedInformationImages", file);
+    });
+  }
   return fd;
 };
 
