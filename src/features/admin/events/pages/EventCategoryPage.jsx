@@ -7,7 +7,8 @@ import {
   Divider,
   Paper,
   Stack,
-  Typography
+  Typography,
+  Skeleton
 } from "@mui/material";
 import { ChevronRight, Layers, PencilLine, Plus, RefreshCw, Trash2 } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
@@ -45,6 +46,7 @@ export default function EventCategoryPage() {
       const data = res?.data?.data ?? res?.data ?? [];
       setCategories(Array.isArray(data) ? data : []);
     } catch (err) {
+      toast.error(extractError(err));
       setFetchError(extractError(err));
     } finally {
       setLoading(false);
@@ -62,8 +64,8 @@ export default function EventCategoryPage() {
     setDeleting(true);
     try {
       const id = pendingDelete._id ?? pendingDelete.id;
-      await eventCategoriesApi.delete(id);
-      toast.success("Category deleted successfully");
+      const { message } = await eventCategoriesApi.delete(id);
+      toast.success(message || "Category deleted successfully");
       setCategories((prev) => prev.filter((c) => (c._id ?? c.id) !== id));
       setPendingDelete(null);
     } catch (err) {
@@ -211,8 +213,104 @@ export default function EventCategoryPage() {
         <Box sx={{ px: 3, pb: 3 }}>
           {/* Loading */}
           {loading ? (
-            <Box sx={{ display: "flex", justifyContent: "center", py: 8 }}>
-              <CircularProgress sx={{ color: "#f6765e" }} />
+            <Box
+              sx={{
+                display: "grid",
+                gridTemplateColumns: {
+                  xs: "1fr",
+                  md: "repeat(2, minmax(0,1fr))",
+                  xl: "repeat(3, minmax(0,1fr))"
+                },
+                gap: 2
+              }}
+            >
+              {[...Array(6)].map((_, index) => (
+                <Paper
+                  key={index}
+                  elevation={0}
+                  sx={{
+                    borderRadius: "24px",
+                    border: "1px solid #f0ddd5",
+                    overflow: "hidden",
+                    background: "linear-gradient(135deg, #fff9f7 0%, #fef0eb 100%)",
+                    boxShadow: "0 20px 50px rgba(56,36,29,0.08)"
+                  }}
+                >
+                  <Stack
+                    direction="row"
+                    alignItems="center"
+                    gap={1.5}
+                    sx={{ px: 2.5, pt: 2.5, pb: 1.5 }}
+                  >
+                    <Skeleton
+                      variant="rounded"
+                      width={42}
+                      height={42}
+                      sx={{ borderRadius: "14px" }}
+                    />
+                    <Box sx={{ flex: 1 }}>
+                      <Skeleton variant="text" width="60%" height={24} />
+                      <Skeleton variant="text" width="40%" height={16} />
+                    </Box>
+                  </Stack>
+
+                  <Divider sx={{ borderColor: "#f5ebe7", mx: 2.5 }} />
+
+                  <Stack spacing={1.25} sx={{ px: 2.5, py: 1.75 }}>
+                    <Box>
+                      <Skeleton
+                        variant="rounded"
+                        width={60}
+                        height={20}
+                        sx={{ mb: 1, borderRadius: "10px" }}
+                      />
+                      <Stack direction="row" spacing={0.75}>
+                        <Skeleton
+                          variant="rounded"
+                          width={50}
+                          height={20}
+                          sx={{ borderRadius: "10px" }}
+                        />
+                        <Skeleton
+                          variant="rounded"
+                          width={70}
+                          height={20}
+                          sx={{ borderRadius: "10px" }}
+                        />
+                      </Stack>
+                    </Box>
+                    <Box>
+                      <Skeleton
+                        variant="rounded"
+                        width={60}
+                        height={20}
+                        sx={{ mb: 1, borderRadius: "10px" }}
+                      />
+                      <Stack direction="row" spacing={0.75}>
+                        <Skeleton
+                          variant="rounded"
+                          width={60}
+                          height={20}
+                          sx={{ borderRadius: "10px" }}
+                        />
+                        <Skeleton
+                          variant="rounded"
+                          width={50}
+                          height={20}
+                          sx={{ borderRadius: "10px" }}
+                        />
+                      </Stack>
+                    </Box>
+                  </Stack>
+
+                  <Divider sx={{ borderColor: "#f5ebe7", mx: 2.5 }} />
+
+                  <Stack direction="row" spacing={1} sx={{ p: 2.5, pt: 2 }}>
+                    <Skeleton variant="rounded" width="100%" height={36} />
+                    <Skeleton variant="rounded" width="100%" height={36} />
+                  </Stack>
+                </Paper>
+              ))}
             </Box>
           ) : fetchError ? (
             <Paper

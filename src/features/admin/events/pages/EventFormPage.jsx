@@ -73,7 +73,6 @@ export const EventFormPage = () => {
           setFormData(createEventFormValues(ev));
         })
         .catch((err) => {
-          console.error("Failed to load event", err);
           toast.error(err?.response?.data?.message || "Failed to load event");
         })
         .finally(() => {
@@ -105,15 +104,14 @@ export const EventFormPage = () => {
       const payload = { ...formData };
 
       if (isEditing && existingEvent) {
-        await eventsApi.update(existingEvent._id || existingEvent.id, payload);
-        toast.success("Event updated successfully");
+        const { message } = await eventsApi.update(existingEvent._id || existingEvent.id, payload);
+        toast.success(message || "Event updated successfully");
       } else {
-        await eventsApi.create(payload);
-        toast.success("Event created successfully");
+        const { message } = await eventsApi.create(payload);
+        toast.success(message || "Event created successfully");
       }
       navigate(-1);
     } catch (err) {
-      console.error("Failed to save event", err);
       toast.error(err?.response?.data?.message || "Failed to save event");
     } finally {
       setSaving(false);

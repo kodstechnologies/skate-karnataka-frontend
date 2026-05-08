@@ -113,7 +113,6 @@ export default function SponsorshipPage() {
       const id = pendingDeleteSponsorship._id ?? pendingDeleteSponsorship.id;
       await sponsorshipApi.delete(id);
       toast.success("Sponsorship deleted successfully");
-
       setSponsorships((prev) => prev.filter((item) => (item._id ?? item.id) !== id));
       setPendingDeleteSponsorship(null);
       setTotalCount((prev) => Math.max(0, prev - 1));

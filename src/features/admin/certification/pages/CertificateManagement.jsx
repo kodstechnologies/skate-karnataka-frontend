@@ -1,856 +1,366 @@
-import { useState, useEffect, useCallback, useRef, Fragment, useMemo } from "react";
-import { useNavigate } from "react-router-dom";
-import { Award, UploadCloud, CheckCircle, Loader2, FileText, Settings } from "lucide-react";
-import axios from "axios";
+import { useState, useEffect, useCallback } from "react";
+import { Link as RouterLink, useNavigate } from "react-router-dom";
+import { Award, Plus, ChevronRight, FileText, CheckCircle, RefreshCw, Search } from "lucide-react";
+import {
+  Box,
+  Breadcrumbs,
+  Button,
+  Chip,
+  Paper,
+  Stack,
+  Typography,
+  Skeleton,
+  TextField,
+  Divider
+} from "@mui/material";
 import api from "@/lib/axios";
 import toast from "react-hot-toast";
-
-// ---------------------------------------------------------------------------
-// PDF coordinate constants — A4 Portrait in PDF points (1 pt = 1/72 inch)
-// ---------------------------------------------------------------------------
-const PDF_W_PT = 595;
-const PDF_H_PT = 842;
-
-const FIELD_META = {
-  name: {
-    label: "Name",
-    color: "#3B82F6",
-    bg: "#EFF6FF",
-    border: "#BFDBFE"
-  },
-  issueDate: {
-    label: "Issue Date",
-    color: "#10B981",
-    bg: "#ECFDF5",
-    border: "#A7F3D0"
-  },
-  ageGroup: {
-    label: "Age Group",
-    color: "#F59E0B",
-    bg: "#FFFBEB",
-    border: "#FDE68A"
-  },
-  clubName: {
-    label: "Club Name",
-    color: "#8B5CF6",
-    bg: "#F5F3FF",
-    border: "#DDD6FE"
-  },
-
-  signature: {
-    label: "Signature",
-    color: "#EC4899",
-    bg: "#FDF2F8",
-    border: "#FBCFE8"
-  }
-};
-
-const TEXT_COLOR_OPTIONS = [
-  { value: "dark", label: "Dark" },
-  { value: "lightDark", label: "Light Dark" },
-  { value: "gray", label: "Gray" },
-  { value: "darkGray", label: "Dark Gray" }
-];
-
-const DEFAULT_TEMPLATE_LAYOUT = {
-  name: { x: 298, y: 590, size: 12, color: "dark" },
-  issueDate: { x: 298, y: 140, size: 12, color: "dark" },
-  ageGroup: { x: 298, y: 530, size: 12, color: "dark" },
-  clubName: { x: 298, y: 480, size: 12, color: "dark" },
-  signature: { x: 350, y: 210, size: 20, color: "dark", text: "Authorized Signatory" }
-};
-
-const getDisplayColor = (colorValue, defaultColor) => {
-  switch (colorValue) {
-    case "white":
-      return "#ffffff";
-    case "darkBlue":
-      return "#1e3a8a";
-    case "darkYellow":
-      return "#ca8a04";
-    default:
-      return defaultColor;
-  }
-};
-
-// ---------------------------------------------------------------------------
-// TemplateCoordsEditor — purely presentational sub-component
-// Only used inside TemplateSettings; no outside dependencies changed.
-// ---------------------------------------------------------------------------
-function TemplateCoordsEditor({ previewUrl, layout, onLayoutChange, onUpdateLayout }) {
-  const [mode, setMode] = useState("visual");
-  const [failedPreviewUrl, setFailedPreviewUrl] = useState("");
-  const [dragging, setDragging] = useState(null); // null | fieldKey string
-  const [activeTooltip, setActiveTooltip] = useState(null); // null | fieldKey
-  const overlayRef = useRef(null);
-  const [isSmallScreen, setIsSmallScreen] = useState(
-    () => typeof window !== "undefined" && window.innerWidth < 640
-  );
-  const [smallPreviewWidth, setSmallPreviewWidth] = useState(() =>
-    typeof window !== "undefined" ? Math.max(560, Math.round(window.innerWidth * 1.35)) : 560
-  );
-  const [overlaySize, setOverlaySize] = useState({ width: 0, height: 0 });
-  const startPosRef = useRef(null); // { clientX, clientY, origX, origY }
-
-  useEffect(() => {
-    if (typeof window === "undefined") return undefined;
-    const onResize = () => {
-      setIsSmallScreen(window.innerWidth < 640);
-      setSmallPreviewWidth(Math.max(560, Math.round(window.innerWidth * 1.35)));
-    };
-    window.addEventListener("resize", onResize);
-    return () => window.removeEventListener("resize", onResize);
-  }, []);
-
-  useEffect(() => {
-    const el = overlayRef.current;
-    if (!el || typeof window === "undefined") return undefined;
-
-    const syncOverlaySize = () => {
-      const rect = el.getBoundingClientRect();
-      setOverlaySize({
-        width: Math.round(rect.width),
-        height: Math.round(rect.height)
-      });
-    };
-
-    syncOverlaySize();
-
-    if (typeof ResizeObserver !== "undefined") {
-      const observer = new ResizeObserver(syncOverlaySize);
-      observer.observe(el);
-      return () => observer.disconnect();
-    }
-
-    window.addEventListener("resize", syncOverlaySize);
-    return () => window.removeEventListener("resize", syncOverlaySize);
-  }, [previewUrl, isSmallScreen, smallPreviewWidth, mode]);
-
-  // Convert PDF-point coordinates → overlay pixel coordinates.
-  // Returns null until the overlay has been measured by ResizeObserver
-  // so pills never flash to position (0,0) on first render.
-  const ptToPx = useCallback(
-    (ptX, ptY) => {
-      const { width, height } = overlaySize;
-      if (!width || !height) return null;
-      return {
-        px: Math.round((ptX / PDF_W_PT) * width),
-        // PDF Y origin is bottom-left; DOM Y origin is top-left → invert
-        py: Math.round(((PDF_H_PT - ptY) / PDF_H_PT) * height)
-      };
-    },
-    [overlaySize]
-  );
-
-  useCallback((pxX, pxY) => {
-    const el = overlayRef.current;
-    if (!el) return { ptX: 0, ptY: 0 };
-    const { width, height } = el.getBoundingClientRect();
-    return {
-      ptX: Math.round((pxX / width) * PDF_W_PT),
-      ptY: Math.round(PDF_H_PT - (pxY / height) * PDF_H_PT)
-    };
-  }, []);
-
-  // ---- pointer event handlers (attached to overlay div) ------------------
-  const handlePointerDown = useCallback(
-    (e, field) => {
-      e.stopPropagation();
-      e.currentTarget.setPointerCapture(e.pointerId);
-      setDragging(field);
-      setActiveTooltip(field);
-      startPosRef.current = {
-        clientX: e.clientX,
-        clientY: e.clientY,
-        origX: layout[field].x,
-        origY: layout[field].y
-      };
-    },
-    [layout]
-  );
-
-  const handlePointerMove = useCallback(
-    (e) => {
-      if (!dragging || !startPosRef.current || !overlayRef.current) return;
-      const deltaPx = e.clientX - startPosRef.current.clientX;
-      const deltaPy = e.clientY - startPosRef.current.clientY;
-
-      const el = overlayRef.current;
-      const { width, height } = el.getBoundingClientRect();
-
-      // Convert px delta → PDF-point delta
-      const deltaPtX = (deltaPx / width) * PDF_W_PT;
-      const deltaPtY = -(deltaPy / height) * PDF_H_PT; // negative: DOM Y top-down, PDF Y bottom-up
-
-      const newX = startPosRef.current.origX + deltaPtX;
-      const rawNewY = startPosRef.current.origY + deltaPtY;
-
-      // ── Y compensation (identical to firstEdu reference) ─────────────────
-      // Shifts the stored Y up by 30% of the font size so that the backend's
-      // field-specific formulas (e.g. (pos.y + scaledSize) * scaleY for name)
-      // render text exactly at the admin-selected pill position.
-      const fieldSize = Number(layout?.[dragging]?.size) || 0;
-      const yCompensation = fieldSize * 0.3;
-      const newY = rawNewY + yCompensation;
-      // ─────────────────────────────────────────────────────────────────────
-
-      // Clamp within PDF bounds and round to integer points
-      onLayoutChange((prev) => ({
-        ...prev,
-        [dragging]: {
-          ...prev[dragging],
-          x: Math.round(Math.max(0, Math.min(PDF_W_PT, newX))),
-          y: Math.round(Math.max(0, Math.min(PDF_H_PT, newY)))
-        }
-      }));
-    },
-    [dragging, layout, onLayoutChange]
-  );
-
-  const handlePointerUp = useCallback(() => {
-    setDragging(null);
-    startPosRef.current = null;
-  }, []);
-
-  const normalizedPreviewUrl = String(previewUrl || "").trim();
-  const hasTemplate = Boolean(previewUrl);
-  const previewLoadFailed =
-    Boolean(normalizedPreviewUrl) && failedPreviewUrl === normalizedPreviewUrl;
-  const effectiveMode = !hasTemplate || previewLoadFailed ? "manual" : mode;
-  const isCloudinaryPdf =
-    normalizedPreviewUrl.includes("cloudinary") && /\.pdf(\?|#|$)/i.test(normalizedPreviewUrl);
-  const cloudinaryImagePreviewUrl = isCloudinaryPdf
-    ? normalizedPreviewUrl.replace(/\.pdf(\?|#|$)/i, ".jpg$1")
-    : "";
-
-  return (
-    <div className="space-y-4">
-      {/* Section header + mode switcher */}
-      <div className="flex items-start sm:items-center justify-between flex-wrap gap-3">
-        <div className="min-w-0">
-          <label className="block text-sm font-bold text-stone-700">Text Field Coordinates</label>
-          <p className="text-[11px] text-stone-400 mt-0.5">
-            {effectiveMode === "visual"
-              ? "Drag each marker to position text on the certificate."
-              : "Enter PDF point coordinates (origin: bottom-left)."}
-          </p>
-        </div>
-      </div>
-
-      {/* ------------------------------------------------------------------ */}
-      {/* VISUAL MODE — PDF iframe + drag overlay                            */}
-      {/* ------------------------------------------------------------------ */}
-
-      <div className="space-y-3">
-        {/* Legend */}
-        <div className="flex flex-wrap gap-2">
-          {Object.entries(FIELD_META).map(([field, meta]) => (
-            <span
-              key={field}
-              className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold border"
-              style={{
-                color: meta.color,
-                background: meta.bg,
-                borderColor: meta.border
-              }}
-            >
-              <span className="w-2 h-2 rounded-full" style={{ background: meta.color }} />
-              {meta.label}
-            </span>
-          ))}
-          <span className="inline-flex items-center gap-1 text-[11px] text-stone-400 italic ml-1">
-            drag markers to reposition
-          </span>
-        </div>
-
-        {/* PDF preview container */}
-        <div className="overflow-x-auto pb-1">
-          <div
-            className="relative rounded-xl overflow-hidden border-2 border-stone-200 bg-stone-100 shadow-inner min-w-[560px] sm:min-w-0"
-            style={{
-              aspectRatio: `${PDF_W_PT} / ${PDF_H_PT}`,
-              width: isSmallScreen ? `${smallPreviewWidth}px` : "100%"
-            }}
-          >
-            {/* Show an exact rasterized image if the template is saved to Cloudinary to bypass browser PDF margins */}
-            {isCloudinaryPdf ? (
-              <img
-                src={cloudinaryImagePreviewUrl}
-                alt="Certificate Template Preview"
-                className="absolute inset-0 w-full h-full border-0 pointer-events-none"
-                style={{ objectFit: "fill" }}
-                onError={(e) => {
-                  e.target.style.display = "none";
-                  setFailedPreviewUrl(normalizedPreviewUrl);
-                  setMode("manual");
-                }}
-              />
-            ) : (
-              <iframe
-                src={`${previewUrl}#toolbar=0&navpanes=0&scrollbar=0&view=Fit`}
-                title="Certificate Template Preview"
-                className="absolute inset-0 w-full h-full border-0 pointer-events-none"
-                onError={() => {
-                  setFailedPreviewUrl(normalizedPreviewUrl);
-                  setMode("manual");
-                }}
-              />
-            )}
-
-            {/* Transparent drag overlay */}
-            <div
-              ref={overlayRef}
-              className={`absolute inset-0 ${dragging ? "cursor-grabbing" : "cursor-default"}`}
-              style={{ touchAction: "none" }}
-              onPointerMove={handlePointerMove}
-              onPointerUp={handlePointerUp}
-              onPointerLeave={handlePointerUp}
-            >
-              {/* Render a draggable marker for each field */}
-              {Object.entries(layout).map(([field, pos]) => {
-                const meta = FIELD_META[field];
-                if (!meta) return null;
-
-                // Skip rendering until overlay has been measured by ResizeObserver.
-                // ptToPx returns null when overlaySize is still {0,0} so pills
-                // never flash to (0,0) before snapping to the correct position.
-                const pxResult = ptToPx(pos.x, pos.y);
-                if (!pxResult) return null;
-                const { px, py } = pxResult;
-
-                const isDraggingThis = dragging === field;
-                const isActive = activeTooltip === field;
-
-                const liveColor = getDisplayColor(pos.color, meta.color);
-                const displayText =
-                  field === "signature" && pos.text ? `"${pos.text}"` : meta.label;
-
-                return (
-                  <div
-                    key={field}
-                    style={{
-                      position: "absolute",
-                      left: px,
-                      top: py,
-                      zIndex: isDraggingThis ? 30 : 20
-                    }}
-                  >
-                    {/* Marker dot */}
-                    <div
-                      onPointerDown={(e) => handlePointerDown(e, field)}
-                      onMouseEnter={() => setActiveTooltip(field)}
-                      onMouseLeave={() => !dragging && setActiveTooltip(null)}
-                      title={`Drag to reposition: ${meta.label}`}
-                      style={{
-                        padding: isSmallScreen ? "3px 8px" : "4px 12px",
-                        background: `${liveColor}20`,
-                        border: `2px dashed ${liveColor}`,
-                        borderBottom: `4px solid ${liveColor}`, // Highlights the baseline!
-                        color: liveColor,
-                        textShadow: liveColor === "#ffffff" ? "0 1px 2px rgba(0,0,0,0.8)" : "none",
-                        fontWeight: "bold",
-                        fontStyle: "italic",
-                        fontFamily: '"Times New Roman", Times, serif',
-                        fontSize: `${pos.size * ((overlaySize?.width || PDF_W_PT) / PDF_W_PT)}px`,
-                        transform: ["signature", "clubName", "ageGroup", "issueDate"].includes(
-                          field
-                        )
-                          ? "translate(0, -100%)"
-                          : "translate(-50%, -100%)",
-                        boxShadow: isDraggingThis
-                          ? `0 8px 24px rgba(0,0,0,0.15)`
-                          : `0 4px 12px rgba(0,0,0,0.05)`,
-                        cursor: isDraggingThis ? "grabbing" : "grab",
-                        whiteSpace: "nowrap",
-                        transition: isDraggingThis ? "none" : "box-shadow 0.15s, background 0.15s",
-                        userSelect: "none",
-                        backdropFilter: "blur(2px)",
-                        borderRadius: "6px",
-                        maxWidth: isSmallScreen ? "180px" : "none"
-                      }}
-                    >
-                      <span
-                        style={{
-                          pointerEvents: "none",
-                          userSelect: "none",
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "center",
-                          gap: isSmallScreen ? "4px" : "6px"
-                        }}
-                      >
-                        <span style={{ fontSize: "0.8em", opacity: 0.7 }}>✛</span>
-                        {displayText} ({pos.size}pt)
-                      </span>
-                    </div>
-
-                    {/* Tooltip / coordinate panel — shown on hover or active drag */}
-                    {(isActive || isDraggingThis) && (
-                      <div
-                        style={{
-                          position: "absolute",
-                          bottom: isSmallScreen ? 24 : 28,
-                          left: "50%",
-                          transform: "translateX(-50%)",
-                          background: "white",
-                          border: `1.5px solid ${meta.border}`,
-                          borderRadius: 8,
-                          padding: "6px 10px",
-                          minWidth: isSmallScreen ? 140 : 160,
-                          boxShadow: "0 4px 16px rgba(0,0,0,0.15)",
-                          pointerEvents: "none",
-                          zIndex: 40
-                        }}
-                      >
-                        <p
-                          style={{
-                            fontSize: 10,
-                            fontWeight: 800,
-                            color: liveColor === "#ffffff" ? "#1c1917" : liveColor,
-                            marginBottom: 4,
-                            textTransform: "uppercase",
-                            letterSpacing: "0.05em"
-                          }}
-                        >
-                          {meta.label}
-                        </p>
-                        <div
-                          style={{
-                            display: "grid",
-                            gridTemplateColumns: "1fr 1fr",
-                            gap: 4
-                          }}
-                        >
-                          <div style={{ fontSize: 10, color: "#78716c" }}>
-                            X: <b style={{ color: "#1c1917" }}>{pos.x}pt</b>
-                          </div>
-                          <div style={{ fontSize: 10, color: "#78716c" }}>
-                            Y: <b style={{ color: "#1c1917" }}>{pos.y}pt</b>
-                          </div>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        </div>
-
-        {/* Field controls row  — placed below the preview, always readable */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 pt-1">
-          {Object.entries(layout).map(([field, pos]) => {
-            const meta = FIELD_META[field];
-            if (!meta) return null;
-            return (
-              <div
-                key={`size-${field}`}
-                className="flex flex-col gap-1 p-2.5 rounded-xl border"
-                style={{ borderColor: meta.border, background: meta.bg }}
-              >
-                <label
-                  className="text-[9px] sm:text-[9px] font-bold uppercase tracking-widest"
-                  style={{ color: meta.color }}
-                >
-                  {meta.label} — Size (pt)
-                </label>
-                <input
-                  type="number"
-                  min={6}
-                  max={72}
-                  value={pos.size}
-                  onChange={(e) => onUpdateLayout(field, "size", e.target.value)}
-                  className="w-full px-2 py-1 bg-white border border-stone-200 rounded text-xs focus:ring-2 focus:ring-amber-500/20 outline-none font-semibold"
-                />
-                <label
-                  className="text-[9px] sm:text-[9px] font-bold uppercase tracking-widest mt-2"
-                  style={{ color: meta.color }}
-                >
-                  {meta.label} — Text Color
-                </label>
-                <select
-                  value={pos.color || "white"}
-                  onChange={(e) => onUpdateLayout(field, "color", e.target.value)}
-                  className="w-full px-2 py-1 bg-white border border-stone-200 rounded text-xs focus:ring-2 focus:ring-amber-500/20 outline-none font-semibold"
-                >
-                  {TEXT_COLOR_OPTIONS.map((option) => (
-                    <option key={`${field}-color-${option.value}`} value={option.value}>
-                      {option.label}
-                    </option>
-                  ))}
-                </select>
-                {field === "signature" && (
-                  <>
-                    <label
-                      className="text-[9px] sm:text-[9px] font-bold uppercase tracking-widest mt-2"
-                      style={{ color: meta.color }}
-                    >
-                      Signature Text
-                    </label>
-                    <input
-                      type="text"
-                      value={pos.text || ""}
-                      onChange={(e) => onUpdateLayout(field, "text", e.target.value)}
-                      placeholder="e.g. John Doe"
-                      className="w-full px-2 py-1 bg-white border border-stone-200 rounded text-xs focus:ring-2 focus:ring-amber-500/20 outline-none font-semibold italic"
-                    />
-                  </>
-                )}
-              </div>
-            );
-          })}
-        </div>
-
-        {/* Notice when iframe might be blocked */}
-        <p className="text-[10px] text-stone-400 italic">
-          ⚠ If the preview appears blank, your browser may be blocking the PDF embed. Switch to{" "}
-          <b>Manual</b> mode above to set coordinates directly.
-        </p>
-      </div>
-    </div>
-  );
-}
-
-// ---------------------------------------------------------------------------
-// TemplateSettings modal — unchanged API: { isOpen, onClose }
-// handleSave and layout state structure are identical to the original.
-// ---------------------------------------------------------------------------
-// ---------------------------------------------------------------------------
-// TemplateSettings modal
-// Props:
-//   isOpen      — boolean, renders nothing when false
-//   onClose     — called after successful save OR explicit close
-//   templateId  — null → create mode, string ObjectId → edit mode
-//   templateName — pre-filled name when in edit mode
-// ---------------------------------------------------------------------------
-const TemplateSettings = ({ isOpen, onClose, templateId, templateName: initialName }) => {
-  const isEditMode = Boolean(templateId);
-  const [template, setTemplate] = useState(null);
-  const [loading, setLoading] = useState(isEditMode); // only load in edit mode
-  const [saving, setSaving] = useState(false);
-  const [activating, setActivating] = useState(false);
-  const [file, setFile] = useState(null);
-  const [layout, setLayout] = useState(DEFAULT_TEMPLATE_LAYOUT);
-  const [name, setName] = useState(initialName || "");
-
-  // Derive the object URL from `file` synchronously — no setState needed.
-  // useMemo recomputes whenever `file` changes (file is state, so the
-  // component already re-renders on change).
-  const previewObjectUrl = useMemo(() => (file ? URL.createObjectURL(file) : null), [file]);
-
-  // Cleanup-only effect: revoke the previous object URL when it changes.
-  // No setState call here — satisfies react-hooks/set-state-in-effect.
-  useEffect(() => {
-    return () => {
-      if (previewObjectUrl) URL.revokeObjectURL(previewObjectUrl);
-    };
-  }, [previewObjectUrl]);
-
-  const fetchTemplate = useCallback(async () => {
-    if (!templateId) return; // create mode — nothing to fetch
-    try {
-      setLoading(true);
-      const res = await api.get(`/certificate/v1/template/${templateId}`);
-      if (res?.data) {
-        setTemplate(res.data);
-        if (res.data.name) setName(res.data.name);
-        if (res.data.textLayout && Object.keys(res.data.textLayout).length > 0) {
-          const incomingLayout = res.data.textLayout;
-          setLayout({
-            name: { ...DEFAULT_TEMPLATE_LAYOUT.name, ...(incomingLayout.name || {}) },
-            issueDate: {
-              ...DEFAULT_TEMPLATE_LAYOUT.issueDate,
-              ...(incomingLayout.issueDate || {})
-            },
-            ageGroup: {
-              ...DEFAULT_TEMPLATE_LAYOUT.ageGroup,
-              ...(incomingLayout.ageGroup || incomingLayout.field || {})
-            },
-            clubName: { ...DEFAULT_TEMPLATE_LAYOUT.clubName, ...(incomingLayout.clubName || {}) },
-            signature: { ...DEFAULT_TEMPLATE_LAYOUT.signature, ...(incomingLayout.signature || {}) }
-          });
-        } else {
-          setLayout(DEFAULT_TEMPLATE_LAYOUT);
-        }
-      }
-    } catch (err) {
-      console.error("Failed to fetch template:", err);
-      toast.error("Failed to load template data");
-    } finally {
-      setLoading(false);
-    }
-  }, [templateId]);
-
-  useEffect(() => {
-    if (!isOpen) return;
-    let cancelled = false;
-    (async () => {
-      if (!cancelled) await fetchTemplate();
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [isOpen, fetchTemplate]);
-  const handleUpdateLayout = (field, key, val) => {
-    const nextValue =
-      key === "color" || key === "text" ? String(val || "") : parseInt(val, 10) || 0;
-    setLayout((prev) => ({
-      ...prev,
-      [field]: { ...prev[field], [key]: nextValue }
-    }));
-  };
-
-  const handleSave = async () => {
-    if (!name.trim()) {
-      toast.error("Please enter a template name.");
-      return;
-    }
-    if (!isEditMode && !file) {
-      toast.error("Please upload a PDF template file.");
-      return;
-    }
-    setSaving(true);
-    try {
-      const formData = new FormData();
-      formData.append("name", name.trim());
-      formData.append("layout", JSON.stringify(layout));
-      if (file) formData.append("pdf", file);
-
-      if (isEditMode) {
-        await api.put(`/certificate/v1/template/${templateId}`, formData, {
-          headers: { "Content-Type": "multipart/form-data" }
-        });
-        toast.success("Template updated successfully!");
-      } else {
-        await api.post("/certificate/v1/template", formData, {
-          headers: { "Content-Type": "multipart/form-data" }
-        });
-        toast.success("Template created successfully!");
-      }
-      setFile(null);
-      onClose(true); // pass true → caller should refresh the list
-    } catch (err) {
-      console.error("Failed to save template:", err);
-      toast.error(err?.response?.data?.message || "Failed to save template");
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const handleSetActive = async () => {
-    if (!templateId) return;
-    setActivating(true);
-    try {
-      await api.patch(`/certificate/v1/template/${templateId}/activate`);
-      toast.success("Template set as active for certificate generation!");
-      onClose(true);
-    } catch (err) {
-      toast.error(err?.response?.data?.message || "Failed to set active template");
-    } finally {
-      setActivating(false);
-    }
-  };
-
-  if (!isOpen) return null;
-
-  return (
-    <div className="space-y-6 p-1">
-      <p className="text-sm text-stone-500 -mt-2">
-        {isEditMode
-          ? "Edit the layout and PDF for this certificate template."
-          : "Create a new certificate template. Upload a PDF and set field positions."}
-      </p>
-
-      {loading ? (
-        <div className="flex items-center justify-center py-10">
-          <Loader2 className="animate-spin text-amber-500" size={32} />
-        </div>
-      ) : (
-        <div className="space-y-6">
-          {/* Template Name */}
-          <div className="space-y-1.5">
-            <label className="block text-sm font-bold text-stone-700">
-              Template Name <span className="text-red-500">*</span>
-            </label>
-            <input
-              type="text"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="e.g. State Championship 2025"
-              className="w-full px-3 py-2.5 border border-stone-200 rounded-xl text-sm focus:ring-2 focus:ring-amber-500/30 outline-none font-medium bg-white shadow-sm"
-            />
-          </div>
-
-          {/* File Upload */}
-          <div className="space-y-3">
-            <label className="block text-sm font-bold text-stone-700">
-              Background PDF Template{!isEditMode && <span className="text-red-500"> *</span>}
-            </label>
-            <div className="relative group">
-              <input
-                type="file"
-                accept="application/pdf"
-                onChange={(e) => setFile(e.target.files[0])}
-                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
-              />
-              <div
-                className={`p-6 border-2 border-dashed rounded-2xl text-center transition-all ${
-                  file
-                    ? "border-emerald-300 bg-emerald-50"
-                    : "border-stone-200 group-hover:border-amber-400 group-hover:bg-amber-50/30"
-                }`}
-              >
-                {file ? (
-                  <div className="flex flex-col items-center gap-2">
-                    <CheckCircle className="text-emerald-500" size={28} />
-                    <span className="text-emerald-700 font-bold text-sm">{file.name}</span>
-                    <span className="text-emerald-600/70 text-[10px] uppercase font-bold">
-                      New file ready — save to apply
-                    </span>
-                  </div>
-                ) : template ? (
-                  <div className="flex flex-col items-center gap-2">
-                    <FileText className="text-amber-500" size={28} />
-                    <span className="text-stone-700 font-bold text-sm">Current PDF Active</span>
-                    <span className="text-stone-400 text-[10px]">CLICK TO REPLACE (OPTIONAL)</span>
-                  </div>
-                ) : (
-                  <div className="flex flex-col items-center gap-2 text-stone-400">
-                    <UploadCloud size={28} />
-                    <p className="font-bold text-sm">Upload background PDF</p>
-                    <p className="text-[10px] uppercase">A4 Landscape Recommended</p>
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-
-          {/* Coordinate Editor */}
-          <TemplateCoordsEditor
-            previewUrl={previewObjectUrl ?? template?.pdfTemplateUrl ?? null}
-            layout={layout}
-            onLayoutChange={setLayout}
-            onUpdateLayout={handleUpdateLayout}
-          />
-
-          <div className="pt-2 flex items-center justify-between gap-3 flex-wrap">
-            {/* Set as Active — only in edit mode */}
-            {isEditMode && (
-              <button
-                onClick={handleSetActive}
-                disabled={activating || template?.isActive}
-                className="flex items-center gap-2 px-5 py-2.5 border-2 border-emerald-500 text-emerald-700 text-sm font-bold rounded-lg hover:bg-emerald-50 transition-all shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {activating ? (
-                  <Loader2 className="animate-spin" size={16} />
-                ) : (
-                  <CheckCircle size={16} />
-                )}
-                {template?.isActive ? "Currently Active" : "Set as Active"}
-              </button>
-            )}
-            <button
-              onClick={handleSave}
-              disabled={saving}
-              className="flex items-center gap-2 px-6 py-2.5 bg-stone-900 text-white text-sm font-bold rounded-lg hover:bg-stone-800 transition-all shadow-md disabled:opacity-50 ml-auto"
-            >
-              {saving ? <Loader2 className="animate-spin" size={16} /> : <Award size={16} />}
-              {isEditMode ? "Update Template" : "Save Template"}
-            </button>
-          </div>
-        </div>
-      )}
-    </div>
-  );
-};
+import eventsHero from "@/assets/Events_header.jpg";
 
 function CertificateManagement() {
   const navigate = useNavigate();
   const [templates, setTemplates] = useState([]);
-  const [loadingTemplates, setLoadingTemplates] = useState(true);
+  const [loading, setLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState("");
 
   useEffect(() => {
-    let mounted = true;
-
-    const fetchAllTemplates = async () => {
+    let isMount = true;
+    async function fetchTemplates() {
+      setLoading(true);
       try {
-        setLoadingTemplates(true);
-
         const { data } = await api.get("/certificate/v1/templates");
-
-        if (mounted) {
-          setTemplates(data || []);
-        }
+        setTemplates(data || []);
       } catch (err) {
-        toast.error("Failed to load template list");
+        toast.error(err?.response?.data?.message || "Failed to load template list");
       } finally {
-        if (mounted) {
-          setLoadingTemplates(false);
-        }
+        setLoading(false);
       }
-    };
-
-    fetchAllTemplates();
+    }
+    fetchTemplates();
 
     return () => {
-      mounted = false;
+      isMount = false;
     };
   }, []);
 
-  return (
-    <div className="p-1">
-      {/* Header */}
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold text-stone-900">Certificate Management</h1>
-        <button
-          onClick={() => navigate("/certification/create")}
-          className="flex items-center gap-2 px-4 py-2.5 bg-stone-900 text-white text-sm font-bold rounded-lg hover:bg-stone-800 transition-all shadow-md"
-        >
-          <span className="text-lg leading-none">+</span> New Template
-        </button>
-      </div>
+  const filteredTemplates = templates.filter((tpl) =>
+    tpl.name.toLowerCase().includes(searchTerm.toLowerCase())
+  );
 
-      {/* Templates List */}
-      <div className="mb-6">
-        <label className="block text-sm font-bold text-stone-700 mb-2">
-          All Certificate Templates
-        </label>
-        {loadingTemplates ? (
-          <div className="flex items-center gap-2 py-4 text-stone-400 text-sm">
-            <Loader2 className="animate-spin" size={18} /> Loading templates…
-          </div>
-        ) : templates.length === 0 ? (
-          <div className="py-6 text-center rounded-2xl border-2 border-dashed border-stone-200 text-stone-400 text-sm">
-            No templates yet. Click <b>New Template</b> to create one.
-          </div>
-        ) : (
-          <div className="flex flex-col gap-2">
-            {templates.map((tpl) => (
-              <button
-                key={tpl._id}
-                onClick={() => navigate(`/certification/${tpl._id}/edit`)}
-                className="flex items-center justify-between w-full px-4 py-3 bg-white border rounded-xl hover:border-amber-400 hover:bg-amber-50/30 transition-all shadow-sm text-left group"
+  return (
+    <Box className="space-y-5">
+      {/* ── Hero Banner ── */}
+      <Paper
+        elevation={0}
+        sx={{
+          p: { xs: 3, md: 4.5 },
+          minHeight: { xs: 240, md: 280 },
+          borderRadius: "32px",
+          overflow: "hidden",
+          position: "relative",
+          border: "1px solid rgba(255,255,255,0.65)",
+          background: `linear-gradient(120deg, rgba(28, 24, 18, 0.82) 0%, rgba(45, 38, 25, 0.62) 34%, rgba(246, 194, 94, 0.2) 100%), url("${eventsHero}")`,
+          backgroundPosition: "center",
+          backgroundSize: "cover",
+          color: "white",
+          boxShadow: "0 28px 90px rgba(45, 38, 25, 0.22)"
+        }}
+      >
+        <Stack
+          sx={{ position: "relative", zIndex: 1, height: "100%", justifyContent: "space-between" }}
+        >
+          <Box sx={{ maxWidth: 720 }}>
+            <Breadcrumbs
+              separator={<ChevronRight size={14} />}
+              sx={{
+                mb: 2,
+                "& .MuiBreadcrumbs-separator": { color: "rgba(255,255,255,0.6)" },
+                "& .MuiBreadcrumbs-li": {
+                  color: "rgba(255,255,255,0.86)",
+                  fontSize: { xs: 14, md: 16 }
+                }
+              }}
+            >
+              <Typography
+                component={RouterLink}
+                to="/dashboard"
+                sx={{
+                  color: "inherit",
+                  textDecoration: "none",
+                  fontWeight: 600,
+                  "&:hover": { color: "white" }
+                }}
               >
-                <div className="flex items-center gap-3">
-                  <FileText size={18} className="text-amber-500 flex-shrink-0" />
-                  <span className="text-sm font-semibold text-stone-800 group-hover:text-amber-700 transition-colors">
-                    {tpl.name}
-                  </span>
-                  {tpl.isActive && (
-                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-700 border border-emerald-200">
-                      <CheckCircle size={10} /> Active
-                    </span>
-                  )}
-                </div>
-                <span className="text-xs text-stone-400 group-hover:text-amber-600 font-medium">
-                  Edit →
-                </span>
-              </button>
-            ))}
-          </div>
-        )}
-      </div>
-    </div>
+                Dashboard
+              </Typography>
+              <Typography sx={{ color: "white", fontWeight: 700 }}>Certification</Typography>
+            </Breadcrumbs>
+
+            <Typography variant="h3" sx={{ fontWeight: 700, letterSpacing: "-0.05em", mb: 1.5 }}>
+              Certification Control Center
+            </Typography>
+            <Typography sx={{ color: "rgba(255,255,255,0.86)", maxWidth: 620, lineHeight: 1.7 }}>
+              Design, manage, and issue premium digital certificates. Create custom templates with
+              dynamic fields to recognize excellence.
+            </Typography>
+
+            <Stack direction="row" spacing={1} useFlexGap sx={{ mt: 2.5, flexWrap: "wrap" }}>
+              <Chip
+                label={`${templates.length} Templates`}
+                sx={{ color: "white", backgroundColor: "rgba(255,255,255,0.14)" }}
+              />
+            </Stack>
+          </Box>
+        </Stack>
+      </Paper>
+
+      {/* ── Management Panel ── */}
+      <Paper
+        elevation={0}
+        sx={{
+          borderRadius: "32px",
+          border: "1px solid rgba(246, 238, 221, 0.95)",
+          overflow: "hidden",
+          background:
+            "linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(255,252,246,0.98) 100%)",
+          boxShadow: "0 26px 80px rgba(58, 48, 24, 0.07)"
+        }}
+      >
+        <Stack
+          direction={{ xs: "column", lg: "row" }}
+          spacing={2}
+          sx={{ p: 3, alignItems: { lg: "center" }, justifyContent: "space-between" }}
+        >
+          <Box>
+            <Typography variant="h5" sx={{ fontWeight: 700, letterSpacing: "-0.04em" }}>
+              Certificate Templates
+            </Typography>
+            <Typography sx={{ mt: 0.75, color: "#8d847f" }}>
+              Manage your certificate designs and active templates.
+            </Typography>
+          </Box>
+
+          <Stack direction={{ xs: "column", sm: "row" }} spacing={1.5}>
+            <TextField
+              size="small"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              placeholder="Search templates..."
+              sx={{ minWidth: { xs: "100%", sm: 280 } }}
+              slotProps={{
+                input: {
+                  startAdornment: <Search size={16} style={{ color: "#b1a799", marginRight: 8 }} />
+                }
+              }}
+            />
+
+            <Button
+              variant="contained"
+              startIcon={<Plus size={16} />}
+              onClick={() => navigate("/certification/create")}
+            >
+              New Template
+            </Button>
+          </Stack>
+        </Stack>
+
+        <Box sx={{ px: 3, pb: 3 }}>
+          {loading ? (
+            <Box
+              sx={{
+                display: "grid",
+                gridTemplateColumns: {
+                  xs: "1fr",
+                  md: "repeat(2, minmax(0, 1fr))",
+                  xl: "repeat(3, minmax(0, 1fr))"
+                },
+                gap: 2
+              }}
+            >
+              {[...Array(3)].map((_, index) => (
+                <Paper
+                  key={index}
+                  elevation={0}
+                  sx={{
+                    borderRadius: "24px",
+                    border: "1px solid #f0e6d5",
+                    overflow: "hidden",
+                    background: "linear-gradient(135deg, #fffcf7 0%, #fef5eb 100%)",
+                    boxShadow: "0 20px 50px rgba(58, 48, 29, 0.08)"
+                  }}
+                >
+                  <Stack spacing={2} sx={{ p: 2.5 }}>
+                    <Stack direction="row" spacing={1.5} alignItems="center">
+                      <Skeleton
+                        variant="rounded"
+                        width={42}
+                        height={42}
+                        sx={{ borderRadius: "14px" }}
+                      />
+                      <Box sx={{ flex: 1 }}>
+                        <Skeleton variant="text" width="80%" height={24} />
+                        <Skeleton variant="text" width="40%" height={16} />
+                      </Box>
+                    </Stack>
+                    <Divider sx={{ borderColor: "rgba(0,0,0,0.05)" }} />
+                    <Stack direction="row" justifyContent="space-between" alignItems="center">
+                      <Skeleton
+                        variant="rounded"
+                        width={60}
+                        height={20}
+                        sx={{ borderRadius: "10px" }}
+                      />
+                      <Skeleton
+                        variant="rounded"
+                        width={80}
+                        height={32}
+                        sx={{ borderRadius: "10px" }}
+                      />
+                    </Stack>
+                  </Stack>
+                </Paper>
+              ))}
+            </Box>
+          ) : filteredTemplates.length === 0 ? (
+            <Paper
+              elevation={0}
+              sx={{
+                p: 6,
+                borderRadius: "24px",
+                textAlign: "center",
+                backgroundColor: "#fffcf7",
+                border: "2px dashed #f0e6d5"
+              }}
+            >
+              <Award size={48} style={{ color: "#f6965e", margin: "0 auto 16px", opacity: 0.5 }} />
+              <Typography variant="h6" sx={{ color: "#2f2b28", fontWeight: 700 }}>
+                {searchTerm ? "No matching templates" : "No templates found"}
+              </Typography>
+              <Typography sx={{ color: "#8d847f", mt: 1, mb: 3 }}>
+                {searchTerm
+                  ? "Try adjusting your search term."
+                  : "Start by creating your first certificate template."}
+              </Typography>
+              {!searchTerm && (
+                <Button
+                  variant="contained"
+                  startIcon={<Plus size={16} />}
+                  onClick={() => navigate("/certification/create")}
+                  // sx={{ backgroundColor: "#f6965e", "&:hover": { backgroundColor: "#ea8b54" } }}
+                >
+                  Create Template
+                </Button>
+              )}
+            </Paper>
+          ) : (
+            <Box
+              sx={{
+                display: "grid",
+                gridTemplateColumns: {
+                  xs: "1fr",
+                  md: "repeat(2, minmax(0, 1fr))",
+                  xl: "repeat(3, minmax(0, 1fr))"
+                },
+                gap: 2
+              }}
+            >
+              {filteredTemplates.map((tpl) => (
+                <Paper
+                  key={tpl._id}
+                  elevation={0}
+                  onClick={() => navigate(`/certification/${tpl._id}/edit`)}
+                  sx={{
+                    borderRadius: "24px",
+                    border: "1px solid #f0e6d5",
+                    overflow: "hidden",
+                    cursor: "pointer",
+                    background: "linear-gradient(135deg, #fffcf7 0%, #fef5eb 100%)",
+                    boxShadow: "0 20px 50px rgba(58, 48, 29, 0.08)",
+                    transition: "all 0.3s ease",
+                    "&:hover": {
+                      transform: "translateY(-4px)",
+                      boxShadow: "0 28px 65px rgba(58, 48, 29, 0.12)",
+                      borderColor: "#f6965e"
+                    }
+                  }}
+                >
+                  <Stack spacing={2} sx={{ p: 2.5 }}>
+                    <Stack direction="row" spacing={1.5} alignItems="center">
+                      <Box
+                        sx={{
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          width: 42,
+                          height: 42,
+                          borderRadius: "14px",
+                          backgroundColor: "#fff1eb",
+                          color: "#f6965e",
+                          flexShrink: 0
+                        }}
+                      >
+                        <FileText size={22} />
+                      </Box>
+                      <Box sx={{ flex: 1, minWidth: 0 }}>
+                        <Typography
+                          sx={{
+                            fontSize: 17,
+                            fontWeight: 800,
+                            color: "#2f2b28",
+                            lineHeight: 1.3,
+                            overflow: "hidden",
+                            textOverflow: "ellipsis",
+                            whiteSpace: "nowrap"
+                          }}
+                        >
+                          {tpl.name}
+                        </Typography>
+                        <Typography sx={{ fontSize: 12, color: "#8d847f", mt: 0.25 }}>
+                          ID: {tpl._id.slice(-6).toUpperCase()}
+                        </Typography>
+                      </Box>
+                    </Stack>
+
+                    <Divider sx={{ borderColor: "rgba(0,0,0,0.05)" }} />
+
+                    <Stack direction="row" justifyContent="space-between" alignItems="center">
+                      {/* <Box>
+                        {tpl.isActive && (
+                          <Chip
+                            icon={<CheckCircle size={14} style={{ color: "#10b981" }} />}
+                            label="Active"
+                            size="small"
+                            sx={{
+                              backgroundColor: "#ecfdf5",
+                              color: "#047857",
+                              fontWeight: 700,
+                              fontSize: 11,
+                              "& .MuiChip-icon": { marginLeft: "4px" }
+                            }}
+                          />
+                        )}
+                      </Box> */}
+                      <Button
+                        variant="text"
+                        size="small"
+                        sx={{
+                          color: "#f6965e",
+                          fontWeight: 700,
+                          "&:hover": { backgroundColor: "rgba(246, 150, 94, 0.08)" }
+                        }}
+                      >
+                        Edit Details
+                      </Button>
+                    </Stack>
+                  </Stack>
+                </Paper>
+              ))}
+            </Box>
+          )}
+        </Box>
+      </Paper>
+    </Box>
   );
 }
+
 export default CertificateManagement;

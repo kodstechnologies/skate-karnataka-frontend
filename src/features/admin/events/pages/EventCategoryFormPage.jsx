@@ -142,13 +142,13 @@ export default function EventCategoryFormPage() {
     setSaving(true);
     try {
       if (isEditing) {
-        await eventCategoriesApi.update(categoryId, payload);
-        toast.success("Category updated successfully");
+        const { message } = await eventCategoriesApi.update(categoryId, payload);
+        toast.success(message || "Category updated successfully");
       } else {
-        await eventCategoriesApi.create(payload);
-        toast.success("Category created successfully");
+        const { message } = await eventCategoriesApi.create(payload);
+        toast.success(message || "Category created successfully");
       }
-      navigate("/events/category");
+      navigate(-1);
     } catch (err) {
       toast.error(extractError(err));
     } finally {

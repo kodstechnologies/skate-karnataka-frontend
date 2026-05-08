@@ -1,8 +1,9 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { Award, UploadCloud, CheckCircle, Loader2, FileText, ArrowLeft } from "lucide-react";
+import { Award, UploadCloud, CheckCircle, Loader2, FileText, ArrowLeft, Plus } from "lucide-react";
 import api from "@/lib/axios";
 import toast from "react-hot-toast";
+import { Button, Box, Skeleton, Stack, Paper } from "@mui/material";
 
 // ── PDF canvas constants ─────────────────────────────────────────────────────
 const PDF_W_PT = 595;
@@ -612,6 +613,88 @@ function TemplateCoordsEditor({ previewUrl, layout, onLayoutChange, onUpdateLayo
   );
 }
 
+// ── CertificateFormSkeleton ────────────────────────────────────────────────
+function CertificateFormSkeleton() {
+  return (
+    <div className="max-w-5xl mx-auto p-4 sm:p-6 space-y-6">
+      {/* Page header skeleton */}
+      <div className="flex items-center gap-4">
+        <Skeleton variant="text" width={60} height={24} />
+        <div className="flex items-center gap-3">
+          <Skeleton variant="circular" width={22} height={22} />
+          <Skeleton variant="text" width={280} height={32} />
+        </div>
+      </div>
+
+      {/* Card skeleton */}
+      <Paper
+        elevation={0}
+        sx={{
+          p: { xs: 3, sm: 5 },
+          borderRadius: "32px",
+          border: "1px solid rgba(246, 238, 221, 0.95)",
+          background:
+            "linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(255,252,246,0.98) 100%)",
+          boxShadow: "0 26px 80px rgba(58, 48, 24, 0.07)"
+        }}
+      >
+        <Stack spacing={4}>
+          {/* Name field */}
+          <Box className="space-y-1.5">
+            <Skeleton variant="text" width={120} height={20} />
+            <Skeleton variant="rounded" width="100%" height={44} sx={{ borderRadius: "12px" }} />
+          </Box>
+
+          {/* PDF Upload */}
+          <Box className="space-y-2">
+            <Skeleton variant="text" width={120} height={20} />
+            <Skeleton
+              variant="rounded"
+              width="100%"
+              height={140}
+              sx={{ borderRadius: "16px", border: "2px dashed #f0e6d5" }}
+            />
+          </Box>
+
+          {/* Coordinate editor area */}
+          <Box className="space-y-4">
+            <Box>
+              <Skeleton variant="text" width={180} height={20} />
+              <Skeleton variant="text" width={250} height={16} />
+            </Box>
+
+            <Stack direction="row" spacing={1.5} sx={{ flexWrap: "wrap", gap: 1 }}>
+              {[...Array(5)].map((_, i) => (
+                <Skeleton
+                  key={i}
+                  variant="rounded"
+                  width={80}
+                  height={28}
+                  sx={{ borderRadius: "20px" }}
+                />
+              ))}
+            </Stack>
+
+            <Skeleton
+              variant="rounded"
+              width="100%"
+              sx={{
+                aspectRatio: `${PDF_W_PT} / ${PDF_H_PT}`,
+                borderRadius: "16px"
+              }}
+            />
+          </Box>
+
+          {/* Actions */}
+          <Stack direction="row" justifyContent="flex-end" spacing={2} sx={{ pt: 2 }}>
+            <Skeleton variant="rounded" width={140} height={42} sx={{ borderRadius: "12px" }} />
+          </Stack>
+        </Stack>
+      </Paper>
+    </div>
+  );
+}
+
 // ── CertificateTemplateFormPage ──────────────────────────────────────────────
 export default function CertificateTemplateFormPage() {
   const { templateId } = useParams(); // undefined → create, string → edit
@@ -724,11 +807,7 @@ export default function CertificateTemplateFormPage() {
   };
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center py-24">
-        <Loader2 className="animate-spin text-amber-500" size={36} />
-      </div>
-    );
+    return <CertificateFormSkeleton />;
   }
 
   return (
@@ -818,29 +897,18 @@ export default function CertificateTemplateFormPage() {
         />
 
         {/* Actions */}
-        <div className="pt-2 flex items-center justify-between gap-3 flex-wrap border-t border-stone-100">
-          {isEditMode && (
-            <button
-              onClick={handleSetActive}
-              disabled={activating || template?.isActive}
-              className="flex items-center gap-2 px-5 py-2.5 border-2 border-emerald-500 text-emerald-700 text-sm font-bold rounded-lg hover:bg-emerald-50 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {activating ? (
-                <Loader2 className="animate-spin" size={16} />
-              ) : (
-                <CheckCircle size={16} />
-              )}
-              {template?.isActive ? "Currently Active" : "Set as Active"}
-            </button>
-          )}
-          <button
+        <div
+          className={`pt-2 flex items-center justify-end gap-3 flex-wrap border-t border-stone-100`}
+        >
+          <Button
             onClick={handleSave}
             disabled={saving}
-            className="flex items-center gap-2 px-6 py-2.5 bg-stone-900 text-white text-sm font-bold rounded-lg hover:bg-stone-800 transition-all shadow-md disabled:opacity-50 ml-auto"
+            variant="contained"
+            startIcon={<Plus size={16} />}
           >
             {saving ? <Loader2 className="animate-spin" size={16} /> : <Award size={16} />}
             {isEditMode ? "Update Template" : "Save Template"}
-          </button>
+          </Button>
         </div>
       </div>
     </div>

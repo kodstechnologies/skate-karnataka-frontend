@@ -182,8 +182,11 @@ export const LoginPage = () => {
         .then((token) => {
           if (token) {
             setFcmToken(token);
-            // Cache for the post-login useFirebaseMessaging hook
+            // Cache token AND version so useFirebaseMessaging treats it as valid.
+            // Without the version key, isTokenValid is always false and the hook
+            // re-generates the token on every page load.
             localStorage.setItem("fcm_token", token);
+            localStorage.setItem("fcm_token_version", "v2-sw-pinned");
           }
         })
         .catch(() => {

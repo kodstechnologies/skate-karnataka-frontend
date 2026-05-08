@@ -8,7 +8,8 @@ import {
   TablePagination,
   TextField,
   Typography,
-  CircularProgress
+  CircularProgress,
+  Skeleton
 } from "@mui/material";
 import { ChevronRight, PencilLine, Plus, Search, Trash2 } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -103,6 +104,7 @@ export const EventsPage = () => {
       setEvents(data?.data || []);
       setTotalCount(data?.pagination?.total || 0);
     } catch (err) {
+      toast.error(err?.response?.data?.message || "Failed to fetch events");
       setError(err?.response?.data?.message || err.message || "Failed to fetch events");
     } finally {
       setLoading(false);
@@ -133,11 +135,12 @@ export const EventsPage = () => {
     if (!pendingDeleteEvent) return;
     setDeleting(true);
     try {
-      await eventsApi.delete(pendingDeleteEvent._id || pendingDeleteEvent.id);
-      toast.success("Event deleted successfully");
-      fetchEvents(searchTerm, page + 1, rowsPerPage);
+      const { message } = await eventsApi.delete(pendingDeleteEvent._id || pendingDeleteEvent.id);
+      setEvents((prev) =>
+        prev.filter((item) => item._id !== pendingDeleteEvent._id || pendingDeleteEvent.id)
+      );
+      toast.success(message || "Event deleted successfully");
     } catch (err) {
-      console.error("Failed to delete event", err);
       toast.error(err?.response?.data?.message || "Failed to delete event");
     } finally {
       setDeleting(false);
@@ -259,8 +262,60 @@ export const EventsPage = () => {
 
         <Box sx={{ px: 3, pb: 3 }}>
           {loading ? (
-            <Box sx={{ display: "flex", justifyContent: "center", py: 8 }}>
-              <CircularProgress sx={{ color: "#f6765e" }} />
+            <Box
+              sx={{
+                display: "grid",
+                gridTemplateColumns: {
+                  xs: "1fr",
+                  md: "repeat(2, minmax(0, 1fr))",
+                  xl: "repeat(3, minmax(0, 1fr))"
+                },
+                gap: 2
+              }}
+            >
+              {[...Array(6)].map((_, index) => (
+                <Paper
+                  key={index}
+                  elevation={0}
+                  sx={{
+                    borderRadius: "24px",
+                    border: "1px solid #f0ddd5",
+                    overflow: "hidden",
+                    background: "linear-gradient(135deg, #fff9f7 0%, #fef0eb 100%)",
+                    boxShadow: "0 20px 50px rgba(56, 36, 29, 0.08)"
+                  }}
+                >
+                  <Box sx={{ px: 2, py: 1.5 }}>
+                    <Skeleton
+                      variant="rounded"
+                      width={80}
+                      height={24}
+                      sx={{ borderRadius: "12px" }}
+                    />
+                  </Box>
+
+                  <Stack spacing={1.35} sx={{ p: 2.25 }}>
+                    <Skeleton variant="text" width="80%" height={28} sx={{ mb: 0.5 }} />
+                    <Box sx={{ minHeight: 52 }}>
+                      <Skeleton variant="text" width="100%" />
+                      <Skeleton variant="text" width="70%" />
+                    </Box>
+
+                    <Box sx={{ mt: 1 }}>
+                      <Skeleton variant="text" width={60} height={16} sx={{ mb: 0.5 }} />
+                      <Skeleton variant="text" width="50%" height={16} />
+
+                      <Skeleton variant="text" width={60} height={16} sx={{ mt: 1, mb: 0.5 }} />
+                      <Skeleton variant="text" width="50%" height={16} />
+                    </Box>
+
+                    <Stack direction="row" spacing={1} sx={{ pt: 1 }}>
+                      <Skeleton variant="rounded" width="100%" height={40} />
+                      <Skeleton variant="rounded" width="100%" height={40} />
+                    </Stack>
+                  </Stack>
+                </Paper>
+              ))}
             </Box>
           ) : error ? (
             <Paper
