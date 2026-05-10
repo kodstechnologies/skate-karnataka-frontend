@@ -8,10 +8,12 @@ import {
   Stack,
   TextField,
   Typography,
-  Skeleton
+  Skeleton,
+  CircularProgress
 } from "@mui/material";
 import { ChevronRight, Image, Save, Video } from "lucide-react";
 import { Link as RouterLink, useNavigate, useParams } from "react-router-dom";
+import { UploadProgressBanner } from "@/components/ui/UploadProgressBanner";
 import galleryHero from "@/assets/Gallery_header.jpg";
 import { useGalleryStore } from "@/features/admin/gallery/store/gallery-store";
 
@@ -55,6 +57,7 @@ export const GalleryFormPage = () => {
   const [videoPreview, setVideoPreview] = useState(null);
   const [errors, setErrors] = useState({});
   const [synced, setSynced] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Sync form when existingItem loads
   if (isEditing && existingItem && !synced) {
@@ -109,14 +112,17 @@ export const GalleryFormPage = () => {
     if (about.trim()) formData.append("about", about.trim());
 
     try {
+      setIsSubmitting(true);
       if (isEditing) {
         await updateItem(itemId, formData);
       } else {
         await addItem(formData);
       }
+      setIsSubmitting(false);
       navigate("/gallery");
     } catch (err) {
       console.error("Submit error:", err);
+      setIsSubmitting(false);
     }
   };
 
@@ -243,6 +249,7 @@ export const GalleryFormPage = () => {
           boxShadow: "0 26px 80px rgba(48,30,24,0.07)"
         }}
       >
+        <UploadProgressBanner isSubmitting={isSubmitting} isEditing={isEditing} />
         <Box sx={{ mb: 3 }}>
           <Typography
             variant="h5"
@@ -540,18 +547,31 @@ export const GalleryFormPage = () => {
           <Button
             variant="outlined"
             onClick={() => navigate("/gallery")}
+            disabled={isSubmitting}
             sx={{ width: { xs: "100%", sm: "auto" }, py: 1 }}
           >
             Cancel
           </Button>
           <Button
             variant="contained"
-            startIcon={<Save size={16} />}
+            startIcon={
+              isSubmitting ? (
+                <CircularProgress size={16} thickness={5} sx={{ color: "white" }} />
+              ) : (
+                <Save size={16} />
+              )
+            }
             onClick={handleSubmit}
-            disabled={isLoading}
+            disabled={isLoading || isSubmitting}
             sx={{ width: { xs: "100%", sm: "auto" }, py: 1 }}
           >
-            {isEditing ? "Save changes" : "Create gallery item"}
+            {isSubmitting
+              ? isEditing
+                ? "Saving changes..."
+                : "Creating gallery item..."
+              : isEditing
+                ? "Save changes"
+                : "Create gallery item"}
           </Button>
         </Stack>
       </Paper>

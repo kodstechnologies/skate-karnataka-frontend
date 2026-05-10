@@ -10,8 +10,10 @@ import {
   Skeleton,
   Stack,
   TextField,
-  Typography
+  Typography,
+  CircularProgress
 } from "@mui/material";
+import { UploadProgressBanner } from "@/components/ui/UploadProgressBanner";
 import { ChevronRight, Mail, Phone, Save, Clock, Headphones, ShieldCheck } from "lucide-react";
 import { Link as RouterLink } from "react-router-dom";
 import contactHero from "@/assets/contect.png";
@@ -219,6 +221,7 @@ export const ContactUsPage = () => {
               </Stack>
             ) : (
               <Stack spacing={3}>
+                <UploadProgressBanner isSubmitting={isSaving} isEditing={true} />
                 {/* Email */}
                 <TextField
                   fullWidth
@@ -265,9 +268,14 @@ export const ContactUsPage = () => {
                 <Stack direction="row" justifyContent="flex-end">
                   <Button
                     variant="contained"
-                    startIcon={<Save size={16} />}
+                    startIcon={
+                      isSaving ? (
+                        <CircularProgress size={16} thickness={5} sx={{ color: "white" }} />
+                      ) : (
+                        <Save size={16} />
+                      )
+                    }
                     onClick={handleSubmit}
-                    loading={isSaving}
                     disabled={!hasChanges || isSaving}
                     sx={{
                       backgroundColor: "#f6765e",

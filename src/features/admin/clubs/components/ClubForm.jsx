@@ -49,7 +49,7 @@ const SectionCard = ({ icon, title, description, children }) => (
   </Paper>
 );
 
-const FileUploadField = ({ label, fileValue, error, helperText, onChange }) => (
+const FileUploadField = ({ label, fileValue, existingImageUrl, error, helperText, onChange }) => (
   <Box
     sx={{
       p: 2.25,
@@ -91,6 +91,14 @@ const FileUploadField = ({ label, fileValue, error, helperText, onChange }) => (
             <div className="text-xs text-[#978883]">Image ready to save</div>
           </div>
         </div>
+      ) : existingImageUrl ? (
+        <div className="rounded-2xl border border-[#efe2dc] bg-white p-3 shadow-sm">
+          <img
+            src={existingImageUrl}
+            alt="Existing preview"
+            className="h-44 w-full rounded-xl object-cover"
+          />
+        </div>
       ) : (
         <Typography sx={{ color: "#9b8d88", fontSize: 13 }}>No Image selected</Typography>
       )}
@@ -103,7 +111,14 @@ const FileUploadField = ({ label, fileValue, error, helperText, onChange }) => (
   </Box>
 );
 
-export const ClubForm = ({ formData, errors, districts, onFieldChange, onFileChange }) => {
+export const ClubForm = ({
+  formData,
+  existingImageUrl,
+  errors,
+  districts,
+  onFieldChange,
+  onFileChange
+}) => {
   return (
     <Stack spacing={2.5}>
       <SectionCard
@@ -168,6 +183,7 @@ export const ClubForm = ({ formData, errors, districts, onFieldChange, onFileCha
           <FileUploadField
             label="Club Image"
             fileValue={formData.img}
+            existingImageUrl={existingImageUrl}
             error={errors.img}
             helperText="Optional image upload"
             onChange={onFileChange("img")}

@@ -1,7 +1,16 @@
 import { useEffect, useMemo, useState } from "react";
-import { Box, Breadcrumbs, Button, Paper, Stack, Typography } from "@mui/material";
+import {
+  Box,
+  Breadcrumbs,
+  Button,
+  Paper,
+  Stack,
+  Typography,
+  CircularProgress
+} from "@mui/material";
 import { ChevronRight, Save } from "lucide-react";
 import { Link as RouterLink, useNavigate, useParams } from "react-router-dom";
+import { UploadProgressBanner } from "@/components/ui/UploadProgressBanner";
 import clubHero from "@/assets/Club_header.jpg";
 import { ClubForm } from "@/features/admin/clubs/components/ClubForm";
 import {
@@ -55,6 +64,7 @@ export const ClubFormPage = () => {
     isEditing && existingClub ? createClubFormValues(existingClub) : initialClubFormValues
   );
   const [errors, setErrors] = useState({});
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleFieldChange = (field) => (event) => {
     setFormData((current) => ({ ...current, [field]: event.target.value }));
@@ -89,10 +99,12 @@ export const ClubFormPage = () => {
       return;
     }
 
+    setIsSubmitting(true);
     const success =
       isEditing && existingClub
         ? await updateClub(existingClub.id, formData)
         : await addClub(formData);
+    setIsSubmitting(false);
 
     if (success) {
       navigate("/clubs");
@@ -234,6 +246,7 @@ export const ClubFormPage = () => {
           boxShadow: "0 26px 80px rgba(48, 30, 24, 0.07)"
         }}
       >
+        <UploadProgressBanner isSubmitting={isSubmitting} isEditing={isEditing} />
         <Box sx={{ mb: 3 }}>
           <Typography
             variant="h5"
@@ -251,6 +264,7 @@ export const ClubFormPage = () => {
         <Box>
           <ClubForm
             formData={formData}
+            existingImageUrl={existingClub?.img}
             errors={errors}
             districts={districts}
             onFieldChange={handleFieldChange}
@@ -268,11 +282,28 @@ export const ClubFormPage = () => {
             justifyContent: "flex-end"
           }}
         >
-          <Button variant="outlined" onClick={() => navigate("/clubs")}>
+          <Button variant="outlined" onClick={() => navigate("/clubs")} disabled={isSubmitting}>
             Cancel
           </Button>
-          <Button variant="contained" startIcon={<Save size={16} />} onClick={handleSubmit}>
-            {isEditing ? "Save changes" : "Create club"}
+          <Button
+            variant="contained"
+            startIcon={
+              isSubmitting ? (
+                <CircularProgress size={16} thickness={5} sx={{ color: "white" }} />
+              ) : (
+                <Save size={16} />
+              )
+            }
+            onClick={handleSubmit}
+            disabled={isSubmitting}
+          >
+            {isSubmitting
+              ? isEditing
+                ? "Saving changes..."
+                : "Creating club..."
+              : isEditing
+                ? "Save changes"
+                : "Create club"}
           </Button>
         </Stack>
       </Paper>

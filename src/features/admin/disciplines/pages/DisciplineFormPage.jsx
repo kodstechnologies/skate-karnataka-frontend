@@ -1,7 +1,17 @@
 import { useEffect, useMemo, useState } from "react";
-import { Box, Breadcrumbs, Button, Chip, Paper, Stack, Typography } from "@mui/material";
+import {
+  Box,
+  Breadcrumbs,
+  Button,
+  Chip,
+  Paper,
+  Stack,
+  Typography,
+  CircularProgress
+} from "@mui/material";
 import { ChevronRight, Layers, Save } from "lucide-react";
 import { Link as RouterLink, useNavigate, useParams } from "react-router-dom";
+import { UploadProgressBanner } from "@/components/ui/UploadProgressBanner";
 import disciplinesHero from "@/assets/Disciplines_header.png";
 import { DisciplineForm } from "@/features/admin/disciplines/components/DisciplineForm";
 import {
@@ -52,6 +62,7 @@ export const DisciplineFormPage = () => {
       : initialDisciplineFormValues
   );
   const [errors, setErrors] = useState({});
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Re-populate form once existing data loads (direct URL access)
   useEffect(() => {
@@ -86,10 +97,12 @@ export const DisciplineFormPage = () => {
       return;
     }
 
+    setIsSubmitting(true);
     const success =
       isEditing && existingDiscipline
         ? await updateDiscipline(existingDiscipline.id, formData)
         : await addDiscipline(formData);
+    setIsSubmitting(false);
 
     if (success) {
       navigate("/disciplines");
@@ -251,6 +264,7 @@ export const DisciplineFormPage = () => {
           boxShadow: "0 26px 80px rgba(48,30,24,0.07)"
         }}
       >
+        <UploadProgressBanner isSubmitting={isSubmitting} isEditing={isEditing} />
         <Box sx={{ mb: 3 }}>
           <Typography
             variant="h5"
@@ -286,20 +300,37 @@ export const DisciplineFormPage = () => {
             justifyContent: "flex-end"
           }}
         >
-          <Button variant="outlined" onClick={() => navigate("/disciplines")}>
+          <Button
+            variant="outlined"
+            onClick={() => navigate("/disciplines")}
+            disabled={isSubmitting}
+          >
             Cancel
           </Button>
           <Button
             variant="contained"
-            startIcon={<Save size={16} />}
+            startIcon={
+              isSubmitting ? (
+                <CircularProgress size={16} thickness={5} sx={{ color: "white" }} />
+              ) : (
+                <Save size={16} />
+              )
+            }
             onClick={handleSubmit}
+            disabled={isSubmitting}
             sx={{
               backgroundColor: "#f6765e",
               boxShadow: "none",
               "&:hover": { backgroundColor: "#ea6b54", boxShadow: "none" }
             }}
           >
-            {isEditing ? "Save changes" : "Create discipline"}
+            {isSubmitting
+              ? isEditing
+                ? "Saving changes..."
+                : "Creating discipline..."
+              : isEditing
+                ? "Save changes"
+                : "Create discipline"}
           </Button>
         </Stack>
       </Paper>

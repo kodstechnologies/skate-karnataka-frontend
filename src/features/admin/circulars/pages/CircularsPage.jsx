@@ -42,31 +42,17 @@ const formatDate = (dateStr) => {
 };
 
 const ImageAvatar = ({ src, alt, sx }) => {
-  const [loaded, setLoaded] = useState(!src);
   return (
-    <Box sx={{ position: "relative", width: sx?.width, height: sx?.height, flexShrink: 0 }}>
-      {!loaded && (
-        <Skeleton
-          variant="rounded"
-          width="100%"
-          height="100%"
-          sx={{ position: "absolute", inset: 0, borderRadius: sx?.borderRadius }}
-        />
-      )}
-      <Avatar
-        src={src}
-        alt={alt}
-        variant="rounded"
-        sx={{
-          ...sx,
-          width: "100%",
-          height: "100%",
-          opacity: loaded ? 1 : 0,
-          transition: "opacity 0.3s"
-        }}
-        imgProps={{ onLoad: () => setLoaded(true), onError: () => setLoaded(true) }}
-      />
-    </Box>
+    <Avatar
+      src={src}
+      alt={alt}
+      variant="rounded"
+      sx={{
+        ...sx,
+        flexShrink: 0,
+        backgroundColor: "rgba(0,0,0,0.04)"
+      }}
+    />
   );
 };
 

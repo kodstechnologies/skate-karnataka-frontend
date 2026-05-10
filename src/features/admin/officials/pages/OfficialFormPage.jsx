@@ -15,10 +15,12 @@ import {
   Switch,
   Autocomplete,
   Chip,
-  Skeleton
+  Skeleton,
+  CircularProgress
 } from "@mui/material";
 import { ChevronRight, Save, User, Mail, Phone, ShieldCheck, Users } from "lucide-react";
 import { Link as RouterLink, useNavigate, useParams } from "react-router-dom";
+import { UploadProgressBanner } from "@/components/ui/UploadProgressBanner";
 import officialHero from "@/assets/State_official_header.jpg";
 import { useOfficialsStore } from "../store/officials-store";
 
@@ -59,6 +61,7 @@ export const OfficialFormPage = () => {
   const [imgFile, setImgFile] = useState(null);
   const [imgPreview, setImgPreview] = useState(null);
   const [errors, setErrors] = useState({});
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Sync form data when existingOfficial is loaded or changed
   const [prevOfficial, setPrevOfficial] = useState(null);
@@ -110,6 +113,7 @@ export const OfficialFormPage = () => {
   const handleSubmit = async () => {
     if (!validate()) return;
 
+    setIsSubmitting(true);
     const data = new FormData();
     data.append("fullName", formData.fullName);
     data.append("email", formData.email);
@@ -131,6 +135,8 @@ export const OfficialFormPage = () => {
       navigate("/officials");
     } catch (error) {
       console.error("Failed to save official:", error);
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -226,6 +232,7 @@ export const OfficialFormPage = () => {
           </Stack>
         ) : (
           <>
+            <UploadProgressBanner isSubmitting={isSubmitting} isEditing={isEditing} />
             <Typography variant="h6" sx={{ mb: 4, fontWeight: 700, color: "#2f2829" }}>
               Official Information
             </Typography>
@@ -432,9 +439,15 @@ export const OfficialFormPage = () => {
                 </Button>
                 <Button
                   variant="contained"
-                  startIcon={<Save size={18} />}
+                  startIcon={
+                    isSubmitting ? (
+                      <CircularProgress size={16} thickness={5} sx={{ color: "white" }} />
+                    ) : (
+                      <Save size={18} />
+                    )
+                  }
                   onClick={handleSubmit}
-                  disabled={isLoading}
+                  disabled={isLoading || isSubmitting}
                   sx={{
                     borderRadius: "14px",
                     px: 4,
@@ -442,7 +455,13 @@ export const OfficialFormPage = () => {
                     "&:hover": { backgroundColor: "#ea6b54" }
                   }}
                 >
-                  {isEditing ? "Save Changes" : "Create Official"}
+                  {isSubmitting
+                    ? isEditing
+                      ? "Saving..."
+                      : "Creating..."
+                    : isEditing
+                      ? "Save Changes"
+                      : "Create Official"}
                 </Button>
               </Stack>
             </Stack>

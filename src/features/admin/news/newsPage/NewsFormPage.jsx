@@ -16,6 +16,7 @@ import ImageOutlinedIcon from "@mui/icons-material/ImageOutlined";
 import UploadFileOutlinedIcon from "@mui/icons-material/UploadFileOutlined";
 import { Link as RouterLink, useNavigate, useParams } from "react-router-dom";
 import { newsApi } from "@/api/news-api";
+import { UploadProgressBanner } from "@/components/ui/UploadProgressBanner";
 import newsHero from "@/assets/Skating_header.jpg";
 
 const defaultForm = {
@@ -71,6 +72,9 @@ export const NewsFormPage = () => {
             about: item.about ?? "",
             img: null // require re-upload if changing, or leave null to keep
           });
+          if (item.img) {
+            setImgPreviewUrl(item.img);
+          }
         } catch (error) {
           setFetchError("The news article you are trying to edit is not available.");
         } finally {
@@ -84,7 +88,7 @@ export const NewsFormPage = () => {
   // Clean up object URL on unmount
   useEffect(() => {
     return () => {
-      if (imgPreviewUrl) {
+      if (imgPreviewUrl && imgPreviewUrl.startsWith("blob:")) {
         URL.revokeObjectURL(imgPreviewUrl);
       }
     };
@@ -100,7 +104,7 @@ export const NewsFormPage = () => {
   const handleImageChange = (event) => {
     const file = event.target.files?.[0];
     if (!file) return;
-    if (imgPreviewUrl) {
+    if (imgPreviewUrl && imgPreviewUrl.startsWith("blob:")) {
       URL.revokeObjectURL(imgPreviewUrl);
     }
     setImgPreviewUrl(URL.createObjectURL(file));
@@ -247,6 +251,7 @@ export const NewsFormPage = () => {
           boxShadow: "0 26px 80px rgba(48, 30, 24, 0.07)"
         }}
       >
+        <UploadProgressBanner isSubmitting={submitting} isEditing={isEditing} />
         <Stack spacing={2.5}>
           {apiError && (
             <Alert severity="error" onClose={() => setApiError(null)} sx={{ borderRadius: "14px" }}>
@@ -381,16 +386,18 @@ export const NewsFormPage = () => {
                 Choose Cover Image
                 <input type="file" accept="image/*" hidden onChange={handleImageChange} />
               </Button>
-              {formData.img ? (
+              {imgPreviewUrl ? (
                 <div className="rounded-2xl border border-[#efe2dc] bg-white p-3 shadow-sm">
                   <img
                     src={imgPreviewUrl}
                     alt="Cover preview"
                     className="h-44 w-full rounded-xl object-cover"
                   />
-                  <Typography sx={{ mt: 1, fontSize: 13, color: "#6f6462" }}>
-                    {formData.img.name}
-                  </Typography>
+                  {formData.img && (
+                    <Typography sx={{ mt: 1, fontSize: 13, color: "#6f6462" }}>
+                      {formData.img.name}
+                    </Typography>
+                  )}
                 </div>
               ) : (
                 <Typography sx={{ color: "#9b8d88", fontSize: 13 }}>

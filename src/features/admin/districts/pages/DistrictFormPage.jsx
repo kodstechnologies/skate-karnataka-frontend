@@ -1,7 +1,16 @@
 import { useMemo, useState } from "react";
-import { Box, Breadcrumbs, Button, Paper, Stack, Typography } from "@mui/material";
+import {
+  Box,
+  Breadcrumbs,
+  Button,
+  Paper,
+  Stack,
+  Typography,
+  CircularProgress
+} from "@mui/material";
 import { ChevronRight, Save } from "lucide-react";
 import { Link as RouterLink, useNavigate, useParams } from "react-router-dom";
+import { UploadProgressBanner } from "@/components/ui/UploadProgressBanner";
 import districtHero from "@/assets/District_header.jpg";
 import { DistrictForm } from "@/features/admin/districts/components/DistrictForm";
 import {
@@ -38,6 +47,7 @@ export const DistrictFormPage = () => {
       : initialDistrictFormValues
   );
   const [errors, setErrors] = useState({});
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleFieldChange = (field) => (event) => {
     setFormData((current) => ({ ...current, [field]: event.target.value }));
@@ -60,12 +70,14 @@ export const DistrictFormPage = () => {
       return;
     }
 
+    setIsSubmitting(true);
     let success;
     if (isEditing && existingDistrict) {
       success = await updateDistrict(existingDistrict.id, formData);
     } else {
       success = await addDistrict(formData);
     }
+    setIsSubmitting(false);
 
     if (success) {
       navigate("/districts");
@@ -182,6 +194,7 @@ export const DistrictFormPage = () => {
           boxShadow: "0 26px 80px rgba(48, 30, 24, 0.07)"
         }}
       >
+        <UploadProgressBanner isSubmitting={isSubmitting} isEditing={isEditing} />
         <Box sx={{ mb: 3 }}>
           <Typography
             variant="h5"
@@ -213,11 +226,28 @@ export const DistrictFormPage = () => {
             justifyContent: "flex-end"
           }}
         >
-          <Button variant="outlined" onClick={() => navigate("/districts")}>
+          <Button variant="outlined" onClick={() => navigate("/districts")} disabled={isSubmitting}>
             Cancel
           </Button>
-          <Button variant="contained" startIcon={<Save size={16} />} onClick={handleSubmit}>
-            {isEditing ? "Save changes" : "Create district"}
+          <Button
+            variant="contained"
+            startIcon={
+              isSubmitting ? (
+                <CircularProgress size={16} thickness={5} sx={{ color: "white" }} />
+              ) : (
+                <Save size={16} />
+              )
+            }
+            onClick={handleSubmit}
+            disabled={isSubmitting}
+          >
+            {isSubmitting
+              ? isEditing
+                ? "Saving changes..."
+                : "Creating district..."
+              : isEditing
+                ? "Save changes"
+                : "Create district"}
           </Button>
         </Stack>
       </Paper>
