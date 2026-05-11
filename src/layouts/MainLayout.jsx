@@ -6,6 +6,7 @@ import { useFirebaseMessaging } from "@/hooks/useFirebaseMessaging";
 
 export const MainLayout = () => {
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
+  const role = useAuthStore((state) => state.role);
   const location = useLocation();
 
   // Register the FCM foreground notification listener for the entire
@@ -15,6 +16,12 @@ export const MainLayout = () => {
 
   if (!isAuthenticated) {
     return <Navigate to="/login" state={{ from: location }} replace />;
+  }
+
+  // Only Admin and State roles are permitted to access the dashboard.
+  const userRole = (role || "").toLowerCase();
+  if (userRole !== "admin" && userRole !== "state") {
+    return <Navigate to="/login" replace />;
   }
 
   return (

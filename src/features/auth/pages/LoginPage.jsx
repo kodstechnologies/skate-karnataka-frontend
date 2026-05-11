@@ -20,6 +20,7 @@ import {
 import { Phone, LogIn, ArrowLeft, CheckCircle2, ShieldCheck, Timer } from "lucide-react";
 import { useLottie } from "lottie-react";
 import { useAuthStore } from "@/features/auth/store/auth-store";
+import toast from "react-hot-toast";
 import skateLottie from "@/assets/LottieFiles/SkateboardingBoy.json";
 import logo from "@/assets/karnataka-roller-skating-logo.png";
 import { getFCMToken } from "@/firebase/fcm";
@@ -110,6 +111,7 @@ export const LoginPage = () => {
   const navigate = useNavigate();
   const requestLoginOtp = useAuthStore((state) => state.requestLoginOtp);
   const verifyLoginOtp = useAuthStore((state) => state.verifyLoginOtp);
+  const logout = useAuthStore((state) => state.logout);
   const isLoading = useAuthStore((state) => state.isLoading);
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
   const theme = useTheme();
@@ -169,6 +171,16 @@ export const LoginPage = () => {
     e.preventDefault();
     try {
       const data = await requestLoginOtp(identifier);
+
+      if (data && data.type) {
+        const userRole = data.type.toLowerCase();
+        if (userRole !== "admin" && userRole !== "state") {
+          toast.dismiss();
+          toast.error("Only admin and state roles are allowed to login.");
+          return;
+        }
+      }
+
       setUserId(data.id);
       setTimeLeft(300);
       setStep(2);
