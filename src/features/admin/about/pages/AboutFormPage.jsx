@@ -373,8 +373,8 @@ export const AboutFormPage = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
-    if (!about && !isLoading) fetchAbout();
-  }, [about, isLoading, fetchAbout]);
+    fetchAbout();
+  }, [fetchAbout]);
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect

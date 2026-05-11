@@ -82,7 +82,7 @@ export const AppHeader = () => {
   };
 
   return (
-    <header className="sticky top-0 z-20 flex h-[74px] items-center justify-between border-b border-[#efe2dc] bg-[#fbf6f4]/85 px-4 backdrop-blur-xl lg:px-6">
+    <header className="fixed top-0 left-0 right-0 z-20 flex h-[74px] items-center justify-between border-b border-[#efe2dc] bg-[#fbf6f4]/85 px-4 backdrop-blur-xl lg:px-6">
       <div className="flex items-center gap-3 lg:gap-4">
         <button
           type="button"

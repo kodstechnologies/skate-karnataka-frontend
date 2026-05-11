@@ -66,7 +66,7 @@ export const AppSidebar = () => {
       />
 
       <aside
-        className={`fixed inset-y-0 left-0 z-40 flex h-screen flex-col overflow-hidden border-r border-[#efe2dc] bg-[#fbf6f4] shadow-[0_14px_40px_rgba(114,88,79,0.12)] transition-transform duration-300 lg:sticky lg:top-0 lg:z-0 lg:h-[calc(100vh-74px)] lg:translate-x-0 lg:self-start ${
+        className={`fixed inset-y-0 left-0 z-40 flex h-screen flex-col overflow-hidden border-r border-[#efe2dc] bg-[#fbf6f4] shadow-[0_14px_40px_rgba(114,88,79,0.12)] transition-transform duration-300 lg:sticky lg:top-[74px] lg:z-0 lg:h-full lg:translate-x-0 lg:self-start ${
           mobileSidebarOpen ? "translate-x-0" : "-translate-x-full"
         } w-[280px] ${sidebarOpen ? "lg:w-[280px]" : "lg:w-[104px]"}`}
       >

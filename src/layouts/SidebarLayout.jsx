@@ -2,7 +2,7 @@ import { AppSidebar } from "@/components/navigation/AppSidebar";
 
 export const SidebarLayout = ({ children }) => {
   return (
-    <div className="flex h-[calc(100vh-74px)] min-h-0 w-full overflow-hidden bg-transparent text-[#2f2829]">
+    <div className="flex h-full min-h-0 w-full overflow-hidden bg-transparent text-[#2f2829]">
       <AppSidebar />
 
       <div className="flex min-w-0 min-h-0 flex-1 flex-col">
