@@ -579,6 +579,17 @@ export const ClubsPage = () => {
           rowsPerPage={rowsPerPage}
           onRowsPerPageChange={handleChangeRowsPerPage}
           rowsPerPageOptions={[5, 10, 25]}
+          sx={{
+            "& .MuiTablePagination-toolbar": {
+              flexWrap: "wrap",
+              justifyContent: "flex-end",
+              gap: 0.5,
+              py: 1
+            },
+            "& .MuiTablePagination-spacer": { display: "none" },
+            "& .MuiTablePagination-selectLabel": { display: { xs: "none", sm: "block" } },
+            overflowX: "hidden"
+          }}
         />
       </Paper>
 

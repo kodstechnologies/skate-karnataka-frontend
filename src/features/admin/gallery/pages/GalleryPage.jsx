@@ -545,6 +545,17 @@ export const GalleryPage = () => {
             setPage(0);
           }}
           rowsPerPageOptions={[6, 9, 12]}
+          sx={{
+            "& .MuiTablePagination-toolbar": {
+              flexWrap: "wrap",
+              justifyContent: "flex-end",
+              gap: 0.5,
+              py: 1
+            },
+            "& .MuiTablePagination-spacer": { display: "none" },
+            "& .MuiTablePagination-selectLabel": { display: { xs: "none", sm: "block" } },
+            overflowX: "hidden"
+          }}
         />
       </Paper>
 

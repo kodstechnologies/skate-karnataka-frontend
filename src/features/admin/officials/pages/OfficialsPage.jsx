@@ -206,9 +206,7 @@ export const OfficialsPage = () => {
                 <TableCell sx={{ color: "#7e716d", fontWeight: 700, fontSize: 13 }}>
                   Modules
                 </TableCell>
-                <TableCell sx={{ color: "#7e716d", fontWeight: 700, fontSize: 13 }}>
-                  Status
-                </TableCell>
+
                 <TableCell sx={{ color: "#7e716d", fontWeight: 700, fontSize: 13 }}>
                   Actions
                 </TableCell>
@@ -234,14 +232,7 @@ export const OfficialsPage = () => {
                         sx={{ borderRadius: 1 }}
                       />
                     </TableCell>
-                    <TableCell>
-                      <Skeleton
-                        variant="rectangular"
-                        width={80}
-                        height={24}
-                        sx={{ borderRadius: 1 }}
-                      />
-                    </TableCell>
+
                     <TableCell>
                       <Skeleton
                         variant="rectangular"
@@ -321,36 +312,7 @@ export const OfficialsPage = () => {
                           )}
                       </Stack>
                     </TableCell>
-                    <TableCell>
-                      {isLoading ? (
-                        <Skeleton
-                          variant="rectangular"
-                          width={80}
-                          height={24}
-                          sx={{ borderRadius: 1 }}
-                        />
-                      ) : (
-                        <Chip
-                          label={
-                            official.status === true || official.status === "true"
-                              ? "Active"
-                              : "Inactive"
-                          }
-                          size="small"
-                          sx={{
-                            backgroundColor:
-                              official.status === true || official.status === "true"
-                                ? "#edf8ef"
-                                : "#fef1f1",
-                            color:
-                              official.status === true || official.status === "true"
-                                ? "#2f8f4e"
-                                : "#d32f2f",
-                            fontWeight: 700
-                          }}
-                        />
-                      )}
-                    </TableCell>
+
                     <TableCell>
                       <Stack direction="row" spacing={1}>
                         <Tooltip title="Edit">
@@ -383,7 +345,7 @@ export const OfficialsPage = () => {
                 ))
               ) : (
                 <TableRow>
-                  <TableCell colSpan={5} sx={{ py: 8, textAlign: "center", color: "#978a86" }}>
+                  <TableCell colSpan={4} sx={{ py: 8, textAlign: "center", color: "#978a86" }}>
                     No officials found matching your search.
                   </TableCell>
                 </TableRow>
@@ -403,6 +365,17 @@ export const OfficialsPage = () => {
             setPage(0);
           }}
           rowsPerPageOptions={[5, 10, 25]}
+          sx={{
+            "& .MuiTablePagination-toolbar": {
+              flexWrap: "wrap",
+              justifyContent: "flex-end",
+              gap: 0.5,
+              py: 1
+            },
+            "& .MuiTablePagination-spacer": { display: "none" },
+            "& .MuiTablePagination-selectLabel": { display: { xs: "none", sm: "block" } },
+            overflowX: "hidden"
+          }}
         />
       </Paper>
 

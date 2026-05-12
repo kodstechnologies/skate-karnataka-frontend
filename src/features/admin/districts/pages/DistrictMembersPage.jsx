@@ -264,15 +264,6 @@ export const DistrictMembersPage = () => {
                         </Typography>
                       </Box>
                     </Stack>
-                    <Chip
-                      size="small"
-                      label={member.isActive ? "Active" : "Inactive"}
-                      sx={{
-                        backgroundColor: member.isActive ? "#e9f9ef" : "#f3ecea",
-                        color: member.isActive ? "#22a35a" : "#8f817e",
-                        fontWeight: 700
-                      }}
-                    />
                   </Stack>
                   <Typography sx={{ fontSize: 13, color: "#6b5e5a" }}>
                     {member.phone} · {member.email || "—"}
@@ -316,29 +307,27 @@ export const DistrictMembersPage = () => {
           <Table sx={{ minWidth: 800 }}>
             <TableHead>
               <TableRow sx={{ backgroundColor: "#fdf7f3" }}>
-                {["Member", "Phone", "Email", "Address", "Gender", "Status", "Actions"].map(
-                  (col) => (
-                    <TableCell
-                      key={col}
-                      sx={{
-                        borderBottom: "1px solid #f0e1da",
-                        color: "#7e716d",
-                        fontWeight: 700,
-                        fontSize: 13,
-                        whiteSpace: "nowrap"
-                      }}
-                    >
-                      {col}
-                    </TableCell>
-                  )
-                )}
+                {["Member", "Phone", "Email", "Address", "Gender", "Actions"].map((col) => (
+                  <TableCell
+                    key={col}
+                    sx={{
+                      borderBottom: "1px solid #f0e1da",
+                      color: "#7e716d",
+                      fontWeight: 700,
+                      fontSize: 13,
+                      whiteSpace: "nowrap"
+                    }}
+                  >
+                    {col}
+                  </TableCell>
+                ))}
               </TableRow>
             </TableHead>
             <TableBody>
               {isLoading ? (
                 Array.from({ length: 3 }).map((_, i) => (
                   <TableRow key={i}>
-                    {Array.from({ length: 7 }).map((__, j) => (
+                    {Array.from({ length: 6 }).map((__, j) => (
                       <TableCell key={j}>
                         <Skeleton variant="text" />
                       </TableCell>
@@ -401,17 +390,7 @@ export const DistrictMembersPage = () => {
                     <TableCell sx={{ fontSize: 13, color: "#5a4f4c", textTransform: "capitalize" }}>
                       {member.gender || "—"}
                     </TableCell>
-                    <TableCell>
-                      <Chip
-                        size="small"
-                        label={member.isActive ? "Active" : "Inactive"}
-                        sx={{
-                          backgroundColor: member.isActive ? "#e9f9ef" : "#f3ecea",
-                          color: member.isActive ? "#22a35a" : "#8f817e",
-                          fontWeight: 700
-                        }}
-                      />
-                    </TableCell>
+
                     <TableCell>
                       <Stack direction="row" spacing={1}>
                         <IconButton
@@ -440,7 +419,7 @@ export const DistrictMembersPage = () => {
                 ))
               ) : (
                 <TableRow>
-                  <TableCell colSpan={7} sx={{ py: 6, textAlign: "center", color: "#978a86" }}>
+                  <TableCell colSpan={6} sx={{ py: 6, textAlign: "center", color: "#978a86" }}>
                     No members found for this district.
                   </TableCell>
                 </TableRow>
@@ -460,6 +439,17 @@ export const DistrictMembersPage = () => {
             setPage(0);
           }}
           rowsPerPageOptions={[5, 10, 25]}
+          sx={{
+            "& .MuiTablePagination-toolbar": {
+              flexWrap: "wrap",
+              justifyContent: "flex-end",
+              gap: 0.5,
+              py: 1
+            },
+            "& .MuiTablePagination-spacer": { display: "none" },
+            "& .MuiTablePagination-selectLabel": { display: { xs: "none", sm: "block" } },
+            overflowX: "hidden"
+          }}
         />
       </Paper>
 

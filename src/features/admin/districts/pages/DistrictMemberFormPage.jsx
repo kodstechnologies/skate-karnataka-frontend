@@ -20,6 +20,7 @@ import { Link as RouterLink, useNavigate, useParams } from "react-router-dom";
 import districtHero from "@/assets/District_header.jpg";
 import { useDistrictMembersStore } from "@/features/admin/districts/store/district-members-store";
 import { useDistrictsStore } from "@/features/admin/districts/store/districts-store";
+import { validateEmail, validatePhone } from "@/utils/validationHelper";
 
 const genderOptions = [
   { value: "male", label: "Male" },
@@ -43,7 +44,13 @@ const initialForm = {
 const validate = (form) => {
   const errors = {};
   if (!form.fullName.trim()) errors.fullName = "Full name is required";
-  if (!form.phone.trim()) errors.phone = "Phone is required";
+
+  const phoneError = validatePhone(form.phone);
+  if (phoneError) errors.phone = phoneError;
+
+  const emailError = validateEmail(form.email, false);
+  if (emailError) errors.email = emailError;
+
   return errors;
 };
 
@@ -340,6 +347,8 @@ export const DistrictMemberFormPage = () => {
                 label="Email"
                 value={formData.email}
                 onChange={handleField("email")}
+                error={Boolean(errors.email)}
+                helperText={errors.email}
                 sx={inputStyles}
                 slotProps={{
                   input: {
@@ -420,22 +429,6 @@ export const DistrictMemberFormPage = () => {
                   </MenuItem>
                 ))}
               </TextField>
-              <FormControlLabel
-                control={
-                  <Switch
-                    checked={formData.isActive}
-                    onChange={handleField("isActive")}
-                    color="success"
-                  />
-                }
-                label={
-                  <Typography
-                    sx={{ fontWeight: 600, color: formData.isActive ? "#2f8f4e" : "#d32f2f" }}
-                  >
-                    Status: {formData.isActive ? "Active" : "Inactive"}
-                  </Typography>
-                }
-              />
             </Stack>
 
             <Divider sx={{ my: 1 }} />

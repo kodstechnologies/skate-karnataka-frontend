@@ -23,6 +23,7 @@ import { Link as RouterLink, useNavigate, useParams } from "react-router-dom";
 import { UploadProgressBanner } from "@/components/ui/UploadProgressBanner";
 import officialHero from "@/assets/State_official_header.jpg";
 import { useOfficialsStore } from "../store/officials-store";
+import { validateEmail, validatePhone } from "@/utils/validationHelper";
 
 const genderOptions = [
   { value: "male", label: "Male" },
@@ -103,8 +104,12 @@ export const OfficialFormPage = () => {
   const validate = () => {
     const nextErrors = {};
     if (!formData.fullName.trim()) nextErrors.fullName = "Name is required";
-    if (!formData.email.trim()) nextErrors.email = "Email is required";
-    if (!formData.phone.trim()) nextErrors.phone = "Phone is required";
+
+    const emailError = validateEmail(formData.email, true);
+    if (emailError) nextErrors.email = emailError;
+
+    const phoneError = validatePhone(formData.phone, true);
+    if (phoneError) nextErrors.phone = phoneError;
 
     setErrors(nextErrors);
     return Object.keys(nextErrors).length === 0;
@@ -364,29 +369,6 @@ export const OfficialFormPage = () => {
                       </MenuItem>
                     ))}
                   </TextField>
-                </Box>
-
-                <Box sx={{ flex: 1, display: "flex", alignItems: "center" }}>
-                  <FormControlLabel
-                    control={
-                      <Switch
-                        checked={formData.status}
-                        onChange={handleFieldChange("status")}
-                        color="success"
-                      />
-                    }
-                    label={
-                      <Typography
-                        sx={{
-                          fontWeight: 600,
-                          color: formData.status ? "#2f8f4e" : "#d32f2f",
-                          whiteSpace: "nowrap"
-                        }}
-                      >
-                        Account Status: {formData.status ? "Active" : "Inactive"}
-                      </Typography>
-                    }
-                  />
                 </Box>
               </Stack>
 
