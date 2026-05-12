@@ -437,9 +437,9 @@ export const FeedbackPage = () => {
               py: 1
             },
             "& .MuiTablePagination-spacer": { display: "none" },
-            "& .MuiTablePagination-selectLabel": { display: { xs: "none", sm: "block" } },
             overflowX: "hidden"
           }}
+          labelRowsPerPage="Rows:"
         />
       </Paper>
     </Box>
