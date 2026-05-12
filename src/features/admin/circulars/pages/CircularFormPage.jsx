@@ -508,13 +508,13 @@ export const CircularFormPage = () => {
         <Stack
           direction={{ xs: "column", sm: "row" }}
           spacing={1.5}
-          sx={{ justifyContent: "flex-end", alignItems: "center" }}
+          sx={{ justifyContent: "flex-end", alignItems: "stretch" }}
         >
           <Button
             variant="outlined"
             onClick={() => navigate("/circulars")}
             disabled={isSubmitting}
-            sx={{ borderRadius: "14px", textTransform: "none" }}
+            sx={{ borderRadius: "14px", textTransform: "none", width: { xs: "100%", sm: "auto" } }}
           >
             Cancel
           </Button>
@@ -532,7 +532,8 @@ export const CircularFormPage = () => {
             sx={{
               borderRadius: "14px",
               textTransform: "none",
-              minWidth: 160,
+              minWidth: { xs: 0, sm: 160 },
+              width: { xs: "100%", sm: "auto" },
               backgroundColor: "#f6765e",
               boxShadow: "none",
               "&:hover": { backgroundColor: "#ea6b54", boxShadow: "none" },

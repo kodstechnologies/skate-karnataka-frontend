@@ -259,6 +259,17 @@ export const RequestListPage = ({ config }) => {
             setPage(0);
           }}
           rowsPerPageOptions={[5, 10, 25]}
+          labelRowsPerPage="Rows:"
+          sx={{
+            "& .MuiTablePagination-toolbar": {
+              flexWrap: "wrap",
+              justifyContent: "flex-end",
+              gap: 0.5,
+              py: 1
+            },
+            "& .MuiTablePagination-spacer": { display: "none" },
+            overflowX: "hidden"
+          }}
         />
       </Paper>
     </Box>
