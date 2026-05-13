@@ -66,7 +66,14 @@ export const ContactUsPage = () => {
   }, [contactInfo]);
 
   const handleField = (field) => (e) => {
-    const value = e.target.value;
+    let value = e.target.value;
+    if (field === "phone") {
+      // Only allow digits and limit to 10 characters
+      value = value.replace(/\D/g, "");
+      if (value.length > 10) {
+        value = value.slice(0, 10);
+      }
+    }
     setFormData((prev) => ({ ...prev, [field]: value }));
     setErrors((prev) => ({ ...prev, [field]: "" }));
     setHasChanges(true);

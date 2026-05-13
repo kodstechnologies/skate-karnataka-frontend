@@ -52,7 +52,17 @@ const DetailItem = ({ label, value }) => (
     <Typography sx={{ fontSize: 11, color: "#a28f89", textTransform: "uppercase" }}>
       {label}
     </Typography>
-    <Typography sx={{ mt: 0.5, fontSize: 14, color: "#2f2829" }}>{value || "-"}</Typography>
+    <Typography
+      sx={{
+        mt: 0.5,
+        fontSize: 14,
+        color: "#2f2829",
+        wordBreak: "break-word",
+        overflowWrap: "anywhere"
+      }}
+    >
+      {value || "-"}
+    </Typography>
   </div>
 );
 

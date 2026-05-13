@@ -99,7 +99,15 @@ export const DistrictMemberFormPage = () => {
   }
 
   const handleField = (field) => (e) => {
-    const value = field === "isActive" ? e.target.checked : e.target.value;
+    let value = field === "isActive" ? e.target.checked : e.target.value;
+
+    if (field === "phone") {
+      value = value.replace(/\D/g, "");
+      if (value.length > 10) {
+        value = value.slice(0, 10);
+      }
+    }
+
     setFormData((prev) => ({ ...prev, [field]: value }));
     setErrors((prev) => ({ ...prev, [field]: "" }));
   };

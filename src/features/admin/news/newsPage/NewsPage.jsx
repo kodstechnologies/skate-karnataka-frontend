@@ -307,39 +307,60 @@ export default function NewsPage() {
                     overflow: "hidden",
                     background:
                       "linear-gradient(180deg, rgba(255,255,255,1) 0%, rgba(248,250,255,1) 100%)",
-                    boxShadow: "0 20px 50px rgba(24, 36, 80, 0.08)"
+                    boxShadow: "0 20px 50px rgba(24, 36, 80, 0.08)",
+                    display: "flex",
+                    flexDirection: "column",
+                    height: "100%"
                   }}
                 >
                   {/* Image Placeholder */}
                   <Skeleton variant="rectangular" height={180} animation="wave" />
 
-                  <Stack spacing={1.25} sx={{ p: 2.25 }}>
-                    {/* Heading Placeholder */}
-                    <Skeleton
-                      variant="text"
-                      width="80%"
-                      height={28}
-                      animation="wave"
-                      sx={{ mb: 0.5 }}
-                    />
+                  <Box
+                    sx={{
+                      p: 2.25,
+                      flexGrow: 1,
+                      display: "flex",
+                      flexDirection: "column",
+                      justifyContent: "space-between"
+                    }}
+                  >
+                    <Box sx={{ display: "flex", flexDirection: "column", gap: 1.25 }}>
+                      {/* Heading Placeholder */}
+                      <Skeleton
+                        variant="text"
+                        width="80%"
+                        height={28}
+                        animation="wave"
+                        sx={{ mb: 0.5 }}
+                      />
 
-                    {/* Content Placeholder */}
-                    <Box sx={{ minHeight: 52 }}>
-                      <Skeleton variant="text" width="100%" animation="wave" />
-                      <Skeleton variant="text" width="100%" animation="wave" />
-                      <Skeleton variant="text" width="70%" animation="wave" />
+                      {/* Content Placeholder */}
+                      <Box sx={{ minHeight: 52 }}>
+                        <Skeleton variant="text" width="100%" animation="wave" />
+                        <Skeleton variant="text" width="100%" animation="wave" />
+                        <Skeleton variant="text" width="70%" animation="wave" />
+                      </Box>
                     </Box>
 
-                    {/* Date Placeholder */}
-                    <Skeleton variant="text" width="40%" height={20} animation="wave" />
+                    <Box sx={{ mt: 2 }}>
+                      {/* Date Placeholder */}
+                      <Skeleton
+                        variant="text"
+                        width="40%"
+                        height={20}
+                        animation="wave"
+                        sx={{ mb: 1 }}
+                      />
 
-                    {/* Action buttons Placeholder */}
-                    <Stack direction="row" spacing={1} sx={{ pt: 0.5 }}>
-                      <Skeleton variant="rounded" width="100%" height={36} animation="wave" />
-                      <Skeleton variant="rounded" width="100%" height={36} animation="wave" />
-                      <Skeleton variant="rounded" width="100%" height={36} animation="wave" />
-                    </Stack>
-                  </Stack>
+                      {/* Action buttons Placeholder */}
+                      <Stack direction="row" spacing={1} sx={{ pt: 0.5 }}>
+                        <Skeleton variant="rounded" width="100%" height={36} animation="wave" />
+                        <Skeleton variant="rounded" width="100%" height={36} animation="wave" />
+                        <Skeleton variant="rounded" width="100%" height={36} animation="wave" />
+                      </Stack>
+                    </Box>
+                  </Box>
                 </Paper>
               ))}
             </Box>
@@ -398,7 +419,10 @@ export default function NewsPage() {
                       "&:hover": {
                         transform: "translateY(-4px)",
                         boxShadow: "0 28px 65px rgba(24, 36, 80, 0.12)"
-                      }
+                      },
+                      display: "flex",
+                      flexDirection: "column",
+                      height: "100%"
                     }}
                   >
                     {/* Image */}
@@ -423,74 +447,86 @@ export default function NewsPage() {
                       )}
                     </Box>
 
-                    <Stack spacing={1.25} sx={{ p: 2.25 }}>
-                      <Typography
-                        sx={{ fontSize: 17, fontWeight: 800, color: "#1e2a5a", lineHeight: 1.3 }}
-                      >
-                        {item.heading || "Untitled"}
-                      </Typography>
-
-                      <Typography
-                        sx={{
-                          color: "#64748b",
-                          lineHeight: 1.7,
-                          minHeight: 52,
-                          display: "-webkit-box",
-                          WebkitLineClamp: 3,
-                          WebkitBoxOrient: "vertical",
-                          overflow: "hidden"
-                        }}
-                      >
-                        {item.about || "No content provided."}
-                      </Typography>
-
-                      {/* Created at */}
-                      <Typography sx={{ fontSize: 12, color: "#94a3b8" }}>
-                        Created: {formatDate(item.createdAt)}
-                      </Typography>
-
-                      {/* Action buttons */}
-                      <Stack direction="row" spacing={1} sx={{ pt: 0.5 }}>
-                        <Button
-                          variant="outlined"
-                          startIcon={<Eye size={15} />}
-                          onClick={() => navigate(`/news/${itemId}`)}
-                          fullWidth
-                          // sx={{
-                          //   borderColor: "#c7d2fe",
-                          //   color: "#3b5bdb",
-                          //   "&:hover": { borderColor: "#3b5bdb", backgroundColor: "#eef2ff" }
-                          // }}
+                    <Box
+                      sx={{
+                        p: 2.25,
+                        flexGrow: 1,
+                        display: "flex",
+                        flexDirection: "column",
+                        justifyContent: "space-between"
+                      }}
+                    >
+                      <Box sx={{ display: "flex", flexDirection: "column", gap: 1.25 }}>
+                        <Typography
+                          sx={{ fontSize: 17, fontWeight: 800, color: "#1e2a5a", lineHeight: 1.3 }}
                         >
-                          View
-                        </Button>
-                        <Button
-                          variant="outlined"
-                          startIcon={<PencilLine size={15} />}
-                          onClick={() => navigate(`/news/${itemId}/edit`)}
-                          fullWidth
-                          // sx={{
-                          //   borderColor: "#c7d2fe",
-                          //   color: "#3b5bdb",
-                          //   "&:hover": { borderColor: "#3b5bdb", backgroundColor: "#eef2ff" }
-                          // }}
-                        >
-                          Edit
-                        </Button>
-                        <Button
-                          variant="contained"
-                          startIcon={<Trash2 size={15} />}
-                          onClick={() => setPendingDeleteNews(item)}
-                          fullWidth
+                          {item.heading || "Untitled"}
+                        </Typography>
+
+                        <Typography
                           sx={{
-                            backgroundColor: "#f6765e",
-                            "&:hover": { backgroundColor: "#ea6b54" }
+                            color: "#64748b",
+                            lineHeight: 1.7,
+                            minHeight: 52,
+                            display: "-webkit-box",
+                            WebkitLineClamp: 3,
+                            WebkitBoxOrient: "vertical",
+                            overflow: "hidden"
                           }}
                         >
-                          Delete
-                        </Button>
-                      </Stack>
-                    </Stack>
+                          {item.about || "No content provided."}
+                        </Typography>
+                      </Box>
+
+                      <Box sx={{ mt: 2 }}>
+                        {/* Created at */}
+                        <Typography sx={{ fontSize: 12, color: "#94a3b8", mb: 1 }}>
+                          Created: {formatDate(item.createdAt)}
+                        </Typography>
+
+                        {/* Action buttons */}
+                        <Stack direction="row" spacing={1} sx={{ pt: 0.5 }}>
+                          <Button
+                            variant="outlined"
+                            startIcon={<Eye size={15} />}
+                            onClick={() => navigate(`/news/${itemId}`)}
+                            fullWidth
+                            // sx={{
+                            //   borderColor: "#c7d2fe",
+                            //   color: "#3b5bdb",
+                            //   "&:hover": { borderColor: "#3b5bdb", backgroundColor: "#eef2ff" }
+                            // }}
+                          >
+                            View
+                          </Button>
+                          <Button
+                            variant="outlined"
+                            startIcon={<PencilLine size={15} />}
+                            onClick={() => navigate(`/news/${itemId}/edit`)}
+                            fullWidth
+                            // sx={{
+                            //   borderColor: "#c7d2fe",
+                            //   color: "#3b5bdb",
+                            //   "&:hover": { borderColor: "#3b5bdb", backgroundColor: "#eef2ff" }
+                            // }}
+                          >
+                            Edit
+                          </Button>
+                          <Button
+                            variant="contained"
+                            startIcon={<Trash2 size={15} />}
+                            onClick={() => setPendingDeleteNews(item)}
+                            fullWidth
+                            sx={{
+                              backgroundColor: "#f6765e",
+                              "&:hover": { backgroundColor: "#ea6b54" }
+                            }}
+                          >
+                            Delete
+                          </Button>
+                        </Stack>
+                      </Box>
+                    </Box>
                   </Paper>
                 );
               })}

@@ -1,3 +1,4 @@
+import { useEffect, useMemo, useState } from "react";
 import ApartmentOutlinedIcon from "@mui/icons-material/ApartmentOutlined";
 import ImageOutlinedIcon from "@mui/icons-material/ImageOutlined";
 import UploadFileOutlinedIcon from "@mui/icons-material/UploadFileOutlined";
@@ -49,67 +50,97 @@ const SectionCard = ({ icon, title, description, children }) => (
   </Paper>
 );
 
-const FileUploadField = ({ label, fileValue, existingImageUrl, error, helperText, onChange }) => (
-  <Box
-    sx={{
-      p: 2.25,
-      borderRadius: "22px",
-      border: "1px solid #f4e5de",
-      backgroundColor: "#fffaf8"
-    }}
-  >
-    <Typography
+const FileUploadField = ({ label, fileValue, existingImageUrl, error, helperText, onChange }) => {
+  // const [previewUrl, setPreviewUrl] = useState(null);
+
+  // useEffect(() => {
+  //   if (fileValue) {
+  //     const objectUrl = URL.createObjectURL(fileValue);
+  //     setPreviewUrl(objectUrl);
+  //     return () => URL.revokeObjectURL(objectUrl);
+  //   } else {
+  //     setPreviewUrl(null);
+  //   }
+  // }, [fileValue]);
+
+  const previewUrl = useMemo(() => {
+    if (!fileValue) return null;
+
+    return URL.createObjectURL(fileValue);
+  }, [fileValue]);
+
+  useEffect(() => {
+    return () => {
+      if (previewUrl) {
+        URL.revokeObjectURL(previewUrl);
+      }
+    };
+  }, [previewUrl]);
+  return (
+    <Box
       sx={{
-        mb: 1,
-        fontSize: 13,
-        fontWeight: 700,
-        color: "#7f706c",
-        textTransform: "uppercase",
-        letterSpacing: "0.08em"
+        p: 2.25,
+        borderRadius: "22px",
+        border: "1px solid #f4e5de",
+        backgroundColor: "#fffaf8"
       }}
     >
-      {label}
-    </Typography>
-    <Typography sx={{ mb: 1.75, color: "#9b8d88", fontSize: 13 }}>
-      Upload an image for this section.
-    </Typography>
-    <Stack spacing={1.5}>
-      <Button
-        component="label"
-        variant="outlined"
-        startIcon={<UploadFileOutlinedIcon />}
-        sx={{ alignSelf: "flex-start", borderRadius: "14px" }}
+      <Typography
+        sx={{
+          mb: 1,
+          fontSize: 13,
+          fontWeight: 700,
+          color: "#7f706c",
+          textTransform: "uppercase",
+          letterSpacing: "0.08em"
+        }}
       >
-        Choose Image
-        <input type="file" accept="image/*" hidden onChange={onChange} />
-      </Button>
-      {fileValue ? (
-        <div className="flex items-center gap-3 rounded-2xl border border-[#efe2dc] bg-white px-3 py-3 text-sm text-[#6f6462] shadow-sm">
-          <ImageOutlinedIcon sx={{ fontSize: 20, color: "#f6765e" }} />
-          <div className="min-w-0">
-            <div className="truncate font-semibold text-[#2f2829]">{fileValue.name}</div>
-            <div className="text-xs text-[#978883]">Image ready to save</div>
+        {label}
+      </Typography>
+      <Typography sx={{ mb: 1.75, color: "#9b8d88", fontSize: 13 }}>
+        Upload an image for this section.
+      </Typography>
+      <Stack spacing={1.5}>
+        <Button
+          component="label"
+          variant="outlined"
+          startIcon={<UploadFileOutlinedIcon />}
+          sx={{ alignSelf: "flex-start", borderRadius: "14px" }}
+        >
+          Choose Image
+          <input type="file" accept="image/*" hidden onChange={onChange} />
+        </Button>
+        {previewUrl ? (
+          <div className="rounded-2xl border border-[#efe2dc] bg-white p-3 shadow-sm">
+            <img
+              src={previewUrl}
+              alt="New preview"
+              className="h-44 w-full rounded-xl object-cover"
+            />
+            <div className="mt-2 truncate font-semibold text-center text-[#2f2829] text-sm">
+              {fileValue.name}
+            </div>
           </div>
-        </div>
-      ) : existingImageUrl ? (
-        <div className="rounded-2xl border border-[#efe2dc] bg-white p-3 shadow-sm">
-          <img
-            src={existingImageUrl}
-            alt="Existing preview"
-            className="h-44 w-full rounded-xl object-cover"
-          />
-        </div>
-      ) : (
-        <Typography sx={{ color: "#9b8d88", fontSize: 13 }}>No Image selected</Typography>
-      )}
-    </Stack>
-    <Typography
-      sx={{ mt: 1.25, minHeight: 20, color: error ? "#d32f2f" : "#8d7f7b", fontSize: 12 }}
-    >
-      {error || helperText}
-    </Typography>
-  </Box>
-);
+        ) : existingImageUrl ? (
+          <div className="rounded-2xl border border-[#efe2dc] bg-white p-3 shadow-sm">
+            <img
+              src={existingImageUrl}
+              alt="Existing preview"
+              className="h-44 w-full rounded-xl object-cover"
+            />
+          </div>
+        ) : (
+          <Typography sx={{ color: "#9b8d88", fontSize: 13 }}>No Image selected</Typography>
+        )}
+      </Stack>
+      <Typography
+        sx={{ mt: 1.25, minHeight: 20, color: error ? "#d32f2f" : "#8d7f7b", fontSize: 12 }}
+      >
+        {error || helperText}
+      </Typography>
+    </Box>
+  );
+};
 
 export const ClubForm = ({
   formData,
