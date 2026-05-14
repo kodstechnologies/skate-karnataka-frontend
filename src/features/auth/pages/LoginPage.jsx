@@ -37,8 +37,8 @@ const OtpBox = ({ index, value, onChange, onKeyDown, inputRef, filled }) => (
   <Box
     sx={{
       position: "relative",
-      width: 56,
-      height: 56,
+      width: { xs: 46, sm: 56 },
+      height: { xs: 46, sm: 56 },
       flexShrink: 0
     }}
   >
@@ -51,7 +51,6 @@ const OtpBox = ({ index, value, onChange, onKeyDown, inputRef, filled }) => (
         maxLength: 1,
         style: {
           textAlign: "center",
-          fontSize: "1.35rem",
           fontWeight: 800,
           padding: 0,
           letterSpacing: 0,
@@ -62,6 +61,9 @@ const OtpBox = ({ index, value, onChange, onKeyDown, inputRef, filled }) => (
       sx={{
         width: "100%",
         height: "100%",
+        "& .MuiInputBase-input": {
+          fontSize: { xs: "1.15rem", sm: "1.35rem" }
+        },
         "& .MuiOutlinedInput-root": {
           height: "100%",
           borderRadius: "14px",
@@ -326,8 +328,11 @@ export const LoginPage = () => {
       <Box className="flex flex-col md:flex-row w-full min-h-screen">
         {/* ═══════════════ LEFT — Visual ═══════════════ */}
         <Box
-          className="flex-[0_0_auto] md:flex-[1.15] flex flex-col items-center justify-center p-8 sm:p-12 md:p-16 text-center relative overflow-hidden min-h-[40vh] md:min-h-screen"
-          sx={{ background: `linear-gradient(145deg, ${BRAND} 0%, ${BRAND_DARK} 100%)` }}
+          className="hidden md:flex flex-[0_0_auto] md:flex-[1.15] items-center justify-center p-8 sm:p-12 md:p-16 text-center relative overflow-hidden md:min-h-screen"
+          sx={{
+            flexDirection: "column",
+            background: `linear-gradient(145deg, ${BRAND} 0%, ${BRAND_DARK} 100%)`
+          }}
         >
           <Box
             sx={{
@@ -415,7 +420,7 @@ export const LoginPage = () => {
         </Box>
 
         {/* ═══════════════ RIGHT — Form ═══════════════ */}
-        <Box className="flex-1 flex flex-col justify-center bg-white w-full mx-auto p-8 sm:p-12 md:p-16 md:max-w-[600px] min-h-auto md:min-h-screen">
+        <Box className="flex-1 flex flex-col justify-center bg-white w-full mx-auto p-5 sm:p-10 md:p-16 md:max-w-[600px] min-h-auto md:min-h-screen">
           {/* Logo + Header */}
           <Box sx={{ mb: { xs: 3, md: 5 }, textAlign: { xs: "center", md: "left" } }}>
             <Box
@@ -658,7 +663,13 @@ export const LoginPage = () => {
 
                   {/* Industrial OTP boxes */}
                   <Box
-                    sx={{ display: "flex", gap: 1.25, alignItems: "center", width: "100%" }}
+                    sx={{
+                      display: "flex",
+                      gap: { xs: 0.75, sm: 1.25 },
+                      alignItems: "center",
+                      width: "100%",
+                      flexWrap: { xs: "wrap", sm: "nowrap" }
+                    }}
                     onPaste={handleOtpPaste}
                   >
                     {otpDigits.map((digit, i) => (
@@ -674,7 +685,7 @@ export const LoginPage = () => {
                     ))}
 
                     {/* Status indicator */}
-                    <Box sx={{ display: "flex", alignItems: "center", ml: 1 }}>
+                    <Box sx={{ display: "flex", alignItems: "center", ml: { xs: 0.5, sm: 1 } }}>
                       {otpValue.length === 4 ? (
                         <Fade in>
                           <Box
@@ -732,7 +743,8 @@ export const LoginPage = () => {
                         display: "flex",
                         flexDirection: "column",
                         alignItems: "center",
-                        gap: 0.25
+                        gap: 0.25,
+                        mt: { xs: 1, sm: 0 }
                       }}
                     >
                       {/* Clock label */}
