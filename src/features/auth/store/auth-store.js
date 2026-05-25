@@ -8,6 +8,7 @@ export const useAuthStore = create()(
     (set, get) => ({
       user: null,
       role: null,
+
       isAuthenticated: false,
       isLoading: false,
       refreshToken: null,

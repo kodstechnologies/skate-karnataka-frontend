@@ -53,6 +53,7 @@ import DonationPage from "../features/admin/support-hub/DonationPage/DonationPag
 import DonationFormPage from "../features/admin/support-hub/DonationPage/DonationFormPage";
 import EventCategoryPage from "../features/admin/events/pages/EventCategoryPage";
 import EventCategoryFormPage from "../features/admin/events/pages/EventCategoryFormPage";
+import ProtectedRoutes from "./ProtectedRoutes";
 
 export const AppRoutes = () => {
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
@@ -60,11 +61,14 @@ export const AppRoutes = () => {
   return (
     <Routes>
       <Route path="/login" element={<LoginPage />} />
+      <Route path="/" element={<Navigate to="/dashboard" replace />} />
       <Route
-        path="/"
-        element={<Navigate to={isAuthenticated ? "/dashboard" : "/login"} replace />}
-      />
-      <Route element={<MainLayout />}>
+        element={
+          <ProtectedRoutes allowedRoles={["admin", "state"]}>
+            <MainLayout />
+          </ProtectedRoutes>
+        }
+      >
         <Route path="/dashboard" element={<AdminDashboard />} />
         <Route path="/profile" element={<ProfilePage />} />
         <Route path="/contact-us" element={<ContactUsPage />} />

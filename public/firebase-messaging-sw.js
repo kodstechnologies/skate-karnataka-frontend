@@ -55,29 +55,43 @@ self.addEventListener("push", (event) => {
 
   event.waitUntil(
     (async () => {
-      // 1. Always show the OS-level system notification.
-      // This is the most reliable way to ensure the user sees the push,
-      // as SW-triggered notifications bypass many foreground restrictions.
-      try {
-        await self.registration.showNotification(title, {
-          body,
-          ...(icon && { icon }),
-          tag: `fcm-${Date.now()}`, // Unique tag per message
-          requireInteraction: true,
-          data: { ...data, url: "/" }
+      // Find all open tabs
+      const windowClients = await self.clients.matchAll({
+        type: "window",
+        includeUncontrolled: true
+      });
+      let isAnyClientVisible = false;
+
+      // 1. Relay to all open tabs for foreground UI (toasts) and background logic
+      if (windowClients.length > 0) {
+        console.log(`[FCM-SW] Relaying to ${windowClients.length} open tab(s).`);
+        windowClients.forEach((client) => {
+          if (client.visibilityState === "visible") {
+            isAnyClientVisible = true;
+          }
+          client.postMessage({ type: "FCM_PUSH_RECEIVED", payload, title, body, icon });
         });
-        console.log("[FCM-SW] ✅ System notification shown:", title);
-      } catch (err) {
-        console.error("[FCM-SW] ❌ showNotification() FAILED:", err);
       }
 
-      // 2. Relay to all open tabs for background logic (logging, data sync, etc.)
-      // Note: Tabs no longer show toasts; they rely on the OS notification above.
-      const clients = await self.clients.matchAll({ type: "window", includeUncontrolled: true });
-      if (clients.length > 0) {
-        console.log(`[FCM-SW] Relaying to ${clients.length} open tab(s) for background logic.`);
-        clients.forEach((client) =>
-          client.postMessage({ type: "FCM_PUSH_RECEIVED", payload, title, body, icon })
+      // 2. Only show OS-level system notification if NO client is actively visible
+      // This prevents annoying double-notifications and OS-level suppression
+      // from completely hiding the notification when the user is using the app.
+      if (!isAnyClientVisible) {
+        try {
+          await self.registration.showNotification(title, {
+            body,
+            ...(icon && { icon }),
+            tag: `fcm-${Date.now()}`, // Unique tag per message
+            requireInteraction: true,
+            data: { ...data, url: "/" }
+          });
+          console.log("[FCM-SW] ✅ System notification shown:", title);
+        } catch (err) {
+          console.error("[FCM-SW] ❌ showNotification() FAILED:", err);
+        }
+      } else {
+        console.log(
+          "[FCM-SW] 🚫 System notification skipped (App is actively visible in foreground)."
         );
       }
     })()
