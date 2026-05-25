@@ -311,21 +311,50 @@ function CertificateManagement() {
                             lineHeight: 1.3,
                             overflow: "hidden",
                             textOverflow: "ellipsis",
-                            whiteSpace: "nowrap"
+                            whiteSpace: "nowrap",
+                            mb: 0.5
                           }}
                         >
                           {tpl.name}
                         </Typography>
-                        <Typography sx={{ fontSize: 12, color: "#8d847f", mt: 0.25 }}>
-                          ID: {tpl._id.slice(-6).toUpperCase()}
-                        </Typography>
+                        <Stack
+                          direction="row"
+                          spacing={1}
+                          alignItems="center"
+                          sx={{ flexWrap: "wrap", gap: 0.5 }}
+                        >
+                          <Chip
+                            label={tpl.applyTo || "STATE"}
+                            size="small"
+                            sx={{
+                              backgroundColor:
+                                (tpl.applyTo || "STATE") === "STATE"
+                                  ? "#e0f2fe"
+                                  : (tpl.applyTo || "STATE") === "DISTRICT"
+                                    ? "#fef3c7"
+                                    : "#f3e8ff",
+                              color:
+                                (tpl.applyTo || "STATE") === "STATE"
+                                  ? "#0369a1"
+                                  : (tpl.applyTo || "STATE") === "DISTRICT"
+                                    ? "#b45309"
+                                    : "#6b21a8",
+                              fontWeight: 800,
+                              fontSize: 10,
+                              height: 20
+                            }}
+                          />
+                          <Typography sx={{ fontSize: 11, color: "#8d847f" }}>
+                            ID: {tpl._id.slice(-6).toUpperCase()}
+                          </Typography>
+                        </Stack>
                       </Box>
                     </Stack>
 
                     <Divider sx={{ borderColor: "rgba(0,0,0,0.05)" }} />
 
                     <Stack direction="row" justifyContent="space-between" alignItems="center">
-                      {/* <Box>
+                      <Box>
                         {tpl.isActive && (
                           <Chip
                             icon={<CheckCircle size={14} style={{ color: "#10b981" }} />}
@@ -340,7 +369,7 @@ function CertificateManagement() {
                             }}
                           />
                         )}
-                      </Box> */}
+                      </Box>
                       <Button
                         variant="text"
                         size="small"

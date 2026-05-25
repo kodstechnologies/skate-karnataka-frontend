@@ -3,7 +3,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import { Award, UploadCloud, CheckCircle, Loader2, FileText, ArrowLeft, Plus } from "lucide-react";
 import api from "@/lib/axios";
 import toast from "react-hot-toast";
-import { Button, Box, Skeleton, Stack, Paper } from "@mui/material";
+import { Button, Box, Skeleton, Stack, Paper, Chip } from "@mui/material";
 
 // ── PDF canvas constants ─────────────────────────────────────────────────────
 const PDF_W_PT = 595;
@@ -706,6 +706,7 @@ export default function CertificateTemplateFormPage() {
   const [activating, setActivating] = useState(false);
   const [file, setFile] = useState(null);
   const [name, setName] = useState("");
+  const [applyTo, setApplyTo] = useState("STATE");
   const [layout, setLayout] = useState(DEFAULT_LAYOUT);
   const [template, setTemplate] = useState(null); // raw DB record (edit mode)
 
@@ -729,6 +730,7 @@ export default function CertificateTemplateFormPage() {
         const d = res.data;
         setTemplate(d);
         if (d.name) setName(d.name);
+        if (d.applyTo) setApplyTo(d.applyTo);
         if (d.textLayout && Object.keys(d.textLayout).length > 0) {
           const il = d.textLayout;
           setLayout({
@@ -772,6 +774,7 @@ export default function CertificateTemplateFormPage() {
       const fd = new FormData();
       fd.append("name", name.trim());
       fd.append("layout", JSON.stringify(layout));
+      fd.append("applyTo", applyTo);
       if (file) fd.append("pdf", file);
 
       if (isEditMode) {
@@ -844,6 +847,22 @@ export default function CertificateTemplateFormPage() {
           />
         </div>
 
+        {/* Category Dropdown */}
+        <div className="space-y-1.5">
+          <label className="block text-sm font-bold text-stone-700">
+            Apply To (Category) <span className="text-red-500">*</span>
+          </label>
+          <select
+            value={applyTo}
+            onChange={(e) => setApplyTo(e.target.value)}
+            className="w-full px-3 py-2.5 border border-stone-200 rounded-xl text-sm focus:ring-2 focus:ring-amber-500/30 outline-none font-medium bg-white shadow-sm"
+          >
+            <option value="STATE">State Category</option>
+            <option value="DISTRICT">District Category</option>
+            <option value="CLUB">Club Category</option>
+          </select>
+        </div>
+
         {/* PDF Upload */}
         <div className="space-y-2">
           <label className="block text-sm font-bold text-stone-700">
@@ -898,8 +917,35 @@ export default function CertificateTemplateFormPage() {
 
         {/* Actions */}
         <div
-          className={`pt-2 flex items-center justify-end gap-3 flex-wrap border-t border-stone-100`}
+          className={`pt-2 flex items-center justify-between gap-3 flex-wrap border-t border-stone-100`}
         >
+          <div>
+            {isEditMode && template && !template.isActive && (
+              <Button
+                onClick={handleSetActive}
+                disabled={activating}
+                variant="outlined"
+                color="success"
+                startIcon={<CheckCircle size={16} />}
+              >
+                {activating ? <Loader2 className="animate-spin" size={16} /> : "Set as Active"}
+              </Button>
+            )}
+            {isEditMode && template && template.isActive && (
+              <Chip
+                icon={<CheckCircle size={14} style={{ color: "#10b981" }} />}
+                label="Currently Active"
+                size="small"
+                sx={{
+                  backgroundColor: "#ecfdf5",
+                  color: "#047857",
+                  fontWeight: 700,
+                  fontSize: 11,
+                  p: 1.5
+                }}
+              />
+            )}
+          </div>
           <Button
             onClick={handleSave}
             disabled={saving}
