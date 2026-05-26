@@ -49,7 +49,9 @@ export const useAuthStore = create()(
             localStorage.setItem("refreshToken", refreshToken);
 
             set({
-              role,
+              role: String(role || "")
+                .trim()
+                .toLowerCase(),
               isAuthenticated: true,
               refreshToken
             });
@@ -98,40 +100,45 @@ export const useAuthStore = create()(
       },
 
       getProfile: async () => {
-        set({ isLoading: true });
         try {
-          const response = await authApi.getProfile();
+          const role = get().role;
+          const response = await authApi.getProfile(role);
           if (response.success) {
+            const profile = response.data || {};
+            const profileRole = String(profile.role || role || "")
+              .trim()
+              .toLowerCase();
             set({
-              user: response.data,
-              role: response.data.role,
-              isLoading: false
+              user: profile,
+              role: profileRole || role
             });
-            return response.data;
+            return profile;
           }
           throw new Error(response.message || "Failed to fetch profile");
         } catch (error) {
-          set({ isLoading: false });
           console.error("Fetch profile failed:", error);
           throw error;
         }
       },
 
       updateProfile: async (data) => {
-        set({ isLoading: true });
         try {
-          const response = await authApi.updateProfile(data);
+          const role = get().role;
+          const response = await authApi.updateProfile(data, role);
           if (response.success) {
+            const profile = response.data || {};
+            const profileRole = String(profile.role || role || "")
+              .trim()
+              .toLowerCase();
             set({
-              user: response.data,
-              isLoading: false
+              user: profile,
+              role: profileRole || role
             });
             toast.success(response.message || "Profile updated successfully");
-            return response.data;
+            return profile;
           }
           throw new Error(response.message || "Failed to update profile");
         } catch (error) {
-          set({ isLoading: false });
           const errorMessage =
             error.response?.data?.message || error.message || "Failed to update profile";
           toast.error(errorMessage);

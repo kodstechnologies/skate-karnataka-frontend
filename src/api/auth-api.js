@@ -10,11 +10,15 @@ export const authApi = {
   logout: async (refreshTokens, firebaseTokens) => {
     return api.post("/auth/logout", { refreshTokens, firebaseTokens });
   },
-  getProfile: async () => {
-    return api.get("/admin/v1/profile");
+  getProfile: async (role) => {
+    const normalizedRole = String(role || "").toLowerCase();
+    const path = normalizedRole === "state" ? "/state/v1/account-profile" : "/admin/v1/profile";
+    return api.get(path);
   },
-  updateProfile: async (data) => {
-    return api.patch("/admin/v1/edit-profile", data, {
+  updateProfile: async (data, role) => {
+    const normalizedRole = String(role || "").toLowerCase();
+    const path = normalizedRole === "state" ? "/state/v1/edit-profile" : "/admin/v1/edit-profile";
+    return api.patch(path, data, {
       headers: {
         "Content-Type": "multipart/form-data"
       }

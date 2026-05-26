@@ -1,6 +1,9 @@
 import api from "@/lib/axios";
 
 export const stateApi = {
+  getDashboard: async () => {
+    return api.get("/state/v1/dashboard");
+  },
   getAll: async () => {
     return api.get("/state/v1/all");
   },

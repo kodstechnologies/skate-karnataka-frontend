@@ -17,6 +17,7 @@ import { ChevronRight } from "lucide-react";
 import { Link as RouterLink, useNavigate, useParams } from "react-router-dom";
 import skatersHero from "@/assets/Skating_header.jpg";
 import { useSkatersStore } from "@/features/admin/skaters/store/skaters-store";
+import { getSkaterDistrictName } from "@/features/admin/skaters/utils/skater-display";
 
 const formatGender = (gender) => {
   if (!gender) {
@@ -244,7 +245,7 @@ export const SkaterDetailsPage = () => {
         <SummaryCard
           icon={<LocationOnOutlinedIcon sx={{ fontSize: 24 }} />}
           label="District"
-          value={skater.district?.name}
+          value={getSkaterDistrictName(skater)}
           accent="#9c5cff"
         />
         <SummaryCard
@@ -319,7 +320,7 @@ export const SkaterDetailsPage = () => {
                 gap: 2
               }}
             >
-              <DetailItem label="District" value={skater.district?.name} />
+              <DetailItem label="District" value={getSkaterDistrictName(skater)} />
               <DetailItem label="Club" value={skater.club?.name} />
               <DetailItem label="Address" value={skater.address} />
             </Box>

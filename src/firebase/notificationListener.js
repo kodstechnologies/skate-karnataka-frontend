@@ -30,6 +30,13 @@ export const listenToNotifications = () => {
     console.log("[FCM] Payload:", payload);
     console.log("─────────────────────────────────────────────────────");
 
+    // Notify in-app notification list (header dropdown) to refresh
+    window.dispatchEvent(
+      new CustomEvent("fcm-notification-received", {
+        detail: { payload, title, body }
+      })
+    );
+
     // Display in-app toast if the app is currently in the foreground
     if (document.visibilityState === "visible") {
       toast(`${title}\n${body}`, {

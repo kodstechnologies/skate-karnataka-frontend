@@ -2,9 +2,9 @@ import { ChevronRight, LogOut, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import logo from "@/assets/karnataka-roller-skating-logo.png";
-import { navigationGroups } from "@/lib/app-shell";
 import { useUiStore } from "@/store/ui-store";
 import { useAuthStore } from "@/features/auth/store/auth-store";
+import { useSubAdminNavigation } from "@/hooks/useSubAdminNavigation";
 import {
   Avatar,
   Skeleton,
@@ -22,6 +22,7 @@ export const AppSidebar = () => {
   const role = useAuthStore((state) => state.role);
   const user = useAuthStore((state) => state.user);
   const isLoading = useAuthStore((state) => state.isLoading);
+  const { navigationGroups } = useSubAdminNavigation();
   const sidebarOpen = useUiStore((state) => state.sidebarOpen);
   const mobileSidebarOpen = useUiStore((state) => state.mobileSidebarOpen);
   const closeMobileSidebar = useUiStore((state) => state.closeMobileSidebar);
@@ -100,15 +101,7 @@ export const AppSidebar = () => {
 
         <nav className="custom-scrollbar min-h-0 flex-1 overflow-x-hidden overflow-y-auto overscroll-contain px-4 py-3">
           {navigationGroups.map((group) => {
-            // Hide entire Admin Controls group for subadmins
-            if (role === "subadmin" && group.label === "Admin Controls") return null;
-
-            const filteredItems = group.items.filter((item) => {
-              // Always hide States since there is only one state (Karnataka)
-              if (item.slug === "states") return false;
-
-              return true;
-            });
+            const filteredItems = group.items;
 
             if (filteredItems.length === 0) return null;
 

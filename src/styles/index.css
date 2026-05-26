@@ -76,3 +76,48 @@ h6 {
 .custom-scrollbar::-webkit-scrollbar-thumb:hover {
   background: #bda8a0;
 }
+
+@keyframes dashboard-chart-area-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes dashboard-chart-line-draw {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+@keyframes dashboard-chart-dot-in {
+  from {
+    opacity: 0;
+    transform: scale(0.4);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.dashboard-chart-area {
+  animation: dashboard-chart-area-in 0.7s ease forwards;
+}
+
+.dashboard-chart-line {
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+  animation: dashboard-chart-line-draw 1.35s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+.dashboard-chart-dot {
+  transform-origin: center;
+  transform-box: fill-box;
+  animation: dashboard-chart-dot-in 0.45s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+  opacity: 0;
+}

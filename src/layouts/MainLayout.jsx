@@ -1,13 +1,25 @@
+import { useEffect } from "react";
 import { Navigate, Outlet, useLocation } from "react-router-dom";
 import { HeaderLayout } from "@/layouts/HeaderLayout";
 import { SidebarLayout } from "@/layouts/SidebarLayout";
 import { useAuthStore } from "@/features/auth/store/auth-store";
 import { useFirebaseMessaging } from "@/hooks/useFirebaseMessaging";
+import { useSubAdminNavigation } from "@/hooks/useSubAdminNavigation";
+import { isPathAllowedForModules } from "@/lib/navigation-modules";
 
 export const MainLayout = () => {
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
   const role = useAuthStore((state) => state.role);
+  const user = useAuthStore((state) => state.user);
+  const getProfile = useAuthStore((state) => state.getProfile);
   const location = useLocation();
+  const { allowedSlugs } = useSubAdminNavigation();
+
+  useEffect(() => {
+    if (isAuthenticated && !user) {
+      getProfile().catch(() => {});
+    }
+  }, [getProfile, isAuthenticated, user]);
 
   // Register the FCM foreground notification listener for the entire
   // authenticated session. The hook is a no-op if messaging is not supported
@@ -22,6 +34,10 @@ export const MainLayout = () => {
   const userRole = (role || "").toLowerCase();
   if (userRole !== "admin" && userRole !== "state") {
     return <Navigate to="/login" replace />;
+  }
+
+  if (allowedSlugs && user && !isPathAllowedForModules(location.pathname, allowedSlugs)) {
+    return <Navigate to="/dashboard" replace />;
   }
 
   return (

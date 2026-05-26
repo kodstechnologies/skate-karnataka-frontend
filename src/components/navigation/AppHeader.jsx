@@ -1,9 +1,10 @@
-import { Bell, ChevronDown, Menu, Search } from "lucide-react";
+import { ChevronDown, Menu, Search } from "lucide-react";
+import { NotificationBell } from "@/components/navigation/NotificationBell";
 import { useMemo, useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
-import { navigationItems } from "@/lib/app-shell";
 import { useUiStore } from "@/store/ui-store";
 import { useAuthStore } from "@/features/auth/store/auth-store";
+import { useSubAdminNavigation } from "@/hooks/useSubAdminNavigation";
 import { Avatar, Skeleton, Menu as MuiMenu, MenuItem, ListItemIcon, Divider } from "@mui/material";
 import { Logout, Person } from "@mui/icons-material";
 
@@ -19,6 +20,7 @@ export const AppHeader = () => {
   const [query, setQuery] = useState("");
   const [anchorEl, setAnchorEl] = useState(null);
   const open = Boolean(anchorEl);
+  const { navigationItems } = useSubAdminNavigation();
 
   useEffect(() => {
     if (!user) {
@@ -46,10 +48,16 @@ export const AppHeader = () => {
       return [];
     }
 
-    return navigationItems
+    const flatItems = navigationItems.flatMap((item) =>
+      Array.isArray(item.children) && item.children.length
+        ? item.children.map((child) => ({ ...child, label: `${item.label} › ${child.label}` }))
+        : [item]
+    );
+
+    return flatItems
       .filter((item) => item.label.toLowerCase().includes(query.trim().toLowerCase()))
       .slice(0, 6);
-  }, [query]);
+  }, [navigationItems, query]);
 
   const handleSidebarToggle = () => {
     if (window.matchMedia("(max-width: 1023px)").matches) {
@@ -125,10 +133,7 @@ export const AppHeader = () => {
       </div>
 
       <div className="flex items-center gap-2 md:gap-3">
-        <button className="relative flex h-11 w-11 items-center justify-center rounded-2xl border border-[#eee1db] bg-white text-[#756968] shadow-sm transition hover:bg-[#fffaf7]">
-          <Bell size={20} />
-          <span className="absolute right-3 top-3 h-2.5 w-2.5 rounded-full border-2 border-white bg-[#f6765e]" />
-        </button>
+        <NotificationBell />
 
         {isLoading && !user ? (
           <Skeleton variant="rectangular" width={100} height={44} sx={{ borderRadius: "16px" }} />

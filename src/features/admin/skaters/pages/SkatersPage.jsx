@@ -25,6 +25,7 @@ import { ChevronRight, Search, ShieldCheck, Trophy } from "lucide-react";
 import { Link as RouterLink, useNavigate } from "react-router-dom";
 import skatersHero from "@/assets/Skating_header.jpg";
 import { useSkatersStore } from "@/features/admin/skaters/store/skaters-store";
+import { getSkaterDistrictName } from "@/features/admin/skaters/utils/skater-display";
 
 // Custom useDebounce hook
 function useDebounce(value, delay) {
@@ -274,7 +275,7 @@ export const SkatersPage = () => {
                     <DetailItem label="Phone" value={skater.phone} />
                     <DetailItem label="Email" value={skater.email} />
                     <DetailItem label="Gender" value={formatGender(skater.gender)} />
-                    <DetailItem label="District" value={skater.district?.name} />
+                    <DetailItem label="District" value={getSkaterDistrictName(skater)} />
                   </div>
 
                   <Stack direction="row" spacing={1}>
@@ -349,7 +350,7 @@ export const SkatersPage = () => {
                     <TableCell>{skater.phone || "-"}</TableCell>
                     <TableCell>{skater.email || "-"}</TableCell>
                     <TableCell>{formatGender(skater.gender)}</TableCell>
-                    <TableCell>{skater.district?.name || "-"}</TableCell>
+                    <TableCell>{getSkaterDistrictName(skater)}</TableCell>
                     <TableCell>
                       <Stack direction="row" spacing={1}>
                         <IconButton

@@ -24,6 +24,7 @@ import { UploadProgressBanner } from "@/components/ui/UploadProgressBanner";
 import officialHero from "@/assets/State_official_header.jpg";
 import { useOfficialsStore } from "../store/officials-store";
 import { validateEmail, validatePhone } from "@/utils/validationHelper";
+import { SUB_ADMIN_MODULE_OPTIONS } from "@/lib/navigation-modules";
 
 const genderOptions = [
   { value: "male", label: "Male" },
@@ -31,7 +32,7 @@ const genderOptions = [
   { value: "other", label: "Other" }
 ];
 
-const moduleOptions = ["Skaters", "Clubs", "Events", "Gallery", "Districts", "Reports"];
+const moduleOptions = SUB_ADMIN_MODULE_OPTIONS;
 
 export const OfficialFormPage = () => {
   const navigate = useNavigate();

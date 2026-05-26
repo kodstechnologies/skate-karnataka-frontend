@@ -20,8 +20,12 @@ const FIELD_META = {
 // Event-table meta (separate from text FIELD_META — no size/color keys)
 const TABLE_META = { label: "Event Table", color: "#0EA5E9", bg: "#F0F9FF", border: "#BAE6FD" };
 // Column ratios must match backend COL_RATIOS exactly
-const TABLE_COL_RATIOS = [0.25, 0.2, 0.35, 0.2];
-const TABLE_HEADERS = ["EVENT", "DISCIPLINE", "DISTANCE", "PLACEMENT"];
+const TABLE_COL_RATIOS = [0.3, 0.4, 0.3];
+const TABLE_HEADERS = ["DISCIPLINE", "DISTANCE", "PLACEMENT"];
+const TABLE_SAMPLE_ROWS = [
+  { discipline: "Speed Skating", distance: "1 Lap", placement: "1" },
+  { discipline: "Speed Skating", distance: "2 Laps + D", placement: "attended" }
+];
 
 const TEXT_COLOR_OPTIONS = [
   { value: "dark", label: "Dark" },
@@ -392,7 +396,7 @@ function TemplateCoordsEditor({ previewUrl, layout, onLayoutChange, onUpdateLayo
                             key={h}
                             style={{
                               width: colWs[i],
-                              borderRight: i < 3 ? `1px solid ${TABLE_META.color}` : "none",
+                              borderRight: i < 2 ? `1px solid ${TABLE_META.color}` : "none",
                               fontSize: Math.max(7, 10 * scaleRatio),
                               fontWeight: 800,
                               color: TABLE_META.color,
@@ -407,20 +411,20 @@ function TemplateCoordsEditor({ previewUrl, layout, onLayoutChange, onUpdateLayo
                         ))}
                       </div>
                       {/* 2 sample data rows */}
-                      {["RINK - I", "RINK - II"].map((r) => (
+                      {TABLE_SAMPLE_ROWS.map((row, rowIdx) => (
                         <div
-                          key={r}
+                          key={rowIdx}
                           style={{
                             display: "flex",
                             borderBottom: `1px solid ${TABLE_META.color}40`
                           }}
                         >
-                          {TABLE_HEADERS.map((_, i) => (
+                          {[row.discipline, row.distance, row.placement].map((cell, i) => (
                             <div
                               key={i}
                               style={{
                                 width: colWs[i],
-                                borderRight: i < 3 ? `1px solid ${TABLE_META.color}40` : "none",
+                                borderRight: i < 2 ? `1px solid ${TABLE_META.color}40` : "none",
                                 fontSize: Math.max(6, 9 * scaleRatio),
                                 color: `${TABLE_META.color}cc`,
                                 textAlign: "center",
@@ -429,7 +433,7 @@ function TemplateCoordsEditor({ previewUrl, layout, onLayoutChange, onUpdateLayo
                                 whiteSpace: "nowrap"
                               }}
                             >
-                              {i === 0 ? r : ""}
+                              {cell}
                             </div>
                           ))}
                         </div>
