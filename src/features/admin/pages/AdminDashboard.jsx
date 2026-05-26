@@ -48,7 +48,11 @@ const STAT_ROUTES = {
 };
 
 const CLICKABLE_CARD_CLASS =
-  "w-full cursor-pointer text-left transition duration-300 hover:-translate-y-1 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#f6765e]/40";
+  "w-full cursor-pointer text-left transition duration-300 hover:-translate-y-1 hover:shadow-[0_24px_48px_rgba(150,116,104,0.14)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#f6765e]/40";
+
+const staggerStyle = (index, stepMs = 90) => ({
+  animationDelay: `${index * stepMs}ms`,
+});
 
 const sparklinePath = (points) =>
   points
@@ -94,7 +98,8 @@ const StatCard = ({ stat, index, sparklinePoints, onNavigate }) => {
       type="button"
       onClick={() => to && onNavigate(to)}
       disabled={!to}
-      className={`rounded-[24px] border border-white/70 bg-white p-5 shadow-[0_16px_40px_rgba(150,116,104,0.08)] hover:shadow-[0_24px_48px_rgba(150,116,104,0.14)] ${to ? CLICKABLE_CARD_CLASS : ""}`}
+      style={staggerStyle(index, 80)}
+      className={`dashboard-stat-card group rounded-[24px] border border-white/70 bg-white p-5 shadow-[0_16px_40px_rgba(150,116,104,0.08)] ${to ? CLICKABLE_CARD_CLASS : ""}`}
     >
       <div className="flex items-start justify-between gap-4">
         <div>
@@ -108,7 +113,9 @@ const StatCard = ({ stat, index, sparklinePoints, onNavigate }) => {
           </div>
         </div>
 
-        <div className={`flex h-12 w-12 items-center justify-center rounded-2xl ${meta.iconClass}`}>
+        <div
+          className={`flex h-12 w-12 items-center justify-center rounded-2xl transition-transform duration-300 group-hover:scale-110 ${meta.iconClass}`}
+        >
           <Icon size={20} />
         </div>
       </div>
@@ -124,17 +131,18 @@ const StatCard = ({ stat, index, sparklinePoints, onNavigate }) => {
   );
 };
 
-const DashboardPanel = ({ to, onNavigate, children, className = "" }) => (
+const DashboardPanel = ({ to, onNavigate, children, className = "", delay = 0 }) => (
   <button
     type="button"
     onClick={() => onNavigate(to)}
-    className={`${CLICKABLE_CARD_CLASS} ${className}`}
+    style={staggerStyle(delay, 120)}
+    className={`dashboard-panel block h-full w-full ${CLICKABLE_CARD_CLASS} ${className}`}
   >
     {children}
   </button>
 );
 
-const CHART_HEIGHT = 250;
+const CHART_HEIGHT = 168;
 const CHART_WIDTH = 520;
 
 const padWeeklySeries = (series, length) => {
@@ -182,7 +190,7 @@ const buildAreaPath = (series, yMax, height = CHART_HEIGHT, width = CHART_WIDTH)
 };
 
 const ChartLegendItem = ({ color, label, description, icon: Icon }) => (
-  <div className="flex items-start gap-2.5 rounded-2xl border border-[#f0e3dd] bg-[#fffcfa] px-3 py-2.5">
+  <div className="flex min-w-[140px] flex-1 items-start gap-2 rounded-xl border border-[#f0e3dd] bg-[#fffcfa] px-2.5 py-2">
     <span
       className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-xl"
       style={{ backgroundColor: `${color}18`, color }}
@@ -254,206 +262,284 @@ const TrainingLoadChart = ({ weeklyOverview }) => {
       : null;
 
   return (
-    <div className="overflow-hidden rounded-[28px] border border-white/70 bg-gradient-to-br from-white via-white to-[#fff8f5] p-6 shadow-[0_18px_48px_rgba(145,110,98,0.08)] transition duration-300 hover:shadow-[0_26px_56px_rgba(145,110,98,0.14)]">
-      <div className="mb-5 flex flex-wrap items-start justify-between gap-4">
-        <div className="max-w-md">
-          <h2 className="text-lg font-semibold tracking-[-0.03em] text-[#2f2829]">
-            Weekly Overview
-          </h2>
-          <p className="mt-1.5 text-sm leading-relaxed text-[#8f827e]">
-            Activity across Karnataka for the last 7 days — compare new skater sign-ups with
-            complaints/reports submitted by skaters.
+    <div className="relative flex h-full w-full flex-col overflow-hidden rounded-[28px] border border-white/70 bg-gradient-to-br from-white via-[#fffcfa] to-[#f8f4f2] p-6 shadow-[0_18px_48px_rgba(145,110,98,0.08)]">
+    <div className="pointer-events-none absolute -right-16 -top-20 h-40 w-40 rounded-full bg-[#14b8a6]/10 blur-3xl" />
+    <div className="pointer-events-none absolute -bottom-16 left-10 h-36 w-36 rounded-full bg-[#f97316]/10 blur-3xl" />
+
+    <div className="relative z-10 mb-4 flex flex-wrap items-start justify-between gap-3">
+      <div>
+        <h2 className="text-lg font-semibold tracking-[-0.03em] text-[#2f2829]">
+          Weekly Overview
+        </h2>
+        <p className="mt-1 text-xs text-[#a0918b]">
+          Skater registrations and reports this week
+        </p>
+      </div>
+
+      <div className="flex flex-wrap gap-2">
+        <div
+          className="dashboard-metric-pill rounded-2xl border border-[#dff7f6] bg-[#effcfb] px-3 py-2"
+          style={staggerStyle(0, 100)}
+        >
+          <p className="text-[10px] font-semibold uppercase tracking-wider text-[#14b8a6]">
+            Skaters
           </p>
-        </div>
-        <div className="flex flex-wrap gap-2">
-          <div className="rounded-2xl border border-[#d4efee] bg-[#ecf9f8] px-3 py-2 text-center min-w-[88px]">
-            <p className="text-[10px] font-semibold uppercase tracking-wider text-[#53c7c5]">
-              Skaters
-            </p>
-            <p className="mt-0.5 text-xl font-bold text-[#2f2829]">{totalSkaters}</p>
-          </div>
-          <div className="rounded-2xl border border-[#f5ddd6] bg-[#fff1eb] px-3 py-2 text-center min-w-[88px]">
-            <p className="text-[10px] font-semibold uppercase tracking-wider text-[#f6765e]">
-              Reports
-            </p>
-            <p className="mt-0.5 text-xl font-bold text-[#2f2829]">{totalReports}</p>
-          </div>
-        </div>
-      </div>
-
-      <div className="mb-4 grid gap-2 sm:grid-cols-2">
-        <ChartLegendItem
-          color="#53c7c5"
-          icon={UserPlus}
-          label="Teal line — Skater registrations"
-          description="New skaters who joined or completed registration each day."
-        />
-        <ChartLegendItem
-          color="#f6765e"
-          icon={ClipboardList}
-          label="Red line — Reports filed"
-          description="Skater complaints or club reports created each day."
-        />
-      </div>
-
-      <div className="grid grid-cols-[36px_minmax(0,1fr)] gap-3">
-        <div className="flex h-[250px] flex-col justify-between pb-8 text-[11px] font-medium text-[#b3a5a0]">
-          {yLabels.map((label) => (
-            <span key={label}>{label}</span>
-          ))}
+          <p className="text-lg font-bold leading-tight text-[#111827]">{totalSkaters}</p>
         </div>
 
-        <div className="relative">
-          {hoveredPoint && (
-            <div
-              className="pointer-events-none absolute z-10 -translate-x-1/2 rounded-2xl border border-[#efe2dc] bg-white/95 px-3 py-2 shadow-[0_12px_32px_rgba(120,91,81,0.14)] backdrop-blur-sm transition-all duration-200"
-              style={{
-                left: `${(hoveredPoint.x / CHART_WIDTH) * 100}%`,
-                top: 8
-              }}
-            >
-              <p className="text-xs font-bold text-[#2f2829]">{hoveredPoint.label}</p>
-              <p className="mt-1 text-[11px] text-[#53c7c5]">
-                Skaters: <span className="font-semibold">{hoveredPoint.skaters}</span>
-              </p>
-              <p className="text-[11px] text-[#f6765e]">
-                Reports: <span className="font-semibold">{hoveredPoint.reports}</span>
-              </p>
-            </div>
-          )}
-
-          <svg viewBox={`0 0 ${CHART_WIDTH} ${CHART_HEIGHT}`} className="h-[250px] w-full">
-            <defs>
-              <linearGradient id="skaterAreaGrad" x1="0%" x2="0%" y1="0%" y2="100%">
-                <stop offset="0%" stopColor="#53c7c5" stopOpacity="0.35" />
-                <stop offset="100%" stopColor="#53c7c5" stopOpacity="0.02" />
-              </linearGradient>
-              <linearGradient id="reportAreaGrad" x1="0%" x2="0%" y1="0%" y2="100%">
-                <stop offset="0%" stopColor="#f6765e" stopOpacity="0.28" />
-                <stop offset="100%" stopColor="#f6765e" stopOpacity="0.02" />
-              </linearGradient>
-            </defs>
-
-            {gridYs.map((y) => (
-              <line
-                key={y}
-                x1="0"
-                y1={y}
-                x2={CHART_WIDTH}
-                y2={y}
-                stroke="#f2e6e0"
-                strokeDasharray="5 7"
-              />
-            ))}
-
-            <line
-              x1="0"
-              y1={CHART_HEIGHT - 24}
-              x2={CHART_WIDTH}
-              y2={CHART_HEIGHT - 24}
-              stroke="#efe2dc"
-            />
-
-            {hoveredDay != null && skaterPaths.points[hoveredDay] && (
-              <line
-                x1={skaterPaths.points[hoveredDay].x}
-                y1={24}
-                x2={skaterPaths.points[hoveredDay].x}
-                y2={CHART_HEIGHT - 24}
-                stroke="#e6d0c7"
-                strokeDasharray="4 4"
-                className="transition-opacity duration-200"
-              />
-            )}
-
-            <path
-              d={skaterPaths.area}
-              fill="url(#skaterAreaGrad)"
-              className="dashboard-chart-area"
-              style={{ animationDelay: "0.05s" }}
-            />
-            <path
-              d={reportPaths.area}
-              fill="url(#reportAreaGrad)"
-              className="dashboard-chart-area"
-              style={{ animationDelay: "0.15s" }}
-            />
-            <path
-              d={skaterPaths.line}
-              fill="none"
-              stroke="#53c7c5"
-              strokeWidth="3"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              pathLength="1"
-              className="dashboard-chart-line"
-              style={{ animationDelay: "0.2s" }}
-            />
-            <path
-              d={reportPaths.line}
-              fill="none"
-              stroke="#f6765e"
-              strokeWidth="3"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              pathLength="1"
-              className="dashboard-chart-line"
-              style={{ animationDelay: "0.35s" }}
-            />
-
-            {skaterPaths.points.map((point, index) => (
-              <circle
-                key={`skater-point-${index}`}
-                cx={point.x}
-                cy={point.y}
-                r={hoveredDay === index ? 6 : point.count > 0 ? 4.5 : 3.5}
-                fill="#53c7c5"
-                stroke="#fff"
-                strokeWidth="2"
-                className="dashboard-chart-dot transition-all duration-200"
-                style={{ animationDelay: `${0.45 + index * 0.06}s` }}
-              />
-            ))}
-            {reportPaths.points.map((point, index) => (
-              <circle
-                key={`report-point-${index}`}
-                cx={point.x}
-                cy={point.y}
-                r={hoveredDay === index ? 6 : point.count > 0 ? 4.5 : 3.5}
-                fill="#f6765e"
-                stroke="#fff"
-                strokeWidth="2"
-                className="dashboard-chart-dot transition-all duration-200"
-                style={{ animationDelay: `${0.55 + index * 0.06}s` }}
-              />
-            ))}
-          </svg>
-
-          <div
-            className="mt-2 grid text-center text-[11px] font-medium text-[#b1a29d]"
-            style={{ gridTemplateColumns: `repeat(${normalizedLabels.length}, minmax(0, 1fr))` }}
-          >
-            {normalizedLabels.map((label, index) => (
-              <button
-                key={`${label}-${index}`}
-                type="button"
-                onMouseEnter={() => setHoveredDay(index)}
-                onMouseLeave={() => setHoveredDay(null)}
-                onFocus={() => setHoveredDay(index)}
-                onBlur={() => setHoveredDay(null)}
-                className={`rounded-lg py-1 transition-colors duration-200 ${
-                  hoveredDay === index
-                    ? "bg-[#fef0ea] text-[#f6765e]"
-                    : "text-[#b1a29d] hover:bg-[#faf5f2]"
-                }`}
-              >
-                {label}
-              </button>
-            ))}
-          </div>
+        <div
+          className="dashboard-metric-pill rounded-2xl border border-[#ffe4dc] bg-[#fff5f2] px-3 py-2"
+          style={staggerStyle(1, 100)}
+        >
+          <p className="text-[10px] font-semibold uppercase tracking-wider text-[#f97316]">
+            Reports
+          </p>
+          <p className="text-lg font-bold leading-tight text-[#111827]">{totalReports}</p>
         </div>
       </div>
     </div>
+
+    <div className="relative z-10 mb-3 flex flex-wrap gap-2">
+      <div className="dashboard-metric-pill" style={staggerStyle(0, 100)}>
+        <ChartLegendItem
+          color="#14b8a6"
+          icon={UserPlus}
+          label="Skater Registrations"
+          description="Daily sign-ups"
+        />
+      </div>
+
+      <div className="dashboard-metric-pill" style={staggerStyle(1, 100)}>
+        <ChartLegendItem
+          color="#f97316"
+          icon={ClipboardList}
+          label="Reports Filed"
+          description="Daily submissions"
+        />
+      </div>
+    </div>
+
+    <div className="relative z-10 flex min-h-0 flex-1 w-full gap-3">
+      <div
+        className="flex shrink-0 flex-col justify-between text-[10px] font-semibold text-[#9ca3af]"
+        style={{ height: CHART_HEIGHT }}
+      >
+        {yLabels.map((label) => (
+          <span key={label}>{label}</span>
+        ))}
+      </div>
+  
+      {/* Graph */}
+      <div className="relative flex-1">
+        {/* Tooltip */}
+        {hoveredPoint && (
+          <div
+            className="dashboard-enter absolute z-20 min-w-[160px] -translate-x-1/2 rounded-2xl border border-[#f1f5f9] bg-white/95 px-4 py-3 shadow-2xl backdrop-blur-md"
+            style={{
+              left: `${(hoveredPoint.x / CHART_WIDTH) * 100}%`,
+              top: 10,
+            }}
+          >
+            <p className="text-sm font-bold text-[#111827]">
+              {hoveredPoint.label}
+            </p>
+  
+            <div className="mt-2 space-y-1">
+              <p className="text-xs text-[#14b8a6]">
+                Skaters:
+                <span className="ml-1 font-bold">
+                  {hoveredPoint.skaters}
+                </span>
+              </p>
+  
+              <p className="text-xs text-[#f97316]">
+                Reports:
+                <span className="ml-1 font-bold">
+                  {hoveredPoint.reports}
+                </span>
+              </p>
+            </div>
+          </div>
+        )}
+  
+        <svg
+          viewBox={`0 0 ${CHART_WIDTH} ${CHART_HEIGHT}`}
+          className="dashboard-chart-grid w-full"
+          style={{ height: CHART_HEIGHT }}
+          preserveAspectRatio="none"
+        >
+          <defs>
+            <linearGradient
+              id="skaterAreaGrad"
+              x1="0%"
+              x2="0%"
+              y1="0%"
+              y2="100%"
+            >
+              <stop
+                offset="0%"
+                stopColor="#14b8a6"
+                stopOpacity="0.35"
+              />
+              <stop
+                offset="100%"
+                stopColor="#14b8a6"
+                stopOpacity="0"
+              />
+            </linearGradient>
+  
+            <linearGradient
+              id="reportAreaGrad"
+              x1="0%"
+              x2="0%"
+              y1="0%"
+              y2="100%"
+            >
+              <stop
+                offset="0%"
+                stopColor="#f97316"
+                stopOpacity="0.28"
+              />
+              <stop
+                offset="100%"
+                stopColor="#f97316"
+                stopOpacity="0"
+              />
+            </linearGradient>
+          </defs>
+  
+          {/* Grid */}
+          {gridYs.map((y) => (
+            <line
+              key={y}
+              x1="0"
+              y1={y}
+              x2={CHART_WIDTH}
+              y2={y}
+              stroke="#e5e7eb"
+              strokeDasharray="5 5"
+            />
+          ))}
+  
+          {/* Bottom Axis */}
+          <line
+            x1="0"
+            y1={CHART_HEIGHT - 24}
+            x2={CHART_WIDTH}
+            y2={CHART_HEIGHT - 24}
+            stroke="#d1d5db"
+          />
+  
+          {/* Hover Line */}
+          {hoveredDay != null && skaterPaths.points[hoveredDay] && (
+            <line
+              x1={skaterPaths.points[hoveredDay].x}
+              y1={24}
+              x2={skaterPaths.points[hoveredDay].x}
+              y2={CHART_HEIGHT - 24}
+              stroke="#cbd5e1"
+              strokeDasharray="4 4"
+            />
+          )}
+  
+          {/* Areas */}
+          <path
+            d={skaterPaths.area}
+            fill="url(#skaterAreaGrad)"
+            className="dashboard-chart-area"
+            style={staggerStyle(0, 80)}
+          />
+
+          <path
+            d={reportPaths.area}
+            fill="url(#reportAreaGrad)"
+            className="dashboard-chart-area"
+            style={staggerStyle(1, 80)}
+          />
+
+          {/* Lines */}
+          <path
+            d={skaterPaths.line}
+            fill="none"
+            stroke="#14b8a6"
+            strokeWidth="4"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            pathLength="1"
+            className="dashboard-chart-line"
+            style={staggerStyle(2, 80)}
+          />
+
+          <path
+            d={reportPaths.line}
+            fill="none"
+            stroke="#f97316"
+            strokeWidth="4"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            pathLength="1"
+            className="dashboard-chart-line"
+            style={{ ...staggerStyle(3, 80), animationDelay: "0.35s" }}
+          />
+
+          {/* Dots */}
+          {skaterPaths.points.map((point, index) => (
+            <circle
+              key={`skater-${index}`}
+              cx={point.x}
+              cy={point.y}
+              r={hoveredDay === index ? 7 : 5}
+              fill="#14b8a6"
+              stroke="#fff"
+              strokeWidth="3"
+              className="dashboard-chart-dot transition-all duration-200"
+              style={{ animationDelay: `${0.55 + index * 0.07}s` }}
+            />
+          ))}
+
+          {reportPaths.points.map((point, index) => (
+            <circle
+              key={`report-${index}`}
+              cx={point.x}
+              cy={point.y}
+              r={hoveredDay === index ? 7 : 5}
+              fill="#f97316"
+              stroke="#fff"
+              strokeWidth="3"
+              className="dashboard-chart-dot transition-all duration-200"
+              style={{ animationDelay: `${0.75 + index * 0.07}s` }}
+            />
+          ))}
+        </svg>
+  
+        {/* Bottom Labels */}
+        <div
+          className="mt-2 grid gap-1 text-center"
+          style={{
+            gridTemplateColumns: `repeat(${normalizedLabels.length}, minmax(0, 1fr))`,
+          }}
+        >
+          {normalizedLabels.map((label, index) => (
+            <button
+              key={`${label}-${index}`}
+              type="button"
+              onMouseEnter={() => setHoveredDay(index)}
+              onMouseLeave={() => setHoveredDay(null)}
+              onFocus={() => setHoveredDay(index)}
+              onBlur={() => setHoveredDay(null)}
+              className={`rounded-lg py-1 text-[10px] font-semibold transition-all duration-200 ${
+                hoveredDay === index
+                  ? "bg-[#fff1eb] text-[#f97316]"
+                  : "text-[#6b7280] hover:bg-[#f9fafb]"
+              }`}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+      </div>
+    </div>
+  </div>
   );
 };
 
@@ -470,33 +556,37 @@ const DisciplineDonut = ({ distribution, total }) => {
     .join(", ")})`;
 
   return (
-    <div className="rounded-[28px] border border-white/70 bg-white p-6 shadow-[0_18px_48px_rgba(145,110,98,0.08)] transition duration-300 hover:-translate-y-1 hover:shadow-[0_26px_56px_rgba(145,110,98,0.14)]">
-      <div className="mb-5">
+    <div className="flex h-full w-full flex-col rounded-[28px] border border-white/70 bg-gradient-to-b from-white to-[#fffaf8] p-6 shadow-[0_18px_48px_rgba(145,110,98,0.08)]">
+      <div className="mb-4">
         <h2 className="text-lg font-semibold tracking-[-0.03em] text-[#2f2829]">
           Discipline Split
         </h2>
         <p className="mt-1 text-xs text-[#a0918b]">Active skaters by discipline</p>
       </div>
 
-      <div className="flex justify-center">
+      <div className="flex flex-1 flex-col items-center justify-center">
         <div
-          className="relative flex h-48 w-48 items-center justify-center rounded-full"
+          className="dashboard-donut-ring relative flex h-40 w-40 items-center justify-center rounded-full shadow-[inset_0_0_0_1px_rgba(239,226,220,0.5)]"
           style={{ background: gradient }}
         >
-          <div className="flex h-[110px] w-[110px] flex-col items-center justify-center rounded-full bg-white text-center shadow-[inset_0_0_0_1px_rgba(239,226,220,0.9)]">
-            <span className="text-3xl font-semibold tracking-[-0.05em] text-[#2f2829]">
+          <div className="flex h-[92px] w-[92px] flex-col items-center justify-center rounded-full bg-white text-center shadow-[inset_0_0_0_1px_rgba(239,226,220,0.9)]">
+            <span className="text-2xl font-semibold tracking-[-0.05em] text-[#2f2829]">
               {total}
             </span>
-            <span className="mt-1 text-[11px] uppercase tracking-[0.22em] text-[#ab9d98]">
+            <span className="mt-0.5 text-[10px] uppercase tracking-[0.2em] text-[#ab9d98]">
               Skaters
             </span>
           </div>
         </div>
       </div>
 
-      <div className="mt-6 space-y-3">
-        {items.map((item) => (
-          <div key={item.label} className="flex items-center justify-between gap-3 text-sm">
+      <div className="mt-4 space-y-2">
+        {items.map((item, index) => (
+          <div
+            key={item.label}
+            className="dashboard-list-item flex items-center justify-between gap-3 rounded-xl px-1 py-0.5 text-sm transition-colors hover:bg-[#fff6f2]"
+            style={staggerStyle(index, 60)}
+          >
             <div className="flex items-center gap-3">
               <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: item.color }} />
               <span className="text-[#736866]">{item.label}</span>
@@ -634,9 +724,9 @@ export const AdminDashboard = () => {
 
   return (
     <div className="space-y-5">
-      <section className="relative overflow-hidden rounded-[28px] border border-white/80 bg-white px-6 py-6 shadow-[0_16px_44px_rgba(145,110,98,0.08)]">
-        <div className="pointer-events-none absolute -right-8 -top-8 h-32 w-32 rounded-full bg-[#f6765e]/10 blur-2xl" />
-        <div className="pointer-events-none absolute -bottom-10 left-16 h-32 w-32 rounded-full bg-[#53c7c5]/10 blur-2xl" />
+      <section className="dashboard-enter relative overflow-hidden rounded-[28px] border border-white/80 bg-gradient-to-r from-white via-[#fffefd] to-[#fff8f5] px-6 py-6 shadow-[0_16px_44px_rgba(145,110,98,0.08)]">
+        <div className="dashboard-hero-glow pointer-events-none absolute -right-8 -top-8 h-32 w-32 rounded-full bg-[#f6765e]/12 blur-2xl" />
+        <div className="dashboard-hero-glow pointer-events-none absolute -bottom-10 left-16 h-32 w-32 rounded-full bg-[#53c7c5]/12 blur-2xl" />
         <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-[#d09987]">
           Dashboard
         </p>
@@ -673,13 +763,13 @@ export const AdminDashboard = () => {
 
       {(showSkaters || showReports) && (
         <section
-          className={`grid gap-5 ${showSkaters ? "xl:grid-cols-[minmax(0,1.6fr)_minmax(320px,0.85fr)]" : ""}`}
+          className={`grid items-stretch gap-5 ${showSkaters ? "xl:grid-cols-[minmax(0,1.6fr)_minmax(320px,0.85fr)]" : ""}`}
         >
-          <DashboardPanel to={showSkaters ? "/skaters" : "/reports/school"} onNavigate={goTo}>
+          <DashboardPanel to={showSkaters ? "/skaters" : "/reports/school"} onNavigate={goTo} delay={0}>
             <TrainingLoadChart weeklyOverview={dashboard?.weeklyOverview} />
           </DashboardPanel>
           {showSkaters && (
-            <DashboardPanel to="/skaters" onNavigate={goTo}>
+            <DashboardPanel to="/skaters" onNavigate={goTo} delay={1}>
               <DisciplineDonut
                 distribution={dashboard?.disciplineDistribution}
                 total={dashboard?.disciplineTotal || dashboard?.summary?.totalSkaters || 0}
@@ -695,6 +785,7 @@ export const AdminDashboard = () => {
             <DashboardPanel
               to="/events/detail"
               onNavigate={goTo}
+              delay={0}
               className="rounded-[28px] border border-white/70 bg-white p-6 shadow-[0_18px_48px_rgba(145,110,98,0.08)] hover:shadow-[0_26px_56px_rgba(145,110,98,0.14)]"
             >
               <div className="mb-6 flex items-center justify-between">
@@ -710,10 +801,11 @@ export const AdminDashboard = () => {
                 {(dashboard?.upcomingSessions || []).length === 0 ? (
                   <p className="text-sm text-[#b19f99]">No upcoming events scheduled.</p>
                 ) : (
-                  dashboard.upcomingSessions.map((session) => (
+                  dashboard.upcomingSessions.map((session, index) => (
                     <div
                       key={session.id}
-                      className="grid gap-3 rounded-[22px] border border-[#f1e5df] bg-[#fffaf8] p-4 transition duration-300 hover:-translate-y-0.5 hover:bg-white lg:grid-cols-[minmax(0,1fr)_120px_130px]"
+                      className="dashboard-list-item grid gap-3 rounded-[22px] border border-[#f1e5df] bg-[#fffaf8] p-4 transition duration-300 hover:-translate-y-0.5 hover:border-[#f6765e]/20 hover:bg-white hover:shadow-md lg:grid-cols-[minmax(0,1fr)_120px_130px]"
+                      style={staggerStyle(index, 70)}
                     >
                       <div>
                         <p className="text-sm font-semibold text-[#2f2829]">{session.title}</p>
@@ -740,8 +832,9 @@ export const AdminDashboard = () => {
 
           {showReports && (
             <DashboardPanel
-              to="/reports/school"
+              to="/complains"
               onNavigate={goTo}
+              delay={showEvents ? 1 : 0}
               className="rounded-[28px] border border-white/70 bg-white p-6 shadow-[0_18px_48px_rgba(145,110,98,0.08)] hover:shadow-[0_26px_56px_rgba(145,110,98,0.14)]"
             >
               <div className="mb-6">
@@ -757,13 +850,14 @@ export const AdminDashboard = () => {
                 {(dashboard?.recentActivity || []).length === 0 ? (
                   <p className="text-sm text-[#b19f99]">No recent activity yet.</p>
                 ) : (
-                  dashboard.recentActivity.map((item) => {
+                  dashboard.recentActivity.map((item, index) => {
                     const Icon = activityIconFor(item.type);
 
                     return (
                       <div
                         key={item.id}
-                        className="flex items-start gap-4 rounded-[22px] bg-[#fcf7f4] p-4 transition duration-300 hover:-translate-y-0.5 hover:bg-white"
+                        className="dashboard-list-item flex items-start gap-4 rounded-[22px] bg-[#fcf7f4] p-4 transition duration-300 hover:-translate-y-0.5 hover:bg-white hover:shadow-sm"
+                        style={staggerStyle(index, 65)}
                       >
                         <div
                           className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl ${activityClassFor(item.type)}`}

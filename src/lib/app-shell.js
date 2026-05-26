@@ -17,6 +17,7 @@ import {
   Image,
   Headphones,
   MessageSquare,
+  AlertTriangle,
   Award,
   Newspaper,
   Handshake,
@@ -72,6 +73,12 @@ export const navigationGroups = [
       { slug: "gallery", to: "/gallery", label: "Gallery", icon: Image },
       { slug: "contact-us", to: "/contact-us", label: "Contact Us", icon: Headphones },
       { slug: "feedback", to: "/feedback", label: "Feedback", icon: MessageSquare },
+      {
+        slug: "complains",
+        to: "/complains",
+        label: "Complains",
+        icon: AlertTriangle
+      },
       {
         slug: "Certification",
         to: "/certification",

@@ -32,6 +32,8 @@ import { ProfilePage } from "@/features/admin/pages/ProfilePage";
 import { ContactUsPage } from "@/features/admin/contact-us/pages/ContactUsPage";
 import { FeedbackPage } from "@/features/admin/feedback/pages/FeedbackPage";
 import { FeedbackDetailPage } from "@/features/admin/feedback/pages/FeedbackDetailPage";
+import { ComplainsPage } from "@/features/admin/complains/pages/ComplainsPage";
+import { ComplainDetailsPage } from "@/features/admin/complains/pages/ComplainDetailsPage";
 import { DisciplinesPage } from "@/features/admin/disciplines/pages/DisciplinesPage";
 import { DisciplineFormPage } from "@/features/admin/disciplines/pages/DisciplineFormPage";
 import { DisciplineDetailPage } from "@/features/admin/disciplines/pages/DisciplineDetailPage";
@@ -74,6 +76,8 @@ export const AppRoutes = () => {
         <Route path="/contact-us" element={<ContactUsPage />} />
         <Route path="/feedback" element={<FeedbackPage />} />
         <Route path="/feedback/:feedbackId" element={<FeedbackDetailPage />} />
+        <Route path="/complains" element={<ComplainsPage />} />
+        <Route path="/complains/:complainId" element={<ComplainDetailsPage />} />
         <Route path="/disciplines" element={<DisciplinesPage />} />
         <Route path="/disciplines/create" element={<DisciplineFormPage />} />
         <Route path="/disciplines/:disciplineId" element={<DisciplineDetailPage />} />

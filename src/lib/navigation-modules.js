@@ -16,7 +16,7 @@ const MODULE_TO_NAV_SLUGS = {
   Events: ["events"],
   Gallery: ["gallery"],
   Districts: ["districts"],
-  Reports: ["reports"]
+  Reports: ["reports", "complains"]
 };
 
 const PATH_PREFIX_TO_SLUG = [
@@ -26,7 +26,8 @@ const PATH_PREFIX_TO_SLUG = [
   ["/event", "events"],
   ["/gallery", "gallery"],
   ["/districts", "districts"],
-  ["/reports", "reports"]
+  ["/reports", "reports"],
+  ["/complains", "complains"]
 ];
 
 const ALWAYS_ALLOWED_PATHS = ["/dashboard", "/profile"];
