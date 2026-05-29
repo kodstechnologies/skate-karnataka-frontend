@@ -23,6 +23,7 @@ import {
   Typography
 } from "@mui/material";
 import {
+  CalendarDays,
   ChevronRight,
   PencilLine,
   Plus,
@@ -464,6 +465,17 @@ export const DistrictsPage = () => {
                     {/* Actions */}
                     <TableCell>
                       <Stack direction="row" spacing={1}>
+                        <IconButton
+                          onClick={() => navigate(`/districts/${district.id}/events`)}
+                          sx={{
+                            border: "1px solid #efe2dc",
+                            color: "#f6765e",
+                            backgroundColor: "#fff8f4"
+                          }}
+                          aria-label={`View events for ${district.districtName}`}
+                        >
+                          <CalendarDays size={16} />
+                        </IconButton>
                         <IconButton
                           onClick={() => navigate(`/districts/${district.id}/edit`)}
                           sx={{ border: "1px solid #efe2dc", backgroundColor: "#fff8f4" }}

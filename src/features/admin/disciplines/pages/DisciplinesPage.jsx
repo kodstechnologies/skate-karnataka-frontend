@@ -21,7 +21,16 @@ import {
   TextField,
   Typography
 } from "@mui/material";
-import { ChevronRight, Eye, Layers, PencilLine, Plus, Search, Trash2 } from "lucide-react";
+import {
+  CalendarDays,
+  ChevronRight,
+  Eye,
+  Layers,
+  PencilLine,
+  Plus,
+  Search,
+  Trash2
+} from "lucide-react";
 import { Link as RouterLink, useNavigate } from "react-router-dom";
 import disciplinesHero from "@/assets/Disciplines_header.png";
 import { ConfirmDeleteModal } from "@/components/ui/ConfirmDeleteModal";
@@ -422,6 +431,18 @@ export const DisciplinesPage = () => {
                     {/* Actions */}
                     <TableCell>
                       <Stack direction="row" spacing={0.75}>
+                        <IconButton
+                          onClick={() => navigate(`/disciplines/${item.id}/events`)}
+                          sx={{
+                            border: "1px solid #efe2dc",
+                            color: "#f6765e",
+                            backgroundColor: "#fff8f4"
+                          }}
+                          aria-label={`View events for ${item.title}`}
+                          title="Events"
+                        >
+                          <CalendarDays size={16} />
+                        </IconButton>
                         <IconButton
                           onClick={() => navigate(`/disciplines/${item.id}`)}
                           sx={{

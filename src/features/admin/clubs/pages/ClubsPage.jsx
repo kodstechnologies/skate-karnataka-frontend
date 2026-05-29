@@ -23,6 +23,7 @@ import {
 } from "@mui/material";
 
 import {
+  CalendarDays,
   ChevronRight,
   PencilLine,
   Plus,
@@ -519,6 +520,18 @@ export const ClubsPage = () => {
                     </TableCell>
                     <TableCell>
                       <Stack direction="row" spacing={0.75}>
+                        <IconButton
+                          onClick={() => navigate(`/clubs/${club.id}/events`)}
+                          sx={{
+                            border: "1px solid #efe2dc",
+                            color: "#f6765e",
+                            backgroundColor: "#fff8f4"
+                          }}
+                          aria-label={`View events for ${club.name}`}
+                          title="Events"
+                        >
+                          <CalendarDays size={16} />
+                        </IconButton>
                         <IconButton
                           onClick={() =>
                             navigate(`/clubs/${club.id}/members/create`, {

@@ -14,5 +14,8 @@ export const clubApi = {
   },
   delete: async (id) => {
     return api.delete(`/admin/v1/club/${id}`);
+  },
+  getClubEvents: async (clubId, params = {}) => {
+    return api.get(`/state/v1/club/${clubId}/event`, { params });
   }
 };

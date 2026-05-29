@@ -14,5 +14,8 @@ export const disciplineApi = {
   },
   delete: async (id) => {
     return api.delete(`/guest/v1/discipline/${id}`);
+  },
+  getDisciplineEvents: async (disciplineId, params = {}) => {
+    return api.get(`/guest/v1/discipline/${disciplineId}/event`, { params });
   }
 };

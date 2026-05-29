@@ -14,5 +14,8 @@ export const districtApi = {
   },
   delete: async (id) => {
     return api.delete(`/admin/v1/district/${id}`);
+  },
+  getDistrictEvents: async (districtId, params = {}) => {
+    return api.get(`/state/v1/district/${districtId}/event`, { params });
   }
 };

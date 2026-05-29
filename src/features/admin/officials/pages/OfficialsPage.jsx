@@ -21,6 +21,7 @@ import {
   Avatar
 } from "@mui/material";
 import {
+  CalendarDays,
   ChevronRight,
   Search,
   PencilLine,
@@ -315,6 +316,18 @@ export const OfficialsPage = () => {
 
                     <TableCell>
                       <Stack direction="row" spacing={1}>
+                        <Tooltip title="Events">
+                          <IconButton
+                            onClick={() => navigate(`/officials/${official._id}/events`)}
+                            sx={{
+                              border: "1px solid #efe2dc",
+                              backgroundColor: "#fff8f4",
+                              color: "#f6765e"
+                            }}
+                          >
+                            <CalendarDays size={18} />
+                          </IconButton>
+                        </Tooltip>
                         <Tooltip title="Edit">
                           <IconButton
                             onClick={() => navigate(`/officials/${official._id}/edit`)}

@@ -1,6 +1,7 @@
 import { Navigate, Route, Routes } from "react-router-dom";
 import { useAuthStore } from "@/features/auth/store/auth-store";
 import { ClubDetailsPage } from "@/features/admin/clubs/pages/ClubDetailsPage";
+import { ClubEventsPage } from "@/features/admin/clubs/pages/ClubEventsPage";
 import { ClubFormPage } from "@/features/admin/clubs/pages/ClubFormPage";
 import { ClubsPage } from "@/features/admin/clubs/pages/ClubsPage";
 import { ClubMembersPage } from "@/features/admin/clubs/pages/ClubMembersPage";
@@ -10,12 +11,14 @@ import { GalleryPage } from "@/features/admin/gallery/pages/GalleryPage";
 import { GalleryDetailPage } from "@/features/admin/gallery/pages/GalleryDetailPage";
 import { DistrictFormPage } from "@/features/admin/districts/pages/DistrictFormPage";
 import { DistrictMemberFormPage } from "@/features/admin/districts/pages/DistrictMemberFormPage";
+import { DistrictEventsPage } from "@/features/admin/districts/pages/DistrictEventsPage";
 import { DistrictMembersPage } from "@/features/admin/districts/pages/DistrictMembersPage";
 import { DistrictsPage } from "@/features/admin/districts/pages/DistrictsPage";
 import { EventFormPage } from "@/features/admin/events/pages/EventFormPage";
 import { EventsPage } from "@/features/admin/events/pages/EventsPage";
 import { AdminDashboard } from "@/features/admin/pages/AdminDashboard";
 import { OfficialsPage } from "@/features/admin/officials/pages/OfficialsPage";
+import { OfficialEventsPage } from "@/features/admin/officials/pages/OfficialEventsPage";
 import { OfficialFormPage } from "@/features/admin/officials/pages/OfficialFormPage";
 import { AcademyRequestDetailsPage } from "@/features/admin/requests/pages/AcademyRequestDetailsPage";
 import { AcademyRequestsPage } from "@/features/admin/requests/pages/AcademyRequestsPage";
@@ -34,6 +37,7 @@ import { FeedbackPage } from "@/features/admin/feedback/pages/FeedbackPage";
 import { FeedbackDetailPage } from "@/features/admin/feedback/pages/FeedbackDetailPage";
 import { ComplainsPage } from "@/features/admin/complains/pages/ComplainsPage";
 import { ComplainDetailsPage } from "@/features/admin/complains/pages/ComplainDetailsPage";
+import { DisciplineRegistryPage } from "@/features/admin/discipline-registry/pages/DisciplineRegistryPage";
 import { DisciplinesPage } from "@/features/admin/disciplines/pages/DisciplinesPage";
 import { DisciplineFormPage } from "@/features/admin/disciplines/pages/DisciplineFormPage";
 import { DisciplineDetailPage } from "@/features/admin/disciplines/pages/DisciplineDetailPage";
@@ -78,6 +82,7 @@ export const AppRoutes = () => {
         <Route path="/feedback/:feedbackId" element={<FeedbackDetailPage />} />
         <Route path="/complains" element={<ComplainsPage />} />
         <Route path="/complains/:complainId" element={<ComplainDetailsPage />} />
+        <Route path="/discipline" element={<DisciplineRegistryPage />} />
         <Route path="/disciplines" element={<DisciplinesPage />} />
         <Route path="/disciplines/create" element={<DisciplineFormPage />} />
         <Route path="/disciplines/:disciplineId" element={<DisciplineDetailPage />} />
@@ -91,6 +96,7 @@ export const AppRoutes = () => {
         <Route path="/circulars/:circularId/edit" element={<CircularFormPage />} />
         <Route path="/officials" element={<OfficialsPage />} />
         <Route path="/officials/create" element={<OfficialFormPage />} />
+        <Route path="/officials/:officialId/events" element={<OfficialEventsPage />} />
         <Route path="/officials/:officialId/edit" element={<OfficialFormPage />} />
         <Route path="/skaters" element={<SkatersPage />} />
         <Route path="/skaters/:skaterId" element={<SkaterDetailsPage />} />
@@ -98,6 +104,7 @@ export const AppRoutes = () => {
         <Route path="/clubs/create" element={<ClubFormPage />} />
         <Route path="/clubs/:clubId" element={<ClubDetailsPage />} />
         <Route path="/clubs/:clubId/edit" element={<ClubFormPage />} />
+        <Route path="/clubs/:clubId/events" element={<ClubEventsPage />} />
         <Route path="/clubs/:clubId/members" element={<ClubMembersPage />} />
         <Route path="/clubs/:clubId/members/create" element={<ClubMemberFormPage />} />
         <Route path="/clubs/:clubId/members/:memberId/edit" element={<ClubMemberFormPage />} />
@@ -114,6 +121,7 @@ export const AppRoutes = () => {
         <Route path="/districts" element={<DistrictsPage />} />
         <Route path="/districts/create" element={<DistrictFormPage />} />
         <Route path="/districts/:districtId/edit" element={<DistrictFormPage />} />
+        <Route path="/districts/:districtId/events" element={<DistrictEventsPage />} />
         <Route path="/districts/:districtId/members" element={<DistrictMembersPage />} />
         <Route path="/districts/:districtId/members/create" element={<DistrictMemberFormPage />} />
         <Route

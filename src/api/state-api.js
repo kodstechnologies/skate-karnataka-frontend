@@ -23,5 +23,10 @@ export const stateApi = {
   },
   delete: async (id) => {
     return api.delete(`/state/v1/${id}`);
+  },
+  getOfficialEvents: async (officialId, params = {}) => {
+    return api.get("/event/v1/state", {
+      params: { ...params, stateId: officialId }
+    });
   }
 };
