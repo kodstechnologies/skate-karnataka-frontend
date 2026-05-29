@@ -9,6 +9,7 @@ import {
   initialEventFormValues
 } from "@/features/admin/events/components/eventFormConfig";
 import { eventsApi } from "@/api/events-api";
+import { eventCategoriesApi } from "@/api/event-categories-api";
 import toast from "react-hot-toast";
 
 const validateEventForm = (formData) => {
@@ -22,7 +23,8 @@ const validateEventForm = (formData) => {
     "eventStartDate",
     "eventEndDate",
     "status",
-    "entryFee"
+    "entryFee",
+    "skatingEventCategories"
   ];
 
   requiredFields.forEach((field) => {
@@ -33,6 +35,9 @@ const validateEventForm = (formData) => {
 
   if (formData.entryFee && Number(formData.entryFee) < 0) {
     errors.entryFee = "Entry fee cannot be negative";
+  }
+  if (!Array.isArray(formData.skatingEventCategories) || formData.skatingEventCategories.length < 1) {
+    errors.skatingEventCategories = "Select at least one category";
   }
 
   // Logical Date Validation
@@ -79,6 +84,7 @@ export const EventFormPage = () => {
   const [existingEvent, setExistingEvent] = useState(passedEvent || null);
   const [loading, setLoading] = useState(isEditing && !passedEvent);
   const [saving, setSaving] = useState(false);
+  const [eventCategories, setEventCategories] = useState([]);
 
   const [formData, setFormData] = useState(
     passedEvent ? createEventFormValues(passedEvent) : initialEventFormValues
@@ -104,8 +110,22 @@ export const EventFormPage = () => {
     }
   }, [isEditing, eventId, passedEvent]);
 
+  useEffect(() => {
+    eventCategoriesApi
+      .getAll()
+      .then((res) => {
+        const list = res?.data?.data ?? res?.data ?? [];
+        setEventCategories(Array.isArray(list) ? list : []);
+      })
+      .catch(() => {
+        setEventCategories([]);
+        toast.error("Failed to load event categories");
+      });
+  }, []);
+
   const handleFieldChange = (field) => (event) => {
-    const value = event.target.value;
+    const value =
+      field === "skatingEventCategories" ? [...(event.target.value || [])] : event.target.value;
 
     setFormData((current) => ({ ...current, [field]: value }));
     setErrors((current) => ({
@@ -250,6 +270,7 @@ export const EventFormPage = () => {
           errors={errors}
           onFieldChange={handleFieldChange}
           disabled={saving}
+          eventCategories={eventCategories}
         />
 
         <Stack

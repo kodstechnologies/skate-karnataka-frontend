@@ -17,6 +17,7 @@ export const initialEventFormValues = {
   eventEndTime: "",
   status: "coming_soon",
   entryFee: "",
+  skatingEventCategories: [],
   colorOne: "#f117d5",
   colorTwo: "#1838e3",
   textColor: "#000000"
@@ -57,6 +58,9 @@ export const createEventFormValues = (event = {}) => ({
   eventEndTime: formatTimeForInput(event.eventEndTime),
   status: event.status ?? "coming_soon",
   entryFee: event.entryFee ?? "",
+  skatingEventCategories: (event.skatingEventCategories ?? [])
+    .map((item) => (typeof item === "string" ? item : item?._id))
+    .filter(Boolean),
   colorOne: event.colorOne ?? "#ffffff",
   colorTwo: event.colorTwo ?? "#ffffff",
   textColor: event.textColor ?? "#000000"

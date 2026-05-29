@@ -2,7 +2,18 @@ import CalendarMonthOutlinedIcon from "@mui/icons-material/CalendarMonthOutlined
 import EventAvailableOutlinedIcon from "@mui/icons-material/EventAvailableOutlined";
 import PaletteOutlinedIcon from "@mui/icons-material/PaletteOutlined";
 import PlaceOutlinedIcon from "@mui/icons-material/PlaceOutlined";
-import { Box, MenuItem, Paper, Popover, Stack, TextField, Typography } from "@mui/material";
+import CategoryOutlinedIcon from "@mui/icons-material/CategoryOutlined";
+import {
+  Box,
+  Checkbox,
+  ListItemText,
+  MenuItem,
+  Paper,
+  Popover,
+  Stack,
+  TextField,
+  Typography
+} from "@mui/material";
 import { useState } from "react";
 import { HexColorPicker } from "react-colorful";
 import { eventStatusOptions } from "@/features/admin/events/components/eventFormConfig";
@@ -124,7 +135,10 @@ const SectionCard = ({ icon, title, description, children }) => (
 );
 
 /* ── Main form ── */
-export const EventForm = ({ formData, errors, onFieldChange, disabled }) => {
+export const EventForm = ({ formData, errors, onFieldChange, disabled, eventCategories = [] }) => {
+  const getOptionId = (option) => option?._id || option?.id || "";
+  const selectedCategoryIds = (formData.skatingEventCategories || []).map(String);
+
   return (
     <Stack spacing={2.5}>
       {/* ── Event Information ── */}
@@ -191,6 +205,39 @@ export const EventForm = ({ formData, errors, onFieldChange, disabled }) => {
             sx={inputStyles}
           />
         </Box>
+      </SectionCard>
+
+      <SectionCard
+        icon={<CategoryOutlinedIcon />}
+        title="Skating Event Categories"
+        description="Select one or more category types allowed for this event."
+      >
+        <TextField
+          select
+          label="Category Types"
+          value={selectedCategoryIds}
+          onChange={onFieldChange("skatingEventCategories")}
+          error={Boolean(errors.skatingEventCategories)}
+          helperText={errors.skatingEventCategories}
+          fullWidth
+          disabled={disabled}
+          sx={inputStyles}
+          SelectProps={{
+            multiple: true,
+            renderValue: (selected) =>
+              eventCategories
+                .filter((opt) => selected.includes(String(getOptionId(opt))))
+                .map((opt) => opt.typeName)
+                .join(", ")
+          }}
+        >
+          {eventCategories.map((option) => (
+            <MenuItem key={getOptionId(option)} value={String(getOptionId(option))}>
+              <Checkbox checked={selectedCategoryIds.includes(String(getOptionId(option)))} />
+              <ListItemText primary={option.typeName} />
+            </MenuItem>
+          ))}
+        </TextField>
       </SectionCard>
 
       {/* ── Schedule ── */}
