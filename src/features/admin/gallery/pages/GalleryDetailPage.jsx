@@ -409,7 +409,10 @@ export const GalleryDetailPage = () => {
                       key={activeUrl}
                       src={activeUrl}
                       controls
+                      autoPlay={activeMedia === "video"}
+                      muted
                       playsInline
+                      preload="auto"
                       style={{
                         width: "100%",
                         maxHeight: "520px",

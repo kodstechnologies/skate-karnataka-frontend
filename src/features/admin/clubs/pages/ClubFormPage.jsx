@@ -43,6 +43,8 @@ export const ClubFormPage = () => {
   const { clubId } = useParams();
   const isEditing = Boolean(clubId);
   const clubs = useClubsStore((state) => state.clubs);
+  const isLoading = useClubsStore((state) => state.isLoading);
+  const fetchClubs = useClubsStore((state) => state.fetchClubs);
   const addClub = useClubsStore((state) => state.addClub);
   const updateClub = useClubsStore((state) => state.updateClub);
 
@@ -55,16 +57,33 @@ export const ClubFormPage = () => {
     }
   }, [districts.length, fetchDistricts]);
 
+  useEffect(() => {
+    if (districts.length === 0) {
+      fetchDistricts({ limit: 100 });
+    }
+  }, [districts.length, fetchDistricts]);
+
+  useEffect(() => {
+    if (isEditing) {
+      fetchClubs({ limit: 100 });
+    }
+  }, [isEditing, fetchClubs]);
+
   const existingClub = useMemo(
-    () => clubs.find((club) => club.id === clubId) ?? null,
+    () => clubs.find((club) => String(club.id) === String(clubId)) ?? null,
     [clubId, clubs]
   );
 
-  const [formData, setFormData] = useState(
-    isEditing && existingClub ? createClubFormValues(existingClub) : initialClubFormValues
-  );
+  const [formData, setFormData] = useState(initialClubFormValues);
+  const [imagePreview, setImagePreview] = useState(null);
   const [errors, setErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  useEffect(() => {
+    if (!existingClub?.id) return;
+    setFormData(createClubFormValues(existingClub));
+    setImagePreview(existingClub.img || null);
+  }, [existingClub?.id, existingClub]);
 
   const handleFieldChange = (field) => (event) => {
     setFormData((current) => ({ ...current, [field]: event.target.value }));
@@ -88,6 +107,7 @@ export const ClubFormPage = () => {
       ...current,
       [field]: file
     }));
+    setImagePreview(URL.createObjectURL(file));
     setErrors((current) => ({ ...current, [field]: "" }));
   };
 
@@ -111,7 +131,16 @@ export const ClubFormPage = () => {
     }
   };
 
-  if (isEditing && !existingClub) {
+  if (isEditing && isLoading && !existingClub) {
+    return (
+      <Paper elevation={0} sx={{ p: 4, borderRadius: "28px", textAlign: "center" }}>
+        <CircularProgress size={28} sx={{ color: "#f6765e" }} />
+        <Typography sx={{ mt: 2, color: "#8d7f7b" }}>Loading club details...</Typography>
+      </Paper>
+    );
+  }
+
+  if (isEditing && !isLoading && !existingClub) {
     return (
       <Paper elevation={0} sx={{ p: 4, borderRadius: "28px", textAlign: "center" }}>
         <Typography variant="h5" sx={{ fontWeight: 700, color: "#2f2829" }}>
@@ -264,7 +293,7 @@ export const ClubFormPage = () => {
         <Box>
           <ClubForm
             formData={formData}
-            existingImageUrl={existingClub?.img}
+            existingImageUrl={imagePreview}
             errors={errors}
             districts={districts}
             onFieldChange={handleFieldChange}

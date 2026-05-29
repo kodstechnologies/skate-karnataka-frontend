@@ -16,7 +16,10 @@ import {
 } from "@mui/material";
 import { useState } from "react";
 import { HexColorPicker } from "react-colorful";
-import { eventStatusOptions } from "@/features/admin/events/components/eventFormConfig";
+import {
+  eventStatusOptions,
+  normalizeSkatingEventCategoryIds
+} from "@/features/admin/events/components/eventFormConfig";
 
 const sectionCardStyles = {
   p: { xs: 2.25, md: 2.75 },
@@ -137,7 +140,7 @@ const SectionCard = ({ icon, title, description, children }) => (
 /* ── Main form ── */
 export const EventForm = ({ formData, errors, onFieldChange, disabled, eventCategories = [] }) => {
   const getOptionId = (option) => option?._id || option?.id || "";
-  const selectedCategoryIds = (formData.skatingEventCategories || []).map(String);
+  const selectedCategoryIds = normalizeSkatingEventCategoryIds(formData.skatingEventCategories);
 
   return (
     <Stack spacing={2.5}>

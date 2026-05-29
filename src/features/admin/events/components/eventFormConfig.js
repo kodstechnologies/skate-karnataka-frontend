@@ -5,6 +5,35 @@ export const eventStatusOptions = [
   { value: "completed", label: "Completed" }
 ];
 
+const OBJECT_ID_REGEX = /^[0-9a-fA-F]{24}$/;
+
+/** Keep category ids as a string array — never spread a string (that splits into chars). */
+export const normalizeSkatingEventCategoryIds = (value) => {
+  if (value == null || value === "") return [];
+
+  if (Array.isArray(value)) {
+    return value
+      .map((item) => {
+        if (item == null || item === "") return "";
+        if (typeof item === "string") return item.trim();
+        return String(item._id || item.id || "").trim();
+      })
+      .filter((id) => OBJECT_ID_REGEX.test(id));
+  }
+
+  if (typeof value === "string") {
+    const trimmed = value.trim();
+    if (!trimmed) return [];
+    if (OBJECT_ID_REGEX.test(trimmed)) return [trimmed];
+    return trimmed
+      .split(",")
+      .map((part) => part.trim())
+      .filter((id) => OBJECT_ID_REGEX.test(id));
+  }
+
+  return [];
+};
+
 export const initialEventFormValues = {
   header: "",
   about: "",
@@ -58,9 +87,7 @@ export const createEventFormValues = (event = {}) => ({
   eventEndTime: formatTimeForInput(event.eventEndTime),
   status: event.status ?? "coming_soon",
   entryFee: event.entryFee ?? "",
-  skatingEventCategories: (event.skatingEventCategories ?? [])
-    .map((item) => (typeof item === "string" ? item : item?._id))
-    .filter(Boolean),
+  skatingEventCategories: normalizeSkatingEventCategoryIds(event.skatingEventCategories),
   colorOne: event.colorOne ?? "#ffffff",
   colorTwo: event.colorTwo ?? "#ffffff",
   textColor: event.textColor ?? "#000000"

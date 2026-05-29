@@ -90,7 +90,7 @@ export const GalleryFormPage = () => {
       return;
     }
     setVideoFile(file);
-    setVideoPreview(file.name);
+    setVideoPreview(URL.createObjectURL(file));
     setErrors((prev) => ({ ...prev, video: "" }));
   };
 
@@ -478,6 +478,21 @@ export const GalleryFormPage = () => {
                     <video
                       src={videoPreview}
                       controls
+                      playsInline
+                      preload="metadata"
+                      style={{ width: "100%", height: 200, objectFit: "cover", display: "block" }}
+                    />
+                  </Box>
+                ) : typeof videoPreview === "string" &&
+                  (videoPreview.startsWith("blob:") || videoPreview.startsWith("data:")) ? (
+                  <Box
+                    sx={{ borderRadius: "18px", overflow: "hidden", border: "1px solid #b8e8f7" }}
+                  >
+                    <video
+                      src={videoPreview}
+                      controls
+                      playsInline
+                      preload="metadata"
                       style={{ width: "100%", height: 200, objectFit: "cover", display: "block" }}
                     />
                   </Box>

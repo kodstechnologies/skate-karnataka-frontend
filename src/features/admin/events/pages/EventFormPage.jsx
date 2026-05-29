@@ -6,7 +6,8 @@ import eventsHero from "@/assets/Events_header.jpg";
 import { EventForm } from "@/features/admin/events/components/EventForm";
 import {
   createEventFormValues,
-  initialEventFormValues
+  initialEventFormValues,
+  normalizeSkatingEventCategoryIds
 } from "@/features/admin/events/components/eventFormConfig";
 import { eventsApi } from "@/api/events-api";
 import { eventCategoriesApi } from "@/api/event-categories-api";
@@ -125,7 +126,9 @@ export const EventFormPage = () => {
 
   const handleFieldChange = (field) => (event) => {
     const value =
-      field === "skatingEventCategories" ? [...(event.target.value || [])] : event.target.value;
+      field === "skatingEventCategories"
+        ? normalizeSkatingEventCategoryIds(event.target.value)
+        : event.target.value;
 
     setFormData((current) => ({ ...current, [field]: value }));
     setErrors((current) => ({

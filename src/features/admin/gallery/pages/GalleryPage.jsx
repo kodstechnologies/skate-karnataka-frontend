@@ -293,15 +293,12 @@ export const GalleryPage = () => {
                     sx={{
                       height: { xs: 200, sm: 220 },
                       position: "relative",
-                      background: item.imageUrl
-                        ? `url("${item.imageUrl}")`
-                        : "linear-gradient(135deg,#1a1a2e 0%,#16213e 50%,#0f3460 100%)",
-                      backgroundSize: "cover",
-                      backgroundPosition: "center",
                       cursor: "pointer",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
+                      overflow: "hidden",
+                      background:
+                        !item.imageUrl && !item.videoUrl
+                          ? "linear-gradient(135deg,#1a1a2e 0%,#16213e 50%,#0f3460 100%)"
+                          : "#0c0c0e",
                       "&:hover .view-overlay": { opacity: 1 }
                     }}
                     onClick={() =>
@@ -311,6 +308,35 @@ export const GalleryPage = () => {
                       )
                     }
                   >
+                    {item.videoUrl && !item.imageUrl ? (
+                      <Box
+                        component="video"
+                        src={item.videoUrl}
+                        muted
+                        playsInline
+                        preload="metadata"
+                        sx={{
+                          width: "100%",
+                          height: "100%",
+                          objectFit: "cover",
+                          display: "block",
+                          pointerEvents: "none"
+                        }}
+                      />
+                    ) : item.imageUrl ? (
+                      <Box
+                        component="img"
+                        src={item.imageUrl}
+                        alt={item.title || "Gallery"}
+                        sx={{
+                          width: "100%",
+                          height: "100%",
+                          objectFit: "cover",
+                          display: "block",
+                          pointerEvents: "none"
+                        }}
+                      />
+                    ) : null}
                     {/* Hover overlay */}
                     <Box
                       className="view-overlay"
@@ -630,10 +656,13 @@ export const GalleryPage = () => {
               }}
             >
               <video
+                key={selectedMedia.url}
                 src={selectedMedia.url}
                 controls
                 autoPlay
+                muted
                 playsInline
+                preload="auto"
                 controlsList="nodownload"
                 style={{ width: "100%", height: "100%", objectFit: "contain" }}
               />
