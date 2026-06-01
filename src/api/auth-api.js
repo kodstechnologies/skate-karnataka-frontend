@@ -12,8 +12,16 @@ export const authApi = {
   },
   getProfile: async (role) => {
     const normalizedRole = String(role || "").toLowerCase();
-    const path = normalizedRole === "state" ? "/state/v1/account-profile" : "/admin/v1/profile";
-    return api.get(path);
+    if (normalizedRole === "state") {
+      return api.get("/state/v1/account-profile");
+    }
+    if (normalizedRole === "club") {
+      return api.get("/club/v1/profile");
+    }
+    if (normalizedRole === "district") {
+      return api.get("/district/v1/profile");
+    }
+    return api.get("/admin/v1/profile");
   },
   updateProfile: async (data, role) => {
     const normalizedRole = String(role || "").toLowerCase();

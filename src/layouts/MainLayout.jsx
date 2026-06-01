@@ -30,14 +30,24 @@ export const MainLayout = () => {
     return <Navigate to="/login" state={{ from: location }} replace />;
   }
 
-  // Only Admin and State roles are permitted to access the dashboard.
   const userRole = (role || "").toLowerCase();
-  if (userRole !== "admin" && userRole !== "state") {
+  const webRoles = ["admin", "state", "club", "district"];
+  if (!webRoles.includes(userRole)) {
     return <Navigate to="/login" replace />;
   }
 
-  if (allowedSlugs && user && !isPathAllowedForModules(location.pathname, allowedSlugs)) {
-    return <Navigate to="/dashboard" replace />;
+  if (
+    allowedSlugs &&
+    user &&
+    !isPathAllowedForModules(location.pathname, allowedSlugs, userRole)
+  ) {
+    const fallback =
+      userRole === "club"
+        ? "/club/dashboard"
+        : userRole === "district"
+          ? "/district/dashboard"
+          : "/dashboard";
+    return <Navigate to={fallback} replace />;
   }
 
   return (

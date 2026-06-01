@@ -24,24 +24,40 @@ import {
 } from "@mui/material";
 import BlockOutlinedIcon from "@mui/icons-material/BlockOutlined";
 import LockOpenOutlinedIcon from "@mui/icons-material/LockOpenOutlined";
-import { ChevronRight, PencilLine, Plus, Search, Star, Trash2, Users } from "lucide-react";
+import { CheckCircle2, ChevronRight, PencilLine, Search, Star, Trash2, Users } from "lucide-react";
 import { Link as RouterLink, useNavigate, useParams } from "react-router-dom";
 import clubHero from "@/assets/Club_header.jpg";
 import { ConfirmDeleteModal } from "@/components/ui/ConfirmDeleteModal";
+import { MemberAddMenuButton } from "@/components/members/MemberAddMenuButton";
+import { useAuthStore } from "@/features/auth/store/auth-store";
 import { useClubMembersStore } from "@/features/admin/clubs/store/club-members-store";
 import { useClubsStore } from "@/features/admin/clubs/store/clubs-store";
-
-const getStatusChipSx = (isBlocked) =>
-  isBlocked
-    ? { bgcolor: "#ffebee", color: "#c62828", fontWeight: 700 }
-    : { bgcolor: "#e8f5e9", color: "#2e7d32", fontWeight: 700 };
+import { canApproveMembers, getMemberApprovalChipProps } from "@/utils/memberApprovalStatus";
 
 export const ClubMembersPage = () => {
   const navigate = useNavigate();
-  const { clubId } = useParams();
+  const { clubId: clubIdParam } = useParams();
+  const role = useAuthStore((s) => s.role);
+  const authUser = useAuthStore((s) => s.user);
+  const isClubPortal = String(role || "").toLowerCase() === "club";
+  const canApprove = canApproveMembers(role);
+  const clubId = clubIdParam || (isClubPortal ? authUser?.id : null);
 
   const clubs = useClubsStore((s) => s.clubs);
-  const club = useMemo(() => clubs.find((c) => c.id === clubId) ?? null, [clubs, clubId]);
+  const club = useMemo(() => {
+    if (clubIdParam) {
+      return clubs.find((c) => c.id === clubIdParam) ?? null;
+    }
+    if (isClubPortal) {
+      return { id: clubId, name: authUser?.name || "Club" };
+    }
+    return null;
+  }, [clubs, clubIdParam, isClubPortal, clubId, authUser?.name]);
+
+  const membersBasePath = isClubPortal ? "/club/members" : `/clubs/${clubId}/members`;
+  const createMemberPath = `${membersBasePath}/create`;
+  const bulkMemberPath = `${membersBasePath}/bulk`;
+  const editMemberPath = (memberId) => `${membersBasePath}/${memberId}/edit`;
 
   const {
     members,
@@ -49,6 +65,7 @@ export const ClubMembersPage = () => {
     fetchMembers,
     deleteMember,
     toggleMemberBlock,
+    approveMember,
     setMainMember,
     pagination
   } = useClubMembersStore();
@@ -109,6 +126,23 @@ export const ClubMembersPage = () => {
 
   const clubName = club?.name || "Club";
 
+  if (!clubId) {
+    return (
+      <Paper elevation={0} sx={{ p: 4, borderRadius: "28px", textAlign: "center" }}>
+        <Typography variant="h6" sx={{ fontWeight: 700 }}>
+          Club not found
+        </Typography>
+        <Button
+          sx={{ mt: 2 }}
+          variant="contained"
+          onClick={() => navigate(isClubPortal ? "/club/dashboard" : "/clubs")}
+        >
+          Go back
+        </Button>
+      </Paper>
+    );
+  }
+
   return (
     <Box className="space-y-5">
       {/* Hero */}
@@ -150,18 +184,20 @@ export const ClubMembersPage = () => {
           >
             <Typography
               component={RouterLink}
-              to="/dashboard"
+              to={isClubPortal ? "/club/dashboard" : "/dashboard"}
               sx={{ color: "inherit", textDecoration: "none" }}
             >
               Dashboard
             </Typography>
-            <Typography
-              component={RouterLink}
-              to="/clubs"
-              sx={{ color: "inherit", textDecoration: "none" }}
-            >
-              Clubs
-            </Typography>
+            {!isClubPortal && (
+              <Typography
+                component={RouterLink}
+                to="/clubs"
+                sx={{ color: "inherit", textDecoration: "none" }}
+              >
+                Clubs
+              </Typography>
+            )}
             <Typography sx={{ color: "white", fontWeight: 700 }}>Members</Typography>
           </Breadcrumbs>
 
@@ -211,7 +247,9 @@ export const ClubMembersPage = () => {
               Members
             </Typography>
             <Typography sx={{ mt: 0.75, color: "#8d7f7b" }}>
-              Search, add, edit, or remove members for this club. Choose one member as main.
+              {isClubPortal
+                ? "Search and manage club members. Add or edit member details."
+                : "Search, add, edit, or remove members for this club. Choose one member as main."}
             </Typography>
           </Box>
           <Stack direction={{ xs: "column", sm: "row" }} spacing={1.5}>
@@ -233,13 +271,12 @@ export const ClubMembersPage = () => {
               }}
               sx={{ minWidth: { xs: "100%", sm: 280 } }}
             />
-            <Button
-              variant="contained"
-              startIcon={<Plus size={16} />}
-              onClick={() => navigate(`/clubs/${clubId}/members/create`)}
-            >
-              Add member
-            </Button>
+            <MemberAddMenuButton
+              label="Add member"
+              singleTo={createMemberPath}
+              bulkTo={bulkMemberPath}
+              sx={{ backgroundColor: "#f6765e", "&:hover": { backgroundColor: "#ea6b54" } }}
+            />
           </Stack>
         </Stack>
 
@@ -309,22 +346,30 @@ export const ClubMembersPage = () => {
                   <Typography sx={{ fontSize: 13, color: "#6b5e5a" }}>
                     {member.phone} · {member.email || "—"}
                   </Typography>
-                  <Chip
-                    size="small"
-                    label={member.isBlocked ? "Blocked" : "Active"}
-                    sx={getStatusChipSx(member.isBlocked)}
-                  />
+                  <Chip size="small" {...getMemberApprovalChipProps(member)} />
                   <Stack direction="row" spacing={1}>
+                    {canApprove && !member.verify && (
+                      <Button
+                        variant="contained"
+                        startIcon={<CheckCircle2 size={15} />}
+                        onClick={() => approveMember(member.id)}
+                        fullWidth
+                        size="small"
+                        sx={{ backgroundColor: "#2e7d32", "&:hover": { backgroundColor: "#1b5e20" } }}
+                      >
+                        Approve
+                      </Button>
+                    )}
                     <Button
                       variant="outlined"
                       startIcon={<PencilLine size={15} />}
-                      onClick={() => navigate(`/clubs/${clubId}/members/${member.id}/edit`)}
+                      onClick={() => navigate(editMemberPath(member.id))}
                       fullWidth
                       size="small"
                     >
                       Edit
                     </Button>
-                    {!member.isMain && (
+                    {!isClubPortal && !member.isMain && (
                       <Button
                         variant="outlined"
                         startIcon={<Star size={15} />}
@@ -336,23 +381,25 @@ export const ClubMembersPage = () => {
                         Set main
                       </Button>
                     )}
-                    <Button
-                      variant={member.isBlocked ? "contained" : "outlined"}
-                      color={member.isBlocked ? "success" : "error"}
-                      startIcon={
-                        member.isBlocked ? (
-                          <LockOpenOutlinedIcon sx={{ fontSize: 16 }} />
-                        ) : (
-                          <BlockOutlinedIcon sx={{ fontSize: 16 }} />
-                        )
-                      }
-                      onClick={() => setPendingBlock(member)}
-                      fullWidth
-                      size="small"
-                    >
-                      {member.isBlocked ? "Unblock" : "Block"}
-                    </Button>
-                    {!member.isMain && (
+                    {!isClubPortal && (
+                      <Button
+                        variant={member.isBlocked ? "contained" : "outlined"}
+                        color={member.isBlocked ? "success" : "error"}
+                        startIcon={
+                          member.isBlocked ? (
+                            <LockOpenOutlinedIcon sx={{ fontSize: 16 }} />
+                          ) : (
+                            <BlockOutlinedIcon sx={{ fontSize: 16 }} />
+                          )
+                        }
+                        onClick={() => setPendingBlock(member)}
+                        fullWidth
+                        size="small"
+                      >
+                        {member.isBlocked ? "Unblock" : "Block"}
+                      </Button>
+                    )}
+                    {!isClubPortal && !member.isMain && (
                       <Button
                         variant="contained"
                         startIcon={<Trash2 size={15} />}
@@ -487,25 +534,36 @@ export const ClubMembersPage = () => {
                       {member.gender || "—"}
                     </TableCell>
                     <TableCell>
-                      <Chip
-                        size="small"
-                        label={member.isBlocked ? "Blocked" : "Active"}
-                        sx={getStatusChipSx(member.isBlocked)}
-                      />
+                      <Chip size="small" {...getMemberApprovalChipProps(member)} />
                     </TableCell>
 
                     <TableCell>
                       <Stack direction="row" spacing={1}>
+                        {canApprove && !member.verify && (
+                          <Tooltip title="Approve member (state admin)">
+                            <IconButton
+                              onClick={() => approveMember(member.id)}
+                              sx={{
+                                border: "1px solid #c8e6c9",
+                                color: "#2e7d32",
+                                backgroundColor: "#e8f5e9"
+                              }}
+                              aria-label={`Approve ${member.fullName}`}
+                            >
+                              <CheckCircle2 size={16} />
+                            </IconButton>
+                          </Tooltip>
+                        )}
                         <Tooltip title="Edit member">
                           <IconButton
-                            onClick={() => navigate(`/clubs/${clubId}/members/${member.id}/edit`)}
+                            onClick={() => navigate(editMemberPath(member.id))}
                             sx={{ border: "1px solid #efe2dc", backgroundColor: "#fff8f4" }}
                             aria-label={`Edit ${member.fullName}`}
                           >
                             <PencilLine size={16} />
                           </IconButton>
                         </Tooltip>
-                        {!member.isMain && (
+                        {!isClubPortal && !member.isMain && (
                           <Tooltip title="Set as main member">
                             <IconButton
                               onClick={() => handleSetMain(member)}
@@ -520,28 +578,30 @@ export const ClubMembersPage = () => {
                             </IconButton>
                           </Tooltip>
                         )}
-                        <Tooltip title={member.isBlocked ? "Unblock member" : "Block member"}>
-                          <IconButton
-                            onClick={() => setPendingBlock(member)}
-                            sx={{
-                              border: "1px solid #efe2dc",
-                              backgroundColor: member.isBlocked ? "#e8f5e9" : "#fff1f0",
-                              color: member.isBlocked ? "#2e7d32" : "#c62828"
-                            }}
-                            aria-label={
-                              member.isBlocked
-                                ? `Unblock ${member.fullName}`
-                                : `Block ${member.fullName}`
-                            }
-                          >
-                            {member.isBlocked ? (
-                              <LockOpenOutlinedIcon sx={{ fontSize: 18 }} />
-                            ) : (
-                              <BlockOutlinedIcon sx={{ fontSize: 18 }} />
-                            )}
-                          </IconButton>
-                        </Tooltip>
-                        {!member.isMain && (
+                        {!isClubPortal && (
+                          <Tooltip title={member.isBlocked ? "Unblock member" : "Block member"}>
+                            <IconButton
+                              onClick={() => setPendingBlock(member)}
+                              sx={{
+                                border: "1px solid #efe2dc",
+                                backgroundColor: member.isBlocked ? "#e8f5e9" : "#fff1f0",
+                                color: member.isBlocked ? "#2e7d32" : "#c62828"
+                              }}
+                              aria-label={
+                                member.isBlocked
+                                  ? `Unblock ${member.fullName}`
+                                  : `Block ${member.fullName}`
+                              }
+                            >
+                              {member.isBlocked ? (
+                                <LockOpenOutlinedIcon sx={{ fontSize: 18 }} />
+                              ) : (
+                                <BlockOutlinedIcon sx={{ fontSize: 18 }} />
+                              )}
+                            </IconButton>
+                          </Tooltip>
+                        )}
+                        {!isClubPortal && !member.isMain && (
                           <Tooltip title="Delete member">
                             <IconButton
                               onClick={() => setPendingDelete(member)}
@@ -605,19 +665,21 @@ export const ClubMembersPage = () => {
         onConfirm={handleDelete}
       />
 
-      <ConfirmDeleteModal
-        open={Boolean(pendingBlock)}
-        title={pendingBlock?.isBlocked ? "Unblock member" : "Block member"}
-        description={
-          pendingBlock?.isBlocked
-            ? "This member will be able to log in again and access the KRSA platform."
-            : "This member will be blocked from logging in. They will see a message that their account was blocked by the administrator."
-        }
-        itemLabel={pendingBlock?.fullName}
-        confirmLabel={pendingBlock?.isBlocked ? "Unblock" : "Block"}
-        onClose={() => setPendingBlock(null)}
-        onConfirm={handleConfirmBlockToggle}
-      />
+      {!isClubPortal && (
+        <ConfirmDeleteModal
+          open={Boolean(pendingBlock)}
+          title={pendingBlock?.isBlocked ? "Unblock member" : "Block member"}
+          description={
+            pendingBlock?.isBlocked
+              ? "This member will be able to log in again and access the KRSA platform."
+              : "This member will be blocked from logging in. They will see a message that their account was blocked by the administrator."
+          }
+          itemLabel={pendingBlock?.fullName}
+          confirmLabel={pendingBlock?.isBlocked ? "Unblock" : "Block"}
+          onClose={() => setPendingBlock(null)}
+          onConfirm={handleConfirmBlockToggle}
+        />
+      )}
     </Box>
   );
 };

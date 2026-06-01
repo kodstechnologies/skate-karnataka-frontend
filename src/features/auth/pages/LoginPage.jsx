@@ -20,6 +20,7 @@ import {
 import { Phone, LogIn, ArrowLeft, CheckCircle2, ShieldCheck, Timer } from "lucide-react";
 import { useLottie } from "lottie-react";
 import { useAuthStore } from "@/features/auth/store/auth-store";
+import { getHomePathForRole } from "@/lib/role-navigation";
 import toast from "react-hot-toast";
 import skateLottie from "@/assets/LottieFiles/SkateboardingBoy.json";
 import logo from "@/assets/karnataka-roller-skating-logo.png";
@@ -114,6 +115,8 @@ export const LoginPage = () => {
   const logout = useAuthStore((state) => state.logout);
   const isLoading = useAuthStore((state) => state.isLoading);
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
+  const role = useAuthStore((state) => state.role);
+  const homePath = getHomePathForRole(role);
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("md"));
 
@@ -121,9 +124,9 @@ export const LoginPage = () => {
 
   useEffect(() => {
     if (isAuthenticated) {
-      navigate("/dashboard", { replace: true });
+      navigate(getHomePathForRole(role), { replace: true });
     }
-  }, [isAuthenticated, navigate]);
+  }, [isAuthenticated, navigate, role]);
 
   const [step, setStep] = useState(1);
   const [identifier, setIdentifier] = useState("");
@@ -174,9 +177,10 @@ export const LoginPage = () => {
 
       if (data && data.type) {
         const userRole = data.type.toLowerCase();
-        if (userRole !== "admin" && userRole !== "state") {
+        const allowedWebRoles = ["admin", "state", "club", "district"];
+        if (!allowedWebRoles.includes(userRole)) {
           toast.dismiss();
-          toast.error("Only admin and state roles are allowed to login.");
+          toast.error("This account type cannot sign in on the web portal.");
           return;
         }
       }
@@ -248,8 +252,8 @@ export const LoginPage = () => {
   const handleVerifyOtp = async (e) => {
     e.preventDefault();
     try {
-      await verifyLoginOtp(userId, otpValue, fcmToken);
-      navigate("/dashboard");
+      const result = await verifyLoginOtp(userId, otpValue, fcmToken);
+      navigate(getHomePathForRole(result?.role || useAuthStore.getState().role));
     } catch (error) {
       console.error("OTP verification failed:", error);
     }
@@ -317,7 +321,7 @@ export const LoginPage = () => {
 
   // ── Render-level auth guard (fires before paint — eliminates login flash) ─
   if (isAuthenticated) {
-    return <Navigate to="/dashboard" replace />;
+    return <Navigate to={homePath} replace />;
   }
 
   // ────────────────────────────────────────────────────────────────────────

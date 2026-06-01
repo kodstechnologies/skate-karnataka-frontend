@@ -42,5 +42,38 @@ export const eventsApi = {
    */
   delete: async (id) => {
     return api.delete(`/event/v1/state/${id}`);
+  },
+
+  /** Public skating category list for event forms (club/district create). */
+  getSkatingCategories: async () => {
+    return api.get("/event/v1/category");
+  },
+
+  getClubEvents: async (params = {}) => {
+    return api.get("/event/v1/club", { params });
+  },
+
+  getClubEventById: async (id) => {
+    return api.get(`/event/v1/club/${id}`);
+  },
+
+  createClubEvent: async (payload) => {
+    return api.post("/event/v1/club", payload);
+  },
+
+  updateClubEvent: async (id, payload) => {
+    return api.patch(`/event/v1/club/${id}`, payload);
+  },
+
+  deleteClubEvent: async (id) => {
+    return api.delete(`/event/v1/club/${id}`);
+  },
+
+  getDistrictEvents: async (params = {}) => {
+    return api.get("/event/v1/district", { params });
+  },
+
+  deleteDistrictEvent: async (id) => {
+    return api.delete(`/event/v1/district/${id}`);
   }
 };

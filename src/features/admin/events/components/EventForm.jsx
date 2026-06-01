@@ -4,9 +4,9 @@ import PaletteOutlinedIcon from "@mui/icons-material/PaletteOutlined";
 import PlaceOutlinedIcon from "@mui/icons-material/PlaceOutlined";
 import CategoryOutlinedIcon from "@mui/icons-material/CategoryOutlined";
 import {
+  Autocomplete,
   Box,
-  Checkbox,
-  ListItemText,
+  Chip,
   MenuItem,
   Paper,
   Popover,
@@ -18,6 +18,7 @@ import { useState } from "react";
 import { HexColorPicker } from "react-colorful";
 import {
   eventStatusOptions,
+  mapSkatingCategoryOptions,
   normalizeSkatingEventCategoryIds
 } from "@/features/admin/events/components/eventFormConfig";
 
@@ -138,9 +139,28 @@ const SectionCard = ({ icon, title, description, children }) => (
 );
 
 /* ── Main form ── */
-export const EventForm = ({ formData, errors, onFieldChange, disabled, eventCategories = [] }) => {
-  const getOptionId = (option) => option?._id || option?.id || "";
+export const EventForm = ({
+  formData,
+  errors,
+  onFieldChange,
+  disabled,
+  eventCategories = [],
+  categorySeedFromEvent = []
+}) => {
   const selectedCategoryIds = normalizeSkatingEventCategoryIds(formData.skatingEventCategories);
+  const categoryOptions = mapSkatingCategoryOptions(eventCategories);
+  const seedOptions = mapSkatingCategoryOptions(
+    Array.isArray(categorySeedFromEvent)
+      ? categorySeedFromEvent.filter((item) => item && typeof item === "object")
+      : []
+  );
+  const allCategoryOptions = [
+    ...categoryOptions,
+    ...seedOptions.filter((seed) => !categoryOptions.some((opt) => opt.id === seed.id))
+  ];
+  const selectedCategoryOptions = allCategoryOptions.filter((opt) =>
+    selectedCategoryIds.includes(opt.id)
+  );
 
   return (
     <Stack spacing={2.5}>
@@ -215,32 +235,47 @@ export const EventForm = ({ formData, errors, onFieldChange, disabled, eventCate
         title="Skating Event Categories"
         description="Select one or more category types allowed for this event."
       >
-        <TextField
-          select
-          label="Category Types"
-          value={selectedCategoryIds}
-          onChange={onFieldChange("skatingEventCategories")}
-          error={Boolean(errors.skatingEventCategories)}
-          helperText={errors.skatingEventCategories}
-          fullWidth
-          disabled={disabled}
-          sx={inputStyles}
-          SelectProps={{
-            multiple: true,
-            renderValue: (selected) =>
-              eventCategories
-                .filter((opt) => selected.includes(String(getOptionId(opt))))
-                .map((opt) => opt.typeName)
-                .join(", ")
+        <Autocomplete
+          multiple
+          disableCloseOnSelect
+          options={allCategoryOptions}
+          value={selectedCategoryOptions}
+          onChange={(_, newValue) => {
+            onFieldChange("skatingEventCategories")({
+              target: { value: newValue.map((item) => item.id) }
+            });
           }}
-        >
-          {eventCategories.map((option) => (
-            <MenuItem key={getOptionId(option)} value={String(getOptionId(option))}>
-              <Checkbox checked={selectedCategoryIds.includes(String(getOptionId(option)))} />
-              <ListItemText primary={option.typeName} />
-            </MenuItem>
-          ))}
-        </TextField>
+          getOptionLabel={(option) => option.label || ""}
+          isOptionEqualToValue={(a, b) => a.id === b.id}
+          disabled={disabled}
+          fullWidth
+          sx={inputStyles}
+          renderTags={(value, getTagProps) =>
+            value.map((option, index) => (
+              <Chip
+                {...getTagProps({ index })}
+                key={option.id}
+                label={option.label}
+                size="small"
+                sx={{ bgcolor: "#fff1eb", color: "#c45a42", fontWeight: 600 }}
+              />
+            ))
+          }
+          renderInput={(params) => (
+            <TextField
+              {...params}
+              label="Category types"
+              placeholder={
+                selectedCategoryOptions.length ? "" : "Select one or more categories"
+              }
+              error={Boolean(errors.skatingEventCategories)}
+              helperText={
+                errors.skatingEventCategories ||
+                "Choose all skating categories that apply to this event"
+              }
+            />
+          )}
+        />
       </SectionCard>
 
       {/* ── Schedule ── */}

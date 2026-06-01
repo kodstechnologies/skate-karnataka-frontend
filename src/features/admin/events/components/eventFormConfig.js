@@ -7,6 +7,21 @@ export const eventStatusOptions = [
 
 const OBJECT_ID_REGEX = /^[0-9a-fA-F]{24}$/;
 
+export const getSkatingCategoryOptionId = (option) =>
+  String(option?._id || option?.id || "").trim();
+
+export const getSkatingCategoryOptionLabel = (option) =>
+  option?.typeName || option?.name || option?.label || "";
+
+/** Normalize API list items to { id, label } for Autocomplete. */
+export const mapSkatingCategoryOptions = (list = []) =>
+  (Array.isArray(list) ? list : [])
+    .map((item) => ({
+      id: getSkatingCategoryOptionId(item),
+      label: getSkatingCategoryOptionLabel(item)
+    }))
+    .filter((item) => OBJECT_ID_REGEX.test(item.id));
+
 /** Keep category ids as a string array — never spread a string (that splits into chars). */
 export const normalizeSkatingEventCategoryIds = (value) => {
   if (value == null || value === "") return [];
@@ -73,6 +88,68 @@ const formatTimeForInput = (v) => {
   const d = new Date(v);
   if (isNaN(d.getTime())) return v;
   return `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
+};
+
+export const validateEventForm = (formData) => {
+  const errors = {};
+  const requiredFields = [
+    "header",
+    "about",
+    "address",
+    "registerStartDate",
+    "registerEndDate",
+    "eventStartDate",
+    "eventEndDate",
+    "status",
+    "entryFee",
+    "skatingEventCategories"
+  ];
+
+  requiredFields.forEach((field) => {
+    if (field === "skatingEventCategories") return;
+    if (!String(formData[field] ?? "").trim()) {
+      errors[field] = "This field is required";
+    }
+  });
+
+  if (formData.entryFee && Number(formData.entryFee) < 0) {
+    errors.entryFee = "Entry fee cannot be negative";
+  }
+  if (!Array.isArray(formData.skatingEventCategories) || formData.skatingEventCategories.length < 1) {
+    errors.skatingEventCategories = "Select at least one category";
+  }
+
+  const regStart = formData.registerStartDate ? new Date(formData.registerStartDate) : null;
+  const regEnd = formData.registerEndDate ? new Date(formData.registerEndDate) : null;
+  const eventStart = formData.eventStartDate ? new Date(formData.eventStartDate) : null;
+  const eventEnd = formData.eventEndDate ? new Date(formData.eventEndDate) : null;
+
+  if (regStart && regEnd && regStart > regEnd) {
+    errors.registerEndDate = "Registration end date cannot be before start date";
+  }
+
+  if (eventStart && eventEnd && eventStart > eventEnd) {
+    errors.eventEndDate = "Event end date cannot be before start date";
+  }
+
+  if (regEnd && eventStart && regEnd > eventStart) {
+    errors.registerEndDate = "Registration must end before or on the event start date";
+  }
+
+  if (
+    formData.eventStartDate &&
+    formData.eventEndDate &&
+    new Date(formData.eventStartDate).toDateString() ===
+      new Date(formData.eventEndDate).toDateString()
+  ) {
+    if (formData.eventStartTime && formData.eventEndTime) {
+      if (formData.eventStartTime >= formData.eventEndTime) {
+        errors.eventEndTime = "End time must be strictly after start time for same-day events";
+      }
+    }
+  }
+
+  return errors;
 };
 
 export const createEventFormValues = (event = {}) => ({

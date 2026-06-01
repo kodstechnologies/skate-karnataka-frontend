@@ -5,6 +5,7 @@ import logo from "@/assets/karnataka-roller-skating-logo.png";
 import { useUiStore } from "@/store/ui-store";
 import { useAuthStore } from "@/features/auth/store/auth-store";
 import { useSubAdminNavigation } from "@/hooks/useSubAdminNavigation";
+import { isNavChildActive } from "@/lib/role-navigation";
 import {
   Avatar,
   Skeleton,
@@ -33,6 +34,24 @@ export const AppSidebar = () => {
   useEffect(() => {
     closeMobileSidebar();
   }, [closeMobileSidebar, location.pathname]);
+
+  useEffect(() => {
+    const path = location.pathname.split("?")[0];
+    const nextExpanded = {};
+    navigationGroups.forEach((group) => {
+      group.items.forEach((item) => {
+        if (
+          Array.isArray(item.children) &&
+          item.children.some((child) => isNavChildActive(child.to, path))
+        ) {
+          nextExpanded[item.slug] = true;
+        }
+      });
+    });
+    if (Object.keys(nextExpanded).length > 0) {
+      setExpandedParentItems((previous) => ({ ...previous, ...nextExpanded }));
+    }
+  }, [location.pathname, navigationGroups]);
 
   const toggleParentItem = (itemSlug) => {
     setExpandedParentItems((previous) => ({
@@ -112,7 +131,9 @@ export const AppSidebar = () => {
                     const Icon = item.icon;
                     const hasChildren = Array.isArray(item.children) && item.children.length > 0;
                     const isChildActive = hasChildren
-                      ? item.children.some((child) => location.pathname.startsWith(child.to))
+                      ? item.children.some((child) =>
+                          isNavChildActive(child.to, location.pathname)
+                        )
                       : false;
                     const isExpanded = Boolean(expandedParentItems[item.slug]);
 
@@ -167,9 +188,10 @@ export const AppSidebar = () => {
                                   <NavLink
                                     key={child.to}
                                     to={child.to}
-                                    className={({ isActive }) =>
+                                    end={child.to === "/club/members" || child.to === "/district/members"}
+                                    className={() =>
                                       `flex items-center gap-2 rounded-xl px-2.5 py-2 text-sm transition ${
-                                        isActive
+                                        isNavChildActive(child.to, location.pathname)
                                           ? "bg-[#fff1eb] text-[#f6765e] font-semibold"
                                           : "text-[#8a7d7a] hover:bg-white hover:text-[#2f2829]"
                                       }`
@@ -293,7 +315,13 @@ export const AppSidebar = () => {
                       {user?.fullName || "Admin"}
                     </p>
                     <p className="text-xs text-[#9b8d88]">
-                      {role === "admin" ? "State Admin" : "State Official"}
+                      {role === "admin"
+                        ? "State Admin"
+                        : role === "club"
+                          ? "Club Member"
+                          : role === "district"
+                            ? "District Member"
+                            : "State Official"}
                     </p>
                   </>
                 )}

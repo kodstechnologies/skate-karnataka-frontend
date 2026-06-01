@@ -18,6 +18,7 @@ import {
 import { ChevronRight, Mail, MapPin, Phone, Save, User, Users } from "lucide-react";
 import { Link as RouterLink, useNavigate, useParams, useLocation } from "react-router-dom";
 import clubHero from "@/assets/Club_header.jpg";
+import { useAuthStore } from "@/features/auth/store/auth-store";
 import { useClubMembersStore } from "@/features/admin/clubs/store/club-members-store";
 import { useClubsStore } from "@/features/admin/clubs/store/clubs-store";
 import { validateEmail, validatePhone } from "@/utils/validationHelper";
@@ -56,19 +57,29 @@ const validate = (form) => {
 
 export const ClubMemberFormPage = () => {
   const navigate = useNavigate();
-  const { clubId, memberId } = useParams();
+  const { clubId: clubIdParam, memberId } = useParams();
   const location = useLocation();
-  const returnTo = location.state?.returnTo || `/clubs/${clubId}/members`;
+  const role = useAuthStore((s) => s.role);
+  const authUser = useAuthStore((s) => s.user);
+  const isClubPortal = String(role || "").toLowerCase() === "club";
+  const clubId = clubIdParam || (isClubPortal ? authUser?.id : null);
+  const returnTo =
+    location.state?.returnTo ||
+    (isClubPortal ? "/club/members" : `/clubs/${clubId}/members`);
   const isEditing = Boolean(memberId);
 
   const clubs = useClubsStore((s) => s.clubs);
-  const club = useMemo(() => clubs.find((c) => c.id === clubId) ?? null, [clubs, clubId]);
+  const club = useMemo(
+    () => clubs.find((c) => c.id === clubId) ?? (isClubPortal ? { id: clubId, name: authUser?.name } : null),
+    [clubs, clubId, isClubPortal, authUser?.name]
+  );
 
   const { members, isLoading, fetchMembers, addMember, updateMember } = useClubMembersStore();
 
   useEffect(() => {
+    if (!clubId || isEditing) return;
     if (members.length === 0) fetchMembers(clubId);
-  }, [clubId, fetchMembers, members.length]);
+  }, [clubId, fetchMembers, members.length, isEditing]);
 
   const existing = useMemo(
     () => members.find((m) => m.id === memberId) ?? null,
@@ -200,25 +211,32 @@ export const ClubMemberFormPage = () => {
           >
             <Typography
               component={RouterLink}
-              to="/dashboard"
+              to={isClubPortal ? "/club/dashboard" : "/dashboard"}
               sx={{ color: "inherit", textDecoration: "none" }}
             >
               Dashboard
             </Typography>
-            <Typography
-              component={RouterLink}
-              to="/clubs"
-              sx={{ color: "inherit", textDecoration: "none" }}
-            >
-              Clubs
-            </Typography>
-            <Typography
-              component={RouterLink}
-              to={`/clubs/${clubId}/members`}
-              sx={{ color: "inherit", textDecoration: "none" }}
-            >
-              {clubName}
-            </Typography>
+            {!isClubPortal && (
+              <Typography
+                component={RouterLink}
+                to="/clubs"
+                sx={{ color: "inherit", textDecoration: "none" }}
+              >
+                Clubs
+              </Typography>
+            )}
+            {!isClubPortal && (
+              <Typography
+                component={RouterLink}
+                to={`/clubs/${clubId}/members`}
+                sx={{ color: "inherit", textDecoration: "none" }}
+              >
+                {clubName}
+              </Typography>
+            )}
+            {isClubPortal && (
+              <Typography sx={{ color: "rgba(255,255,255,0.86)" }}>{clubName}</Typography>
+            )}
             <Typography sx={{ color: "white", fontWeight: 700 }}>
               {isEditing ? "Edit" : "Add Member"}
             </Typography>

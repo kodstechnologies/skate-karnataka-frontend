@@ -16,8 +16,9 @@ import {
   Typography
 } from "@mui/material";
 import { ChevronRight, Mail, MapPin, Phone, Save, User, Users } from "lucide-react";
-import { Link as RouterLink, useNavigate, useParams } from "react-router-dom";
+import { Link as RouterLink, useNavigate, useParams, useLocation } from "react-router-dom";
 import districtHero from "@/assets/District_header.jpg";
+import { useAuthStore } from "@/features/auth/store/auth-store";
 import { useDistrictMembersStore } from "@/features/admin/districts/store/district-members-store";
 import { useDistrictsStore } from "@/features/admin/districts/store/districts-store";
 import { validateEmail, validatePhone } from "@/utils/validationHelper";
@@ -56,20 +57,34 @@ const validate = (form) => {
 
 export const DistrictMemberFormPage = () => {
   const navigate = useNavigate();
-  const { districtId, memberId } = useParams();
+  const { districtId: districtIdParam, memberId } = useParams();
+  const location = useLocation();
+  const role = useAuthStore((s) => s.role);
+  const authUser = useAuthStore((s) => s.user);
+  const isDistrictPortal = String(role || "").toLowerCase() === "district";
+  const districtId =
+    districtIdParam || (isDistrictPortal ? authUser?.districtId : null);
+  const returnTo =
+    location.state?.returnTo ||
+    (isDistrictPortal ? "/district/members" : `/districts/${districtId}/members`);
   const isEditing = Boolean(memberId);
 
   const districts = useDistrictsStore((s) => s.districts);
   const district = useMemo(
-    () => districts.find((d) => d.id === districtId) ?? null,
-    [districts, districtId]
+    () =>
+      districts.find((d) => d.id === districtId) ??
+      (isDistrictPortal
+        ? { id: districtId, name: authUser?.districtName }
+        : null),
+    [districts, districtId, isDistrictPortal, authUser?.districtName]
   );
 
   const { members, isLoading, fetchMembers, addMember, updateMember } = useDistrictMembersStore();
 
   useEffect(() => {
+    if (!districtId || isEditing) return;
     if (members.length === 0) fetchMembers(districtId);
-  }, [districtId, fetchMembers, members.length]);
+  }, [districtId, fetchMembers, members.length, isEditing]);
 
   const existing = useMemo(
     () => members.find((m) => m.id === memberId) ?? null,
@@ -142,10 +157,11 @@ export const DistrictMemberFormPage = () => {
     const fd = buildFormData();
     const ok = isEditing ? await updateMember(memberId, fd) : await addMember(districtId, fd);
 
-    if (ok) navigate(`/districts/${districtId}/members`);
+    if (ok) navigate(returnTo);
   };
 
-  const districtName = district?.districtName || "District";
+  const districtName =
+    district?.districtName || district?.name || authUser?.districtName || "District";
 
   if (isEditing && !existing && !isLoading) {
     return (
@@ -156,7 +172,7 @@ export const DistrictMemberFormPage = () => {
         <Button
           sx={{ mt: 3 }}
           variant="contained"
-          onClick={() => navigate(`/districts/${districtId}/members`)}
+          onClick={() => navigate(returnTo)}
         >
           Back to members
         </Button>
@@ -205,25 +221,32 @@ export const DistrictMemberFormPage = () => {
           >
             <Typography
               component={RouterLink}
-              to="/dashboard"
+              to={isDistrictPortal ? "/district/dashboard" : "/dashboard"}
               sx={{ color: "inherit", textDecoration: "none" }}
             >
               Dashboard
             </Typography>
-            <Typography
-              component={RouterLink}
-              to="/districts"
-              sx={{ color: "inherit", textDecoration: "none" }}
-            >
-              Districts
-            </Typography>
-            <Typography
-              component={RouterLink}
-              to={`/districts/${districtId}/members`}
-              sx={{ color: "inherit", textDecoration: "none" }}
-            >
-              {districtName}
-            </Typography>
+            {!isDistrictPortal && (
+              <Typography
+                component={RouterLink}
+                to="/districts"
+                sx={{ color: "inherit", textDecoration: "none" }}
+              >
+                Districts
+              </Typography>
+            )}
+            {!isDistrictPortal && (
+              <Typography
+                component={RouterLink}
+                to={`/districts/${districtId}/members`}
+                sx={{ color: "inherit", textDecoration: "none" }}
+              >
+                {districtName}
+              </Typography>
+            )}
+            {isDistrictPortal && (
+              <Typography sx={{ color: "rgba(255,255,255,0.86)" }}>{districtName}</Typography>
+            )}
             <Typography sx={{ color: "white", fontWeight: 700 }}>
               {isEditing ? "Edit" : "Add Member"}
             </Typography>
@@ -444,7 +467,7 @@ export const DistrictMemberFormPage = () => {
             <Stack direction={{ xs: "column", sm: "row" }} spacing={1.5} justifyContent="flex-end">
               <Button
                 variant="outlined"
-                onClick={() => navigate(`/districts/${districtId}/members`)}
+                onClick={() => navigate(returnTo)}
               >
                 Cancel
               </Button>

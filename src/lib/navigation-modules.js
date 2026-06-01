@@ -1,4 +1,12 @@
 import { navigationGroups } from "@/lib/app-shell";
+import {
+  clubNavigationGroups,
+  districtNavigationGroups,
+  CLUB_NAV_SLUGS,
+  DISTRICT_NAV_SLUGS,
+  isPathAllowedForClub,
+  isPathAllowedForDistrict
+} from "@/lib/role-navigation";
 
 /** Must match OfficialFormPage / backend state official module options. */
 export const SUB_ADMIN_MODULE_OPTIONS = [
@@ -69,7 +77,14 @@ const resolveModuleKey = (moduleName) =>
 
 /** `null` = full access (admin). Otherwise a Set of nav slugs. */
 export const getAllowedNavSlugs = (role, allowedModule) => {
-  if (String(role || "").toLowerCase() !== "state") {
+  const normalizedRole = String(role || "").toLowerCase();
+  if (normalizedRole === "club") {
+    return CLUB_NAV_SLUGS;
+  }
+  if (normalizedRole === "district") {
+    return DISTRICT_NAV_SLUGS;
+  }
+  if (normalizedRole !== "state") {
     return null;
   }
 
@@ -122,13 +137,39 @@ export const filterNavigationGroups = (groups, role, allowedModule) => {
 };
 
 export const getNavigationForUser = (role, allowedModule) => {
+  const normalizedRole = String(role || "").toLowerCase();
+  if (normalizedRole === "club") {
+    const allowedSlugs = CLUB_NAV_SLUGS;
+    return {
+      navigationGroups: clubNavigationGroups,
+      navigationItems: clubNavigationGroups.flatMap((group) => group.items),
+      allowedSlugs
+    };
+  }
+  if (normalizedRole === "district") {
+    const allowedSlugs = DISTRICT_NAV_SLUGS;
+    return {
+      navigationGroups: districtNavigationGroups,
+      navigationItems: districtNavigationGroups.flatMap((group) => group.items),
+      allowedSlugs
+    };
+  }
+
   const groups = filterNavigationGroups(navigationGroups, role, allowedModule);
   const items = groups.flatMap((group) => group.items);
   const allowedSlugs = getAllowedNavSlugs(role, allowedModule);
   return { navigationGroups: groups, navigationItems: items, allowedSlugs };
 };
 
-export const isPathAllowedForModules = (pathname, allowedSlugs) => {
+export const isPathAllowedForModules = (pathname, allowedSlugs, role) => {
+  const normalizedRole = String(role || "").toLowerCase();
+  if (normalizedRole === "club") {
+    return isPathAllowedForClub(pathname);
+  }
+  if (normalizedRole === "district") {
+    return isPathAllowedForDistrict(pathname);
+  }
+
   if (!allowedSlugs) return true;
 
   const path = pathname.split("?")[0];

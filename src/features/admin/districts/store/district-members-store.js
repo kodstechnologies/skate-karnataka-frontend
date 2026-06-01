@@ -14,6 +14,7 @@ const mapToFrontend = (d) => ({
   isActive: d.isActive ?? true,
   isBlocked: Boolean(d.isBlocked),
   isMain: Boolean(d.isMain),
+  verify: d.verify === true,
   role: d.role || "District",
   district: d.district || null
 });
@@ -48,9 +49,14 @@ export const useDistrictMembersStore = create((set, get) => ({
   addMember: async (districtId, formData) => {
     try {
       const response = await districtMemberApi.create(districtId, formData);
-      const newMember = mapToFrontend(response.data);
+      const newMember = mapToFrontend(response?.data?.data ?? response?.data ?? response);
       set((state) => ({ members: [newMember, ...state.members] }));
-      toast.success("Member created successfully");
+      toast.success(
+        response?.message ||
+          (newMember.verify
+            ? "Member created successfully"
+            : "Member created — pending state admin approval")
+      );
       return true;
     } catch (error) {
       toast.error(error.response?.data?.message || "Failed to create member");
@@ -103,6 +109,22 @@ export const useDistrictMembersStore = create((set, get) => ({
       return true;
     } catch (error) {
       toast.error(error.response?.data?.message || "Failed to update member block status");
+      return false;
+    }
+  },
+
+  approveMember: async (memberId) => {
+    try {
+      const response = await districtMemberApi.approve(memberId);
+      set((state) => ({
+        members: state.members.map((member) =>
+          member.id === memberId ? { ...member, verify: true } : member
+        )
+      }));
+      toast.success(response?.message || "Member approved successfully");
+      return true;
+    } catch (error) {
+      toast.error(error?.response?.data?.message || "Failed to approve member");
       return false;
     }
   },

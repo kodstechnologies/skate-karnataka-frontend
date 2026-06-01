@@ -14,6 +14,7 @@ const mapToFrontend = (d) => ({
   isActive: d.isActive ?? true,
   isBlocked: Boolean(d.isBlocked),
   isMain: Boolean(d.isMain),
+  verify: d.verify === true,
   role: d.role || "Club",
   clubId: d.clubId || null
 });
@@ -45,7 +46,12 @@ export const useClubMembersStore = create((set, get) => ({
       const response = await clubMemberApi.create(clubId, formData);
       const newMember = mapToFrontend(response.data?.data || response.data);
       set((state) => ({ members: [newMember, ...state.members] }));
-      toast.success(response.data?.message || "Member created successfully");
+      toast.success(
+        response?.message ||
+          (newMember.verify
+            ? "Member created successfully"
+            : "Member created — pending state admin approval")
+      );
       return true;
     } catch (error) {
       toast.error(error.response?.data?.message || "Failed to create member");
@@ -98,6 +104,22 @@ export const useClubMembersStore = create((set, get) => ({
       return true;
     } catch (error) {
       toast.error(error.response?.data?.message || "Failed to update member block status");
+      return false;
+    }
+  },
+
+  approveMember: async (memberId) => {
+    try {
+      const response = await clubMemberApi.approve(memberId);
+      set((state) => ({
+        members: state.members.map((member) =>
+          member.id === memberId ? { ...member, verify: true } : member
+        )
+      }));
+      toast.success(response?.message || "Member approved successfully");
+      return true;
+    } catch (error) {
+      toast.error(error?.response?.data?.message || "Failed to approve member");
       return false;
     }
   },

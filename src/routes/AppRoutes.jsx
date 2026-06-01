@@ -6,6 +6,7 @@ import { ClubFormPage } from "@/features/admin/clubs/pages/ClubFormPage";
 import { ClubsPage } from "@/features/admin/clubs/pages/ClubsPage";
 import { ClubMembersPage } from "@/features/admin/clubs/pages/ClubMembersPage";
 import { ClubMemberFormPage } from "@/features/admin/clubs/pages/ClubMemberFormPage";
+import { MemberBulkImportPage } from "@/components/members/MemberBulkImportPage";
 import { GalleryFormPage } from "@/features/admin/gallery/pages/GalleryFormPage";
 import { GalleryPage } from "@/features/admin/gallery/pages/GalleryPage";
 import { GalleryDetailPage } from "@/features/admin/gallery/pages/GalleryDetailPage";
@@ -60,6 +61,17 @@ import DonationFormPage from "../features/admin/support-hub/DonationPage/Donatio
 import EventCategoryPage from "../features/admin/events/pages/EventCategoryPage";
 import EventCategoryFormPage from "../features/admin/events/pages/EventCategoryFormPage";
 import ProtectedRoutes from "./ProtectedRoutes";
+import { ClubDashboard } from "@/features/club/pages/ClubDashboard";
+import { ClubEventFormPage } from "@/features/club/pages/ClubEventFormPage";
+import { ClubPortalEventsPage } from "@/features/club/pages/ClubPortalEventsPage";
+import { DistrictDashboard } from "@/features/district/pages/DistrictDashboard";
+import { DistrictPortalEventsPage } from "@/features/district/pages/DistrictPortalEventsPage";
+import { getHomePathForRole } from "@/lib/role-navigation";
+
+const HomeRedirect = () => {
+  const role = useAuthStore((state) => state.role);
+  return <Navigate to={getHomePathForRole(role)} replace />;
+};
 
 export const AppRoutes = () => {
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
@@ -67,15 +79,29 @@ export const AppRoutes = () => {
   return (
     <Routes>
       <Route path="/login" element={<LoginPage />} />
-      <Route path="/" element={<Navigate to="/dashboard" replace />} />
+      <Route path="/" element={<HomeRedirect />} />
       <Route
         element={
-          <ProtectedRoutes allowedRoles={["admin", "state"]}>
+          <ProtectedRoutes allowedRoles={["admin", "state", "club", "district"]}>
             <MainLayout />
           </ProtectedRoutes>
         }
       >
         <Route path="/dashboard" element={<AdminDashboard />} />
+        <Route path="/club/dashboard" element={<ClubDashboard />} />
+        <Route path="/club/events" element={<ClubPortalEventsPage />} />
+        <Route path="/club/events/create" element={<ClubEventFormPage />} />
+        <Route path="/club/events/:eventId/edit" element={<ClubEventFormPage />} />
+        <Route path="/club/members" element={<ClubMembersPage />} />
+        <Route path="/club/members/create" element={<ClubMemberFormPage />} />
+        <Route path="/club/members/bulk" element={<MemberBulkImportPage orgType="club" />} />
+        <Route path="/club/members/:memberId/edit" element={<ClubMemberFormPage />} />
+        <Route path="/district/members" element={<DistrictMembersPage />} />
+        <Route path="/district/dashboard" element={<DistrictDashboard />} />
+        <Route path="/district/events" element={<DistrictPortalEventsPage />} />
+        <Route path="/district/members/create" element={<DistrictMemberFormPage />} />
+        <Route path="/district/members/bulk" element={<MemberBulkImportPage orgType="district" />} />
+        <Route path="/district/members/:memberId/edit" element={<DistrictMemberFormPage />} />
         <Route path="/profile" element={<ProfilePage />} />
         <Route path="/contact-us" element={<ContactUsPage />} />
         <Route path="/feedback" element={<FeedbackPage />} />
@@ -107,6 +133,7 @@ export const AppRoutes = () => {
         <Route path="/clubs/:clubId/events" element={<ClubEventsPage />} />
         <Route path="/clubs/:clubId/members" element={<ClubMembersPage />} />
         <Route path="/clubs/:clubId/members/create" element={<ClubMemberFormPage />} />
+        <Route path="/clubs/:clubId/members/bulk" element={<MemberBulkImportPage orgType="club" />} />
         <Route path="/clubs/:clubId/members/:memberId/edit" element={<ClubMemberFormPage />} />
         <Route path="/events/detail" element={<EventsPage />} />
         <Route path="/events/category" element={<EventCategoryPage />} />
@@ -124,6 +151,10 @@ export const AppRoutes = () => {
         <Route path="/districts/:districtId/events" element={<DistrictEventsPage />} />
         <Route path="/districts/:districtId/members" element={<DistrictMembersPage />} />
         <Route path="/districts/:districtId/members/create" element={<DistrictMemberFormPage />} />
+        <Route
+          path="/districts/:districtId/members/bulk"
+          element={<MemberBulkImportPage orgType="district" />}
+        />
         <Route
           path="/districts/:districtId/members/:memberId/edit"
           element={<DistrictMemberFormPage />}

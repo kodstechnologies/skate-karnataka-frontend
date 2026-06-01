@@ -24,27 +24,41 @@ import {
 } from "@mui/material";
 import BlockOutlinedIcon from "@mui/icons-material/BlockOutlined";
 import LockOpenOutlinedIcon from "@mui/icons-material/LockOpenOutlined";
-import { ChevronRight, PencilLine, Plus, Search, Star, Trash2, Users } from "lucide-react";
+import { CheckCircle2, ChevronRight, PencilLine, Search, Star, Trash2, Users } from "lucide-react";
 import { Link as RouterLink, useNavigate, useParams } from "react-router-dom";
 import districtHero from "@/assets/District_header.jpg";
 import { ConfirmDeleteModal } from "@/components/ui/ConfirmDeleteModal";
+import { MemberAddMenuButton } from "@/components/members/MemberAddMenuButton";
+import { useAuthStore } from "@/features/auth/store/auth-store";
 import { useDistrictMembersStore } from "@/features/admin/districts/store/district-members-store";
 import { useDistrictsStore } from "@/features/admin/districts/store/districts-store";
-
-const getStatusChipSx = (isBlocked) =>
-  isBlocked
-    ? { bgcolor: "#ffebee", color: "#c62828", fontWeight: 700 }
-    : { bgcolor: "#e8f5e9", color: "#2e7d32", fontWeight: 700 };
+import { canApproveMembers, getMemberApprovalChipProps } from "@/utils/memberApprovalStatus";
 
 export const DistrictMembersPage = () => {
   const navigate = useNavigate();
-  const { districtId } = useParams();
+  const { districtId: districtIdParam } = useParams();
+  const role = useAuthStore((s) => s.role);
+  const authUser = useAuthStore((s) => s.user);
+  const isDistrictPortal = String(role || "").toLowerCase() === "district";
+  const canApprove = canApproveMembers(role);
+  const districtId =
+    districtIdParam || (isDistrictPortal ? authUser?.districtId : null);
 
   const districts = useDistrictsStore((s) => s.districts);
-  const district = useMemo(
-    () => districts.find((d) => d.id === districtId) ?? null,
-    [districts, districtId]
-  );
+  const district = useMemo(() => {
+    if (districtIdParam) {
+      return districts.find((d) => d.id === districtIdParam) ?? null;
+    }
+    if (isDistrictPortal) {
+      return { id: districtId, name: authUser?.districtName || authUser?.name || "District" };
+    }
+    return null;
+  }, [districts, districtIdParam, isDistrictPortal, districtId, authUser?.districtName, authUser?.name]);
+
+  const membersBasePath = isDistrictPortal ? "/district/members" : `/districts/${districtId}/members`;
+  const createMemberPath = `${membersBasePath}/create`;
+  const bulkMemberPath = `${membersBasePath}/bulk`;
+  const editMemberPath = (memberId) => `${membersBasePath}/${memberId}/edit`;
 
   const {
     members,
@@ -52,6 +66,7 @@ export const DistrictMembersPage = () => {
     fetchMembers,
     deleteMember,
     toggleMemberBlock,
+    approveMember,
     setMainMember,
     pagination
   } = useDistrictMembersStore();
@@ -110,7 +125,24 @@ export const DistrictMembersPage = () => {
     await setMainMember(districtId, member.id);
   };
 
-  const districtName = district?.districtName || "District";
+  const districtName = district?.districtName || district?.name || "District";
+
+  if (!districtId) {
+    return (
+      <Paper elevation={0} sx={{ p: 4, borderRadius: "28px", textAlign: "center" }}>
+        <Typography variant="h6" sx={{ fontWeight: 700 }}>
+          District not found
+        </Typography>
+        <Button
+          sx={{ mt: 2 }}
+          variant="contained"
+          onClick={() => navigate(isDistrictPortal ? "/district/dashboard" : "/districts")}
+        >
+          Go back
+        </Button>
+      </Paper>
+    );
+  }
 
   return (
     <Box className="space-y-5">
@@ -153,18 +185,20 @@ export const DistrictMembersPage = () => {
           >
             <Typography
               component={RouterLink}
-              to="/dashboard"
+              to={isDistrictPortal ? "/district/dashboard" : "/dashboard"}
               sx={{ color: "inherit", textDecoration: "none" }}
             >
               Dashboard
             </Typography>
-            <Typography
-              component={RouterLink}
-              to="/districts"
-              sx={{ color: "inherit", textDecoration: "none" }}
-            >
-              Districts
-            </Typography>
+            {!isDistrictPortal && (
+              <Typography
+                component={RouterLink}
+                to="/districts"
+                sx={{ color: "inherit", textDecoration: "none" }}
+              >
+                Districts
+              </Typography>
+            )}
             <Typography sx={{ color: "white", fontWeight: 700 }}>Members</Typography>
           </Breadcrumbs>
 
@@ -214,7 +248,9 @@ export const DistrictMembersPage = () => {
               Members
             </Typography>
             <Typography sx={{ mt: 0.75, color: "#8d7f7b" }}>
-              Search, add, edit, or remove members for this district. Choose one member as main.
+              {isDistrictPortal
+                ? "Search and manage district members. Add or edit member details."
+                : "Search, add, edit, or remove members for this district. Choose one member as main."}
             </Typography>
           </Box>
           <Stack direction={{ xs: "column", sm: "row" }} spacing={1.5}>
@@ -236,13 +272,12 @@ export const DistrictMembersPage = () => {
               }}
               sx={{ minWidth: { xs: "100%", sm: 280 } }}
             />
-            <Button
-              variant="contained"
-              startIcon={<Plus size={16} />}
-              onClick={() => navigate(`/districts/${districtId}/members/create`)}
-            >
-              Add member
-            </Button>
+            <MemberAddMenuButton
+              label="Add member"
+              singleTo={createMemberPath}
+              bulkTo={bulkMemberPath}
+              sx={{ backgroundColor: "#f6765e", "&:hover": { backgroundColor: "#ea6b54" } }}
+            />
           </Stack>
         </Stack>
 
@@ -312,22 +347,30 @@ export const DistrictMembersPage = () => {
                   <Typography sx={{ fontSize: 13, color: "#6b5e5a" }}>
                     {member.phone} · {member.email || "—"}
                   </Typography>
-                  <Chip
-                    size="small"
-                    label={member.isBlocked ? "Blocked" : "Active"}
-                    sx={getStatusChipSx(member.isBlocked)}
-                  />
+                  <Chip size="small" {...getMemberApprovalChipProps(member)} />
                   <Stack direction="row" spacing={1}>
+                    {canApprove && !member.verify && (
+                      <Button
+                        variant="contained"
+                        startIcon={<CheckCircle2 size={15} />}
+                        onClick={() => approveMember(member.id)}
+                        fullWidth
+                        size="small"
+                        sx={{ backgroundColor: "#2e7d32", "&:hover": { backgroundColor: "#1b5e20" } }}
+                      >
+                        Approve
+                      </Button>
+                    )}
                     <Button
                       variant="outlined"
                       startIcon={<PencilLine size={15} />}
-                      onClick={() => navigate(`/districts/${districtId}/members/${member.id}/edit`)}
+                      onClick={() => navigate(editMemberPath(member.id))}
                       fullWidth
                       size="small"
                     >
                       Edit
                     </Button>
-                    {!member.isMain && (
+                    {!isDistrictPortal && !member.isMain && (
                       <Button
                         variant="outlined"
                         startIcon={<Star size={15} />}
@@ -339,23 +382,25 @@ export const DistrictMembersPage = () => {
                         Set main
                       </Button>
                     )}
-                    <Button
-                      variant={member.isBlocked ? "contained" : "outlined"}
-                      color={member.isBlocked ? "success" : "error"}
-                      startIcon={
-                        member.isBlocked ? (
-                          <LockOpenOutlinedIcon sx={{ fontSize: 16 }} />
-                        ) : (
-                          <BlockOutlinedIcon sx={{ fontSize: 16 }} />
-                        )
-                      }
-                      onClick={() => setPendingBlock(member)}
-                      fullWidth
-                      size="small"
-                    >
-                      {member.isBlocked ? "Unblock" : "Block"}
-                    </Button>
-                    {!member.isMain && (
+                    {!isDistrictPortal && (
+                      <Button
+                        variant={member.isBlocked ? "contained" : "outlined"}
+                        color={member.isBlocked ? "success" : "error"}
+                        startIcon={
+                          member.isBlocked ? (
+                            <LockOpenOutlinedIcon sx={{ fontSize: 16 }} />
+                          ) : (
+                            <BlockOutlinedIcon sx={{ fontSize: 16 }} />
+                          )
+                        }
+                        onClick={() => setPendingBlock(member)}
+                        fullWidth
+                        size="small"
+                      >
+                        {member.isBlocked ? "Unblock" : "Block"}
+                      </Button>
+                    )}
+                    {!isDistrictPortal && !member.isMain && (
                       <Button
                         variant="contained"
                         startIcon={<Trash2 size={15} />}
@@ -490,19 +535,30 @@ export const DistrictMembersPage = () => {
                       {member.gender || "—"}
                     </TableCell>
                     <TableCell>
-                      <Chip
-                        size="small"
-                        label={member.isBlocked ? "Blocked" : "Active"}
-                        sx={getStatusChipSx(member.isBlocked)}
-                      />
+                      <Chip size="small" {...getMemberApprovalChipProps(member)} />
                     </TableCell>
 
                     <TableCell>
                       <Stack direction="row" spacing={1}>
+                        {canApprove && !member.verify && (
+                          <Tooltip title="Approve member (state admin)">
+                            <IconButton
+                              onClick={() => approveMember(member.id)}
+                              sx={{
+                                border: "1px solid #c8e6c9",
+                                color: "#2e7d32",
+                                backgroundColor: "#e8f5e9"
+                              }}
+                              aria-label={`Approve ${member.fullName}`}
+                            >
+                              <CheckCircle2 size={16} />
+                            </IconButton>
+                          </Tooltip>
+                        )}
                         <Tooltip title="Edit member">
                           <IconButton
                             onClick={() =>
-                              navigate(`/districts/${districtId}/members/${member.id}/edit`)
+                              navigate(editMemberPath(member.id))
                             }
                             sx={{ border: "1px solid #efe2dc", backgroundColor: "#fff8f4" }}
                             aria-label={`Edit ${member.fullName}`}
@@ -510,7 +566,7 @@ export const DistrictMembersPage = () => {
                             <PencilLine size={16} />
                           </IconButton>
                         </Tooltip>
-                        {!member.isMain && (
+                        {!isDistrictPortal && !member.isMain && (
                           <Tooltip title="Set as main member">
                             <IconButton
                               onClick={() => handleSetMain(member)}
@@ -525,28 +581,30 @@ export const DistrictMembersPage = () => {
                             </IconButton>
                           </Tooltip>
                         )}
-                        <Tooltip title={member.isBlocked ? "Unblock member" : "Block member"}>
-                          <IconButton
-                            onClick={() => setPendingBlock(member)}
-                            sx={{
-                              border: "1px solid #efe2dc",
-                              backgroundColor: member.isBlocked ? "#e8f5e9" : "#fff1f0",
-                              color: member.isBlocked ? "#2e7d32" : "#c62828"
-                            }}
-                            aria-label={
-                              member.isBlocked
-                                ? `Unblock ${member.fullName}`
-                                : `Block ${member.fullName}`
-                            }
-                          >
-                            {member.isBlocked ? (
-                              <LockOpenOutlinedIcon sx={{ fontSize: 18 }} />
-                            ) : (
-                              <BlockOutlinedIcon sx={{ fontSize: 18 }} />
-                            )}
-                          </IconButton>
-                        </Tooltip>
-                        {!member.isMain && (
+                        {!isDistrictPortal && (
+                          <Tooltip title={member.isBlocked ? "Unblock member" : "Block member"}>
+                            <IconButton
+                              onClick={() => setPendingBlock(member)}
+                              sx={{
+                                border: "1px solid #efe2dc",
+                                backgroundColor: member.isBlocked ? "#e8f5e9" : "#fff1f0",
+                                color: member.isBlocked ? "#2e7d32" : "#c62828"
+                              }}
+                              aria-label={
+                                member.isBlocked
+                                  ? `Unblock ${member.fullName}`
+                                  : `Block ${member.fullName}`
+                              }
+                            >
+                              {member.isBlocked ? (
+                                <LockOpenOutlinedIcon sx={{ fontSize: 18 }} />
+                              ) : (
+                                <BlockOutlinedIcon sx={{ fontSize: 18 }} />
+                              )}
+                            </IconButton>
+                          </Tooltip>
+                        )}
+                        {!isDistrictPortal && !member.isMain && (
                           <Tooltip title="Delete member">
                             <IconButton
                               onClick={() => setPendingDelete(member)}
@@ -610,19 +668,21 @@ export const DistrictMembersPage = () => {
         onConfirm={handleDelete}
       />
 
-      <ConfirmDeleteModal
-        open={Boolean(pendingBlock)}
-        title={pendingBlock?.isBlocked ? "Unblock member" : "Block member"}
-        description={
-          pendingBlock?.isBlocked
-            ? "This member will be able to log in again and access the KRSA platform."
-            : "This member will be blocked from logging in. They will see a message that their account was blocked by the administrator."
-        }
-        itemLabel={pendingBlock?.fullName}
-        confirmLabel={pendingBlock?.isBlocked ? "Unblock" : "Block"}
-        onClose={() => setPendingBlock(null)}
-        onConfirm={handleConfirmBlockToggle}
-      />
+      {!isDistrictPortal && (
+        <ConfirmDeleteModal
+          open={Boolean(pendingBlock)}
+          title={pendingBlock?.isBlocked ? "Unblock member" : "Block member"}
+          description={
+            pendingBlock?.isBlocked
+              ? "This member will be able to log in again and access the KRSA platform."
+              : "This member will be blocked from logging in. They will see a message that their account was blocked by the administrator."
+          }
+          itemLabel={pendingBlock?.fullName}
+          confirmLabel={pendingBlock?.isBlocked ? "Unblock" : "Block"}
+          onClose={() => setPendingBlock(null)}
+          onConfirm={handleConfirmBlockToggle}
+        />
+      )}
     </Box>
   );
 };

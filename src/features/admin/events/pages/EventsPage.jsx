@@ -82,6 +82,15 @@ const getStatusLabel = (status) => {
   }
 };
 
+const getCategoryLabels = (categories = []) =>
+  (Array.isArray(categories) ? categories : [])
+    .map((item) => {
+      if (!item) return "";
+      if (typeof item === "string") return item;
+      return item.typeName || item.name || item.label || "";
+    })
+    .filter(Boolean);
+
 const getStatusColor = (status) => {
   switch (status) {
     case "active":
@@ -118,10 +127,11 @@ export const EventsPage = () => {
     setLoading(true);
     setError(null);
     try {
-      const { data } = await eventsApi.getAll(search, currentPage, limit);
+      const response = await eventsApi.getAll(search, currentPage, limit);
+      const payload = response?.data ?? response;
 
-      setEvents(data?.data || []);
-      setTotalCount(data?.pagination?.total || 0);
+      setEvents(payload?.data || []);
+      setTotalCount(payload?.pagination?.total || 0);
     } catch (err) {
       toast.error(err?.response?.data?.message || "Failed to fetch events");
       setError(err?.response?.data?.message || err.message || "Failed to fetch events");
@@ -155,9 +165,11 @@ export const EventsPage = () => {
     setDeleting(true);
     try {
       const { message } = await eventsApi.delete(pendingDeleteEvent._id || pendingDeleteEvent.id);
+      const deletedId = pendingDeleteEvent._id || pendingDeleteEvent.id;
       setEvents((prev) =>
-        prev.filter((item) => item._id !== pendingDeleteEvent._id || pendingDeleteEvent.id)
+        prev.filter((item) => (item._id || item.id) !== deletedId)
       );
+      setTotalCount((prev) => Math.max(0, prev - 1));
       toast.success(message || "Event deleted successfully");
     } catch (err) {
       toast.error(err?.response?.data?.message || "Failed to delete event");
@@ -416,6 +428,33 @@ export const EventsPage = () => {
                       {event.about || "No description provided."}
                     </Typography>
 
+                    {event.address ? (
+                      <Typography sx={{ fontSize: 13, color: event.textColor || "#6f625e" }}>
+                        📍 {event.address}
+                      </Typography>
+                    ) : null}
+
+                    {getCategoryLabels(event.skatingEventCategories).length > 0 ? (
+                      <Stack direction="row" spacing={0.75} useFlexGap sx={{ flexWrap: "wrap" }}>
+                        {getCategoryLabels(event.skatingEventCategories).map((label) => (
+                          <Chip
+                            key={`${event._id || event.id}-${label}`}
+                            size="small"
+                            label={label}
+                            sx={{
+                              bgcolor: "rgba(255,255,255,0.72)",
+                              color: event.textColor || "#2f2829",
+                              fontWeight: 600
+                            }}
+                          />
+                        ))}
+                      </Stack>
+                    ) : null}
+
+                    <Typography sx={{ fontSize: 14, fontWeight: 700, color: event.textColor || "#2f2829" }}>
+                      {formatCurrency(event.entryFee)}
+                    </Typography>
+
                     {/* Schedule block */}
                     <Box>
                       <Typography
@@ -465,9 +504,7 @@ export const EventsPage = () => {
                       <Button
                         variant="outlined"
                         startIcon={<PencilLine size={16} />}
-                        onClick={() =>
-                          navigate(`/events/${event._id || event.id}/edit`, { state: { event } })
-                        }
+                        onClick={() => navigate(`/events/${event._id || event.id}/edit`)}
                         fullWidth
                       >
                         Edit

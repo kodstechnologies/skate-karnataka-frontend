@@ -12,5 +12,6 @@ export const districtMemberApi = {
   delete: (memberId) => api.delete(`/admin/v1/district-member/${memberId}`),
   toggleBlock: (userId, isBlocked) => api.patch(`/auth/v1/toggle-block/${userId}`, { isBlocked }),
   setMain: (districtId, memberId) =>
-    api.patch(`/admin/v1/district-member/${districtId}/main/${memberId}`)
+    api.patch(`/admin/v1/district-member/${districtId}/main/${memberId}`),
+  approve: (memberId) => api.patch(`/admin/v1/district-member/${memberId}/approve`)
 };
