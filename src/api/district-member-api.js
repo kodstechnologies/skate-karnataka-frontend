@@ -9,5 +9,8 @@ export const districtMemberApi = {
     api.post(`/admin/v1/district-member/${districtId}`, data, { headers: multipartHeaders }),
   update: (memberId, data) =>
     api.patch(`/admin/v1/district-member/${memberId}`, data, { headers: multipartHeaders }),
-  delete: (memberId) => api.delete(`/admin/v1/district-member/${memberId}`)
+  delete: (memberId) => api.delete(`/admin/v1/district-member/${memberId}`),
+  toggleBlock: (userId, isBlocked) => api.patch(`/auth/v1/toggle-block/${userId}`, { isBlocked }),
+  setMain: (districtId, memberId) =>
+    api.patch(`/admin/v1/district-member/${districtId}/main/${memberId}`)
 };

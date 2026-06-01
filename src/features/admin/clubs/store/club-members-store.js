@@ -12,6 +12,8 @@ const mapToFrontend = (d) => ({
   gender: d.gender || "",
   countryCode: d.countryCode || "+91",
   isActive: d.isActive ?? true,
+  isBlocked: Boolean(d.isBlocked),
+  isMain: Boolean(d.isMain),
   role: d.role || "Club",
   clubId: d.clubId || null
 });
@@ -74,6 +76,47 @@ export const useClubMembersStore = create((set, get) => ({
       return true;
     } catch (error) {
       toast.error(error.response?.data?.message || "Failed to delete member");
+      return false;
+    }
+  },
+
+  toggleMemberBlock: async (memberId, isBlocked) => {
+    try {
+      const response = await clubMemberApi.toggleBlock(memberId, isBlocked);
+      const blocked = Boolean(response?.data?.isBlocked ?? isBlocked);
+
+      set((state) => ({
+        members: state.members.map((member) =>
+          member.id === memberId ? { ...member, isBlocked: blocked } : member
+        )
+      }));
+
+      toast.success(
+        response?.message ||
+          (blocked ? "Member blocked successfully" : "Member unblocked successfully")
+      );
+      return true;
+    } catch (error) {
+      toast.error(error.response?.data?.message || "Failed to update member block status");
+      return false;
+    }
+  },
+
+  setMainMember: async (clubId, memberId) => {
+    try {
+      const response = await clubMemberApi.setMain(clubId, memberId);
+
+      set((state) => ({
+        members: state.members.map((member) => ({
+          ...member,
+          isMain: member.id === memberId
+        }))
+      }));
+
+      toast.success(response?.message || "Main member updated successfully");
+      return true;
+    } catch (error) {
+      toast.error(error.response?.data?.message || "Failed to set main member");
       return false;
     }
   }

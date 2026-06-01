@@ -19,14 +19,22 @@ import {
   TablePagination,
   TableRow,
   TextField,
+  Tooltip,
   Typography
 } from "@mui/material";
-import { ChevronRight, PencilLine, Plus, Search, Trash2, Users } from "lucide-react";
+import BlockOutlinedIcon from "@mui/icons-material/BlockOutlined";
+import LockOpenOutlinedIcon from "@mui/icons-material/LockOpenOutlined";
+import { ChevronRight, PencilLine, Plus, Search, Star, Trash2, Users } from "lucide-react";
 import { Link as RouterLink, useNavigate, useParams } from "react-router-dom";
 import districtHero from "@/assets/District_header.jpg";
 import { ConfirmDeleteModal } from "@/components/ui/ConfirmDeleteModal";
 import { useDistrictMembersStore } from "@/features/admin/districts/store/district-members-store";
 import { useDistrictsStore } from "@/features/admin/districts/store/districts-store";
+
+const getStatusChipSx = (isBlocked) =>
+  isBlocked
+    ? { bgcolor: "#ffebee", color: "#c62828", fontWeight: 700 }
+    : { bgcolor: "#e8f5e9", color: "#2e7d32", fontWeight: 700 };
 
 export const DistrictMembersPage = () => {
   const navigate = useNavigate();
@@ -38,13 +46,22 @@ export const DistrictMembersPage = () => {
     [districts, districtId]
   );
 
-  const { members, isLoading, fetchMembers, deleteMember, pagination } = useDistrictMembersStore();
+  const {
+    members,
+    isLoading,
+    fetchMembers,
+    deleteMember,
+    toggleMemberBlock,
+    setMainMember,
+    pagination
+  } = useDistrictMembersStore();
 
   const [searchTerm, setSearchTerm] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(5);
   const [pendingDelete, setPendingDelete] = useState(null);
+  const [pendingBlock, setPendingBlock] = useState(null);
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -55,7 +72,7 @@ export const DistrictMembersPage = () => {
   }, [searchTerm]);
 
   useEffect(() => {
-    fetchMembers(districtId, { name: debouncedSearch, page: page + 1, limit: rowsPerPage });
+    fetchMembers(districtId, { search: debouncedSearch, page: page + 1, limit: rowsPerPage });
   }, [districtId, fetchMembers, debouncedSearch, page, rowsPerPage]);
 
   const filtered = useMemo(() => {
@@ -79,6 +96,18 @@ export const DistrictMembersPage = () => {
     if (!pendingDelete) return;
     const ok = await deleteMember(pendingDelete.id);
     if (ok) setPendingDelete(null);
+  };
+
+  const handleConfirmBlockToggle = async () => {
+    if (!pendingBlock) return;
+    const nextBlocked = !pendingBlock.isBlocked;
+    const ok = await toggleMemberBlock(pendingBlock.id, nextBlocked);
+    if (ok) setPendingBlock(null);
+  };
+
+  const handleSetMain = async (member) => {
+    if (!member || member.isMain) return;
+    await setMainMember(districtId, member.id);
   };
 
   const districtName = district?.districtName || "District";
@@ -185,7 +214,7 @@ export const DistrictMembersPage = () => {
               Members
             </Typography>
             <Typography sx={{ mt: 0.75, color: "#8d7f7b" }}>
-              Search, add, edit, or remove members for this district.
+              Search, add, edit, or remove members for this district. Choose one member as main.
             </Typography>
           </Box>
           <Stack direction={{ xs: "column", sm: "row" }} spacing={1.5}>
@@ -259,15 +288,35 @@ export const DistrictMembersPage = () => {
                         <Typography sx={{ fontWeight: 700, color: "#2f2829", fontSize: 14 }}>
                           {member.fullName}
                         </Typography>
-                        <Typography sx={{ fontSize: 12, color: "#8d7f7b" }}>
-                          {member.role}
-                        </Typography>
+                        <Stack direction="row" spacing={0.75} sx={{ mt: 0.5, flexWrap: "wrap" }}>
+                          <Typography sx={{ fontSize: 12, color: "#8d7f7b" }}>
+                            {member.role}
+                          </Typography>
+                          {member.isMain && (
+                            <Chip
+                              size="small"
+                              label="Main"
+                              sx={{
+                                height: 20,
+                                fontSize: 10,
+                                fontWeight: 700,
+                                bgcolor: "#fff3e0",
+                                color: "#e65100"
+                              }}
+                            />
+                          )}
+                        </Stack>
                       </Box>
                     </Stack>
                   </Stack>
                   <Typography sx={{ fontSize: 13, color: "#6b5e5a" }}>
                     {member.phone} · {member.email || "—"}
                   </Typography>
+                  <Chip
+                    size="small"
+                    label={member.isBlocked ? "Blocked" : "Active"}
+                    sx={getStatusChipSx(member.isBlocked)}
+                  />
                   <Stack direction="row" spacing={1}>
                     <Button
                       variant="outlined"
@@ -278,16 +327,49 @@ export const DistrictMembersPage = () => {
                     >
                       Edit
                     </Button>
+                    {!member.isMain && (
+                      <Button
+                        variant="outlined"
+                        startIcon={<Star size={15} />}
+                        onClick={() => handleSetMain(member)}
+                        fullWidth
+                        size="small"
+                        sx={{ borderColor: "#f0c987", color: "#e65100" }}
+                      >
+                        Set main
+                      </Button>
+                    )}
                     <Button
-                      variant="contained"
-                      startIcon={<Trash2 size={15} />}
-                      onClick={() => setPendingDelete(member)}
+                      variant={member.isBlocked ? "contained" : "outlined"}
+                      color={member.isBlocked ? "success" : "error"}
+                      startIcon={
+                        member.isBlocked ? (
+                          <LockOpenOutlinedIcon sx={{ fontSize: 16 }} />
+                        ) : (
+                          <BlockOutlinedIcon sx={{ fontSize: 16 }} />
+                        )
+                      }
+                      onClick={() => setPendingBlock(member)}
                       fullWidth
                       size="small"
-                      sx={{ backgroundColor: "#f6765e", "&:hover": { backgroundColor: "#ea6b54" } }}
                     >
-                      Delete
+                      {member.isBlocked ? "Unblock" : "Block"}
                     </Button>
+                    {!member.isMain && (
+                      <Button
+                        variant="contained"
+                        startIcon={<Trash2 size={15} />}
+                        onClick={() => setPendingDelete(member)}
+                        fullWidth
+                        size="small"
+                        sx={{
+                          backgroundColor: "#f6765e",
+                          "&:hover": { backgroundColor: "#ea6b54" }
+                        }}
+                      >
+                        Delete
+                      </Button>
+                    )}
                   </Stack>
                 </Stack>
               </Paper>
@@ -307,27 +389,29 @@ export const DistrictMembersPage = () => {
           <Table sx={{ minWidth: 800 }}>
             <TableHead>
               <TableRow sx={{ backgroundColor: "#fdf7f3" }}>
-                {["Member", "Phone", "Email", "Address", "Gender", "Actions"].map((col) => (
-                  <TableCell
-                    key={col}
-                    sx={{
-                      borderBottom: "1px solid #f0e1da",
-                      color: "#7e716d",
-                      fontWeight: 700,
-                      fontSize: 13,
-                      whiteSpace: "nowrap"
-                    }}
-                  >
-                    {col}
-                  </TableCell>
-                ))}
+                {["Member", "Phone", "Email", "Address", "Gender", "Status", "Actions"].map(
+                  (col) => (
+                    <TableCell
+                      key={col}
+                      sx={{
+                        borderBottom: "1px solid #f0e1da",
+                        color: "#7e716d",
+                        fontWeight: 700,
+                        fontSize: 13,
+                        whiteSpace: "nowrap"
+                      }}
+                    >
+                      {col}
+                    </TableCell>
+                  )
+                )}
               </TableRow>
             </TableHead>
             <TableBody>
               {isLoading ? (
                 Array.from({ length: 3 }).map((_, i) => (
                   <TableRow key={i}>
-                    {Array.from({ length: 6 }).map((__, j) => (
+                    {Array.from({ length: 7 }).map((__, j) => (
                       <TableCell key={j}>
                         <Skeleton variant="text" />
                       </TableCell>
@@ -362,9 +446,24 @@ export const DistrictMembersPage = () => {
                           <Typography sx={{ fontWeight: 700, color: "#2f2829", fontSize: 14 }}>
                             {member.fullName}
                           </Typography>
-                          <Typography sx={{ fontSize: 11, color: "#f6765e", fontWeight: 600 }}>
-                            {member.role}
-                          </Typography>
+                          <Stack direction="row" spacing={0.75} sx={{ mt: 0.25, flexWrap: "wrap" }}>
+                            <Typography sx={{ fontSize: 11, color: "#f6765e", fontWeight: 600 }}>
+                              {member.role}
+                            </Typography>
+                            {member.isMain && (
+                              <Chip
+                                size="small"
+                                label="Main"
+                                sx={{
+                                  height: 20,
+                                  fontSize: 10,
+                                  fontWeight: 700,
+                                  bgcolor: "#fff3e0",
+                                  color: "#e65100"
+                                }}
+                              />
+                            )}
+                          </Stack>
                         </Box>
                       </Stack>
                     </TableCell>
@@ -390,36 +489,85 @@ export const DistrictMembersPage = () => {
                     <TableCell sx={{ fontSize: 13, color: "#5a4f4c", textTransform: "capitalize" }}>
                       {member.gender || "—"}
                     </TableCell>
+                    <TableCell>
+                      <Chip
+                        size="small"
+                        label={member.isBlocked ? "Blocked" : "Active"}
+                        sx={getStatusChipSx(member.isBlocked)}
+                      />
+                    </TableCell>
 
                     <TableCell>
                       <Stack direction="row" spacing={1}>
-                        <IconButton
-                          onClick={() =>
-                            navigate(`/districts/${districtId}/members/${member.id}/edit`)
-                          }
-                          sx={{ border: "1px solid #efe2dc", backgroundColor: "#fff8f4" }}
-                          aria-label={`Edit ${member.fullName}`}
-                        >
-                          <PencilLine size={16} />
-                        </IconButton>
-                        <IconButton
-                          onClick={() => setPendingDelete(member)}
-                          sx={{
-                            border: "1px solid #f2d9d1",
-                            color: "#e06f58",
-                            backgroundColor: "#fff6f2"
-                          }}
-                          aria-label={`Delete ${member.fullName}`}
-                        >
-                          <Trash2 size={16} />
-                        </IconButton>
+                        <Tooltip title="Edit member">
+                          <IconButton
+                            onClick={() =>
+                              navigate(`/districts/${districtId}/members/${member.id}/edit`)
+                            }
+                            sx={{ border: "1px solid #efe2dc", backgroundColor: "#fff8f4" }}
+                            aria-label={`Edit ${member.fullName}`}
+                          >
+                            <PencilLine size={16} />
+                          </IconButton>
+                        </Tooltip>
+                        {!member.isMain && (
+                          <Tooltip title="Set as main member">
+                            <IconButton
+                              onClick={() => handleSetMain(member)}
+                              sx={{
+                                border: "1px solid #f0c987",
+                                color: "#e65100",
+                                backgroundColor: "#fff8ef"
+                              }}
+                              aria-label={`Set ${member.fullName} as main`}
+                            >
+                              <Star size={16} />
+                            </IconButton>
+                          </Tooltip>
+                        )}
+                        <Tooltip title={member.isBlocked ? "Unblock member" : "Block member"}>
+                          <IconButton
+                            onClick={() => setPendingBlock(member)}
+                            sx={{
+                              border: "1px solid #efe2dc",
+                              backgroundColor: member.isBlocked ? "#e8f5e9" : "#fff1f0",
+                              color: member.isBlocked ? "#2e7d32" : "#c62828"
+                            }}
+                            aria-label={
+                              member.isBlocked
+                                ? `Unblock ${member.fullName}`
+                                : `Block ${member.fullName}`
+                            }
+                          >
+                            {member.isBlocked ? (
+                              <LockOpenOutlinedIcon sx={{ fontSize: 18 }} />
+                            ) : (
+                              <BlockOutlinedIcon sx={{ fontSize: 18 }} />
+                            )}
+                          </IconButton>
+                        </Tooltip>
+                        {!member.isMain && (
+                          <Tooltip title="Delete member">
+                            <IconButton
+                              onClick={() => setPendingDelete(member)}
+                              sx={{
+                                border: "1px solid #f2d9d1",
+                                color: "#e06f58",
+                                backgroundColor: "#fff6f2"
+                              }}
+                              aria-label={`Delete ${member.fullName}`}
+                            >
+                              <Trash2 size={16} />
+                            </IconButton>
+                          </Tooltip>
+                        )}
                       </Stack>
                     </TableCell>
                   </TableRow>
                 ))
               ) : (
                 <TableRow>
-                  <TableCell colSpan={6} sx={{ py: 6, textAlign: "center", color: "#978a86" }}>
+                  <TableCell colSpan={7} sx={{ py: 6, textAlign: "center", color: "#978a86" }}>
                     No members found for this district.
                   </TableCell>
                 </TableRow>
@@ -460,6 +608,20 @@ export const DistrictMembersPage = () => {
         description="This member will be permanently removed from the district."
         onClose={() => setPendingDelete(null)}
         onConfirm={handleDelete}
+      />
+
+      <ConfirmDeleteModal
+        open={Boolean(pendingBlock)}
+        title={pendingBlock?.isBlocked ? "Unblock member" : "Block member"}
+        description={
+          pendingBlock?.isBlocked
+            ? "This member will be able to log in again and access the KRSA platform."
+            : "This member will be blocked from logging in. They will see a message that their account was blocked by the administrator."
+        }
+        itemLabel={pendingBlock?.fullName}
+        confirmLabel={pendingBlock?.isBlocked ? "Unblock" : "Block"}
+        onClose={() => setPendingBlock(null)}
+        onConfirm={handleConfirmBlockToggle}
       />
     </Box>
   );

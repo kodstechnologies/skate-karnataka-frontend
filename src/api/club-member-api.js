@@ -8,5 +8,7 @@ export const clubMemberApi = {
     api.post(`/admin/v1/club-member/${clubId}`, data, { headers: multipartHeaders }),
   update: (memberId, data) =>
     api.patch(`/admin/v1/club-member/${memberId}`, data, { headers: multipartHeaders }),
-  delete: (memberId) => api.delete(`/admin/v1/club-member/${memberId}`)
+  delete: (memberId) => api.delete(`/admin/v1/club-member/${memberId}`),
+  toggleBlock: (userId, isBlocked) => api.patch(`/auth/v1/toggle-block/${userId}`, { isBlocked }),
+  setMain: (clubId, memberId) => api.patch(`/admin/v1/club-member/${clubId}/main/${memberId}`)
 };

@@ -12,6 +12,8 @@ const mapToFrontend = (d) => ({
   gender: d.gender || "",
   countryCode: d.countryCode || "+91",
   isActive: d.isActive ?? true,
+  isBlocked: Boolean(d.isBlocked),
+  isMain: Boolean(d.isMain),
   role: d.role || "District",
   district: d.district || null
 });
@@ -27,8 +29,13 @@ export const useDistrictMembersStore = create((set, get) => ({
     set({ isLoading: true, error: null, currentDistrictId: districtId });
     try {
       const response = await districtMemberApi.getAll(districtId, params);
-      const payloadData = response.data?.data || response.data || [];
-      const paginationData = response.data?.pagination || null;
+      const innerPayload = response?.data?.data ?? response?.data ?? {};
+      const payloadData = Array.isArray(innerPayload)
+        ? innerPayload
+        : Array.isArray(innerPayload?.data)
+          ? innerPayload.data
+          : [];
+      const paginationData = innerPayload?.pagination ?? response?.data?.pagination ?? null;
 
       const mappedMembers = Array.isArray(payloadData) ? payloadData.map(mapToFrontend) : [];
       set({ members: mappedMembers, pagination: paginationData, isLoading: false });
@@ -74,6 +81,47 @@ export const useDistrictMembersStore = create((set, get) => ({
       return true;
     } catch (error) {
       toast.error(error.response?.data?.message || "Failed to delete member");
+      return false;
+    }
+  },
+
+  toggleMemberBlock: async (memberId, isBlocked) => {
+    try {
+      const response = await districtMemberApi.toggleBlock(memberId, isBlocked);
+      const blocked = Boolean(response?.data?.isBlocked ?? isBlocked);
+
+      set((state) => ({
+        members: state.members.map((member) =>
+          member.id === memberId ? { ...member, isBlocked: blocked } : member
+        )
+      }));
+
+      toast.success(
+        response?.message ||
+          (blocked ? "Member blocked successfully" : "Member unblocked successfully")
+      );
+      return true;
+    } catch (error) {
+      toast.error(error.response?.data?.message || "Failed to update member block status");
+      return false;
+    }
+  },
+
+  setMainMember: async (districtId, memberId) => {
+    try {
+      const response = await districtMemberApi.setMain(districtId, memberId);
+
+      set((state) => ({
+        members: state.members.map((member) => ({
+          ...member,
+          isMain: member.id === memberId
+        }))
+      }));
+
+      toast.success(response?.message || "Main member updated successfully");
+      return true;
+    } catch (error) {
+      toast.error(error.response?.data?.message || "Failed to set main member");
       return false;
     }
   }
