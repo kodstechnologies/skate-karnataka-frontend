@@ -41,5 +41,33 @@ export const useSkatersStore = create((set) => ({
       set({ isLoadingDetail: false });
       toast.error(error.response?.data?.message || "Failed to fetch skater details");
     }
+  },
+
+  toggleSkaterBlock: async (userId, isBlocked) => {
+    try {
+      const response = await skaterApi.toggleBlock(userId, isBlocked);
+      const result = response?.data ?? response;
+      const blocked = Boolean(result?.isBlocked ?? isBlocked);
+
+      set((state) => ({
+        skaters: state.skaters.map((skater) =>
+          skater._id === userId ? { ...skater, isBlocked: blocked } : skater
+        ),
+        selectedSkater:
+          state.selectedSkater?._id === userId
+            ? { ...state.selectedSkater, isBlocked: blocked }
+            : state.selectedSkater
+      }));
+
+      toast.success(
+        response?.message ||
+          (blocked ? "Skater blocked successfully" : "Skater unblocked successfully")
+      );
+      return true;
+    } catch (error) {
+      console.error("Failed to update skater block status:", error);
+      toast.error(error.response?.data?.message || "Failed to update skater block status");
+      return false;
+    }
   }
 }));

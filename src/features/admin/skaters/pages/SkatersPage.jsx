@@ -17,13 +17,17 @@ import {
   TablePagination,
   TableRow,
   TextField,
+  Tooltip,
   Typography,
   CircularProgress
 } from "@mui/material";
 import VisibilityOutlinedIcon from "@mui/icons-material/VisibilityOutlined";
+import BlockOutlinedIcon from "@mui/icons-material/BlockOutlined";
+import LockOpenOutlinedIcon from "@mui/icons-material/LockOpenOutlined";
 import { ChevronRight, Search, ShieldCheck, Trophy } from "lucide-react";
 import { Link as RouterLink, useNavigate } from "react-router-dom";
 import skatersHero from "@/assets/Skating_header.jpg";
+import { ConfirmDeleteModal } from "@/components/ui/ConfirmDeleteModal";
 import { useSkatersStore } from "@/features/admin/skaters/store/skaters-store";
 import { getSkaterDistrictName } from "@/features/admin/skaters/utils/skater-display";
 
@@ -48,6 +52,11 @@ const formatGender = (gender) => {
   return gender.charAt(0).toUpperCase() + gender.slice(1);
 };
 
+const getStatusChipSx = (isBlocked) =>
+  isBlocked
+    ? { bgcolor: "#ffebee", color: "#c62828", fontWeight: 700 }
+    : { bgcolor: "#e8f5e9", color: "#2e7d32", fontWeight: 700 };
+
 const DetailItem = ({ label, value }) => (
   <div>
     <Typography sx={{ fontSize: 11, color: "#a28f89", textTransform: "uppercase" }}>
@@ -69,12 +78,13 @@ const DetailItem = ({ label, value }) => (
 
 export const SkatersPage = () => {
   const navigate = useNavigate();
-  const { skaters, fetchSkaters, pagination, isLoading } = useSkatersStore();
+  const { skaters, fetchSkaters, pagination, isLoading, toggleSkaterBlock } = useSkatersStore();
 
   const [searchTerm, setSearchTerm] = useState("");
   const debouncedSearchTerm = useDebounce(searchTerm, 500);
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
+  const [pendingBlockSkater, setPendingBlockSkater] = useState(null);
 
   const loadSkaters = useCallback(() => {
     fetchSkaters({
@@ -117,6 +127,15 @@ export const SkatersPage = () => {
   const handleSearchChange = (event) => {
     setSearchTerm(event.target.value);
     setPage(0);
+  };
+
+  const closeBlockDialog = () => setPendingBlockSkater(null);
+
+  const handleConfirmBlockToggle = async () => {
+    if (!pendingBlockSkater) return;
+    const nextBlocked = !pendingBlockSkater.isBlocked;
+    const success = await toggleSkaterBlock(pendingBlockSkater._id, nextBlocked);
+    if (success) closeBlockDialog();
   };
 
   return (
@@ -278,6 +297,12 @@ export const SkatersPage = () => {
                     <DetailItem label="District" value={getSkaterDistrictName(skater)} />
                   </div>
 
+                  <Chip
+                    size="small"
+                    label={skater.isBlocked ? "Blocked" : "Active"}
+                    sx={getStatusChipSx(skater.isBlocked)}
+                  />
+
                   <Stack direction="row" spacing={1}>
                     <Button
                       variant="outlined"
@@ -286,6 +311,21 @@ export const SkatersPage = () => {
                       fullWidth
                     >
                       View details
+                    </Button>
+                    <Button
+                      variant={skater.isBlocked ? "contained" : "outlined"}
+                      color={skater.isBlocked ? "success" : "error"}
+                      startIcon={
+                        skater.isBlocked ? (
+                          <LockOpenOutlinedIcon sx={{ fontSize: 18 }} />
+                        ) : (
+                          <BlockOutlinedIcon sx={{ fontSize: 18 }} />
+                        )
+                      }
+                      onClick={() => setPendingBlockSkater(skater)}
+                      fullWidth
+                    >
+                      {skater.isBlocked ? "Unblock" : "Block"}
                     </Button>
                   </Stack>
                 </Stack>
@@ -305,29 +345,36 @@ export const SkatersPage = () => {
           <Table sx={{ minWidth: 1080 }}>
             <TableHead>
               <TableRow sx={{ backgroundColor: "#fdf7f3" }}>
-                {["KRSA ID", "Full Name", "Phone", "Email", "Gender", "District", "Actions"].map(
-                  (column) => (
-                    <TableCell
-                      key={column}
-                      sx={{
-                        borderBottom: "1px solid #f0e1da",
-                        color: "#7e716d",
-                        fontWeight: 700,
-                        fontSize: 13,
-                        whiteSpace: "nowrap"
-                      }}
-                    >
-                      {column}
-                    </TableCell>
-                  )
-                )}
+                {[
+                  "KRSA ID",
+                  "Full Name",
+                  "Phone",
+                  "Email",
+                  "Gender",
+                  "District",
+                  "Status",
+                  "Actions"
+                ].map((column) => (
+                  <TableCell
+                    key={column}
+                    sx={{
+                      borderBottom: "1px solid #f0e1da",
+                      color: "#7e716d",
+                      fontWeight: 700,
+                      fontSize: 13,
+                      whiteSpace: "nowrap"
+                    }}
+                  >
+                    {column}
+                  </TableCell>
+                ))}
               </TableRow>
             </TableHead>
 
             <TableBody>
               {isLoading ? (
                 <TableRow>
-                  <TableCell colSpan={7} sx={{ py: 6, textAlign: "center" }}>
+                  <TableCell colSpan={8} sx={{ py: 6, textAlign: "center" }}>
                     <CircularProgress sx={{ color: "#f6765e" }} />
                   </TableCell>
                 </TableRow>
@@ -352,24 +399,54 @@ export const SkatersPage = () => {
                     <TableCell>{formatGender(skater.gender)}</TableCell>
                     <TableCell>{getSkaterDistrictName(skater)}</TableCell>
                     <TableCell>
+                      <Chip
+                        size="small"
+                        label={skater.isBlocked ? "Blocked" : "Active"}
+                        sx={getStatusChipSx(skater.isBlocked)}
+                      />
+                    </TableCell>
+                    <TableCell>
                       <Stack direction="row" spacing={1}>
-                        <IconButton
-                          onClick={() => navigate(`/skaters/${skater._id}`)}
-                          sx={{
-                            border: "1px solid #efe2dc",
-                            backgroundColor: "#fff8f4"
-                          }}
-                          aria-label={`View ${skater.fullName}`}
-                        >
-                          <VisibilityOutlinedIcon sx={{ fontSize: 18 }} />
-                        </IconButton>
+                        <Tooltip title="View details">
+                          <IconButton
+                            onClick={() => navigate(`/skaters/${skater._id}`)}
+                            sx={{
+                              border: "1px solid #efe2dc",
+                              backgroundColor: "#fff8f4"
+                            }}
+                            aria-label={`View ${skater.fullName}`}
+                          >
+                            <VisibilityOutlinedIcon sx={{ fontSize: 18 }} />
+                          </IconButton>
+                        </Tooltip>
+                        <Tooltip title={skater.isBlocked ? "Unblock skater" : "Block skater"}>
+                          <IconButton
+                            onClick={() => setPendingBlockSkater(skater)}
+                            sx={{
+                              border: "1px solid #efe2dc",
+                              backgroundColor: skater.isBlocked ? "#e8f5e9" : "#fff1f0",
+                              color: skater.isBlocked ? "#2e7d32" : "#c62828"
+                            }}
+                            aria-label={
+                              skater.isBlocked
+                                ? `Unblock ${skater.fullName}`
+                                : `Block ${skater.fullName}`
+                            }
+                          >
+                            {skater.isBlocked ? (
+                              <LockOpenOutlinedIcon sx={{ fontSize: 18 }} />
+                            ) : (
+                              <BlockOutlinedIcon sx={{ fontSize: 18 }} />
+                            )}
+                          </IconButton>
+                        </Tooltip>
                       </Stack>
                     </TableCell>
                   </TableRow>
                 ))
               ) : (
                 <TableRow>
-                  <TableCell colSpan={7} sx={{ py: 6, textAlign: "center", color: "#978a86" }}>
+                  <TableCell colSpan={8} sx={{ py: 6, textAlign: "center", color: "#978a86" }}>
                     No skaters found for the current search.
                   </TableCell>
                 </TableRow>
@@ -399,6 +476,20 @@ export const SkatersPage = () => {
           }}
         />
       </Paper>
+
+      <ConfirmDeleteModal
+        open={Boolean(pendingBlockSkater)}
+        title={pendingBlockSkater?.isBlocked ? "Unblock skater" : "Block skater"}
+        description={
+          pendingBlockSkater?.isBlocked
+            ? "This skater will be able to log in again and access the KRSA platform."
+            : "This skater will be blocked from logging in. They will see a message that their account was blocked by the administrator."
+        }
+        itemLabel={pendingBlockSkater?.fullName}
+        confirmLabel={pendingBlockSkater?.isBlocked ? "Unblock" : "Block"}
+        onClose={closeBlockDialog}
+        onConfirm={handleConfirmBlockToggle}
+      />
     </Box>
   );
 };

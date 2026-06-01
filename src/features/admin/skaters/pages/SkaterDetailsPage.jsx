@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import {
   Box,
   Breadcrumbs,
@@ -10,12 +10,15 @@ import {
   CircularProgress
 } from "@mui/material";
 import BadgeOutlinedIcon from "@mui/icons-material/BadgeOutlined";
+import BlockOutlinedIcon from "@mui/icons-material/BlockOutlined";
+import LockOpenOutlinedIcon from "@mui/icons-material/LockOpenOutlined";
 import LocationOnOutlinedIcon from "@mui/icons-material/LocationOnOutlined";
 import EmailOutlinedIcon from "@mui/icons-material/EmailOutlined";
 import PhoneOutlinedIcon from "@mui/icons-material/PhoneOutlined";
 import { ChevronRight } from "lucide-react";
 import { Link as RouterLink, useNavigate, useParams } from "react-router-dom";
 import skatersHero from "@/assets/Skating_header.jpg";
+import { ConfirmDeleteModal } from "@/components/ui/ConfirmDeleteModal";
 import { useSkatersStore } from "@/features/admin/skaters/store/skaters-store";
 import { getSkaterDistrictName } from "@/features/admin/skaters/utils/skater-display";
 
@@ -114,13 +117,26 @@ const SectionCard = ({ title, description, children }) => (
 export const SkaterDetailsPage = () => {
   const navigate = useNavigate();
   const { skaterId } = useParams();
-  const { selectedSkater: skater, isLoadingDetail, fetchSkaterById } = useSkatersStore();
+  const {
+    selectedSkater: skater,
+    isLoadingDetail,
+    fetchSkaterById,
+    toggleSkaterBlock
+  } = useSkatersStore();
+  const [showBlockDialog, setShowBlockDialog] = useState(false);
 
   useEffect(() => {
     if (skaterId) {
       fetchSkaterById(skaterId);
     }
   }, [skaterId, fetchSkaterById]);
+
+  const handleConfirmBlockToggle = async () => {
+    if (!skater) return;
+    const nextBlocked = !skater.isBlocked;
+    const success = await toggleSkaterBlock(skater._id, nextBlocked);
+    if (success) setShowBlockDialog(false);
+  };
 
   if (isLoadingDetail) {
     return (
@@ -214,6 +230,15 @@ export const SkaterDetailsPage = () => {
                 label={formatGender(skater.gender)}
                 sx={{ color: "white", backgroundColor: "rgba(255,255,255,0.14)" }}
               />
+              <Chip
+                label={skater.isBlocked ? "Blocked" : "Active"}
+                sx={{
+                  color: "white",
+                  backgroundColor: skater.isBlocked
+                    ? "rgba(198, 40, 40, 0.85)"
+                    : "rgba(46, 125, 50, 0.85)"
+                }}
+              />
             </Stack>
           </Box>
         </Stack>
@@ -283,9 +308,25 @@ export const SkaterDetailsPage = () => {
               Full registered profile information.
             </Typography>
           </Box>
-          <Button variant="outlined" onClick={() => navigate("/skaters")}>
-            Back to skaters
-          </Button>
+          <Stack direction={{ xs: "column", sm: "row" }} spacing={1.5}>
+            <Button variant="outlined" onClick={() => navigate("/skaters")}>
+              Back to skaters
+            </Button>
+            <Button
+              variant={skater.isBlocked ? "contained" : "outlined"}
+              color={skater.isBlocked ? "success" : "error"}
+              startIcon={
+                skater.isBlocked ? (
+                  <LockOpenOutlinedIcon sx={{ fontSize: 18 }} />
+                ) : (
+                  <BlockOutlinedIcon sx={{ fontSize: 18 }} />
+                )
+              }
+              onClick={() => setShowBlockDialog(true)}
+            >
+              {skater.isBlocked ? "Unblock skater" : "Block skater"}
+            </Button>
+          </Stack>
         </Stack>
 
         <Stack spacing={2.5}>
@@ -327,6 +368,20 @@ export const SkaterDetailsPage = () => {
           </SectionCard>
         </Stack>
       </Paper>
+
+      <ConfirmDeleteModal
+        open={showBlockDialog}
+        title={skater.isBlocked ? "Unblock skater" : "Block skater"}
+        description={
+          skater.isBlocked
+            ? "This skater will be able to log in again and access the KRSA platform."
+            : "This skater will be blocked from logging in. They will see a message that their account was blocked by the administrator."
+        }
+        itemLabel={skater.fullName}
+        confirmLabel={skater.isBlocked ? "Unblock" : "Block"}
+        onClose={() => setShowBlockDialog(false)}
+        onConfirm={handleConfirmBlockToggle}
+      />
     </Box>
   );
 };

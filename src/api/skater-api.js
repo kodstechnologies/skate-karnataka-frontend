@@ -6,5 +6,8 @@ export const skaterApi = {
   },
   getById: async (id) => {
     return api.get(`/admin/v1/skater/${id}`);
+  },
+  toggleBlock: async (userId, isBlocked) => {
+    return api.patch(`/auth/v1/toggle-block/${userId}`, { isBlocked });
   }
 };
