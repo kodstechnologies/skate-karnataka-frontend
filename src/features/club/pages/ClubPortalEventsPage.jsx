@@ -9,7 +9,7 @@ import {
   TablePagination,
   Typography
 } from "@mui/material";
-import { CalendarDays, ChevronRight, PencilLine, Plus, Trash2 } from "lucide-react";
+import { CalendarDays, ChevronRight, Plus, Trash2 } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { Link as RouterLink, useNavigate } from "react-router-dom";
 import clubHero from "@/assets/Club_header.jpg";
@@ -17,6 +17,7 @@ import eventsHero from "@/assets/Events_header.jpg";
 import { ConfirmDeleteModal } from "@/components/ui/ConfirmDeleteModal";
 import { eventsApi } from "@/api/events-api";
 import { useAuthStore } from "@/features/auth/store/auth-store";
+import { getEventApprovalChipProps } from "@/utils/eventApprovalStatus";
 import toast from "react-hot-toast";
 
 const fmtDate = (v) => {
@@ -156,9 +157,18 @@ export const ClubPortalEventsPage = () => {
     try {
       const id = pendingDeleteEvent._id || pendingDeleteEvent.id;
       const response = await eventsApi.deleteClubEvent(id);
-      setEvents((prev) => prev.filter((item) => (item._id || item.id) !== id));
-      setTotalCount((prev) => Math.max(0, prev - 1));
-      toast.success(response?.message || "Event deleted successfully");
+      const payload = response?.data?.data ?? response?.data ?? response;
+      if (payload?.pendingDelete) {
+        setEvents((prev) =>
+          prev.map((item) =>
+            (item._id || item.id) === id ? { ...item, deleteApprovalStatus: "pending" } : item
+          )
+        );
+      } else {
+        setEvents((prev) => prev.filter((item) => (item._id || item.id) !== id));
+        setTotalCount((prev) => Math.max(0, prev - 1));
+      }
+      toast.success(payload?.message || response?.message || "Event deleted successfully");
     } catch (err) {
       toast.error(err?.response?.data?.message || "Failed to delete event");
     } finally {
@@ -325,24 +335,19 @@ export const ClubPortalEventsPage = () => {
                           color: event.textColor || "#2f2829"
                         }}
                       />
+                      {manageable && event.eventType === "Club" && (
+                        <Chip size="small" {...getEventApprovalChipProps(event)} />
+                      )}
                       {manageable ? (
-                        <Stack direction="row" spacing={0.5} sx={{ ml: "auto" }}>
-                          <Button
-                            size="small"
-                            onClick={() => navigate(`/club/events/${event._id || event.id}/edit`)}
-                            sx={{ minWidth: 0, p: 1, color: event.textColor || "#2f2829" }}
-                          >
-                            <PencilLine size={16} />
-                          </Button>
-                          <Button
-                            size="small"
-                            color="error"
-                            onClick={() => setPendingDeleteEvent(event)}
-                            sx={{ minWidth: 0, p: 1 }}
-                          >
-                            <Trash2 size={16} />
-                          </Button>
-                        </Stack>
+                        <Button
+                          size="small"
+                          color="error"
+                          onClick={() => setPendingDeleteEvent(event)}
+                          sx={{ minWidth: 0, p: 1, ml: "auto" }}
+                          aria-label="Request delete"
+                        >
+                          <Trash2 size={16} />
+                        </Button>
                       ) : null}
                     </Stack>
 

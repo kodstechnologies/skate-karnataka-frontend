@@ -7,9 +7,14 @@ import {
   Autocomplete,
   Box,
   Chip,
+  FormControl,
+  FormControlLabel,
+  FormHelperText,
   MenuItem,
   Paper,
   Popover,
+  Radio,
+  RadioGroup,
   Stack,
   TextField,
   Typography
@@ -145,8 +150,12 @@ export const EventForm = ({
   onFieldChange,
   disabled,
   eventCategories = [],
-  categorySeedFromEvent = []
+  categorySeedFromEvent = [],
+  showCategorySourcePicker = false,
+  categorySourceUsesStandardFallback = false,
+  onCategoryFormatChange
 }) => {
+  const categoryFormat = formData.categoryFormat ?? "standard";
   const selectedCategoryIds = normalizeSkatingEventCategoryIds(formData.skatingEventCategories);
   const categoryOptions = mapSkatingCategoryOptions(eventCategories);
   const seedOptions = mapSkatingCategoryOptions(
@@ -233,8 +242,37 @@ export const EventForm = ({
       <SectionCard
         icon={<CategoryOutlinedIcon />}
         title="Skating Event Categories"
-        description="Select one or more category types allowed for this event."
+        description={
+          showCategorySourcePicker
+            ? "Choose standard (KRSA) or your custom list. Custom uses your saved names when you have them; otherwise KRSA standard categories apply."
+            : "Select one or more category types allowed for this event."
+        }
       >
+        {showCategorySourcePicker ? (
+          <FormControl component="fieldset" sx={{ mb: 2.5, width: "100%" }} disabled={disabled}>
+            <Typography variant="caption" sx={{ color: "#8d7f7b", fontWeight: 600, mb: 0.5 }}>
+              Format
+            </Typography>
+            <RadioGroup
+              row
+              value={categoryFormat}
+              onChange={(e) => {
+                const value = e.target.value;
+                onFieldChange("categoryFormat")({ target: { value } });
+                onCategoryFormatChange?.(value);
+              }}
+            >
+              <FormControlLabel value="standard" control={<Radio size="small" />} label="Standard" />
+              <FormControlLabel value="custom" control={<Radio size="small" />} label="Custom" />
+            </RadioGroup>
+            {categoryFormat === "custom" && categorySourceUsesStandardFallback ? (
+              <FormHelperText sx={{ mx: 0 }}>
+                You have not saved a custom list yet — showing KRSA standard categories. Edit your list under
+                Event categories.
+              </FormHelperText>
+            ) : null}
+          </FormControl>
+        ) : null}
         <Autocomplete
           multiple
           disableCloseOnSelect

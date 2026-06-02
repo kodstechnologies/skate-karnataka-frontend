@@ -16,5 +16,14 @@ export const eventCategoriesApi = {
   update: (id, body) => api.patch(`${BASE}/${id}`, body),
 
   /** DELETE /event/v1/event-categories/:id */
-  delete: (id) => api.delete(`${BASE}/${id}`)
+  delete: (id) => api.delete(`${BASE}/${id}`),
+
+  /** GET /event/v1/event-categories/org-context — standard list + your custom doc */
+  getOrgContext: () => api.get(`${BASE}/org-context`),
+
+  /** GET /event/v1/event-categories/org-custom — one custom list per club/district */
+  getOrgCustom: () => api.get(`${BASE}/org-custom`),
+
+  /** PUT /event/v1/event-categories/org-custom — upsert names array for your org */
+  saveOrgCustom: (body) => api.put(`${BASE}/org-custom`, body)
 };

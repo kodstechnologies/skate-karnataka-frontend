@@ -25,6 +25,7 @@ import {
 import {
   CalendarDays,
   ChevronRight,
+  Image,
   PencilLine,
   Plus,
   Search,
@@ -473,8 +474,21 @@ export const DistrictsPage = () => {
                             backgroundColor: "#fff8f4"
                           }}
                           aria-label={`View events for ${district.districtName}`}
+                          title="Events"
                         >
                           <CalendarDays size={16} />
+                        </IconButton>
+                        <IconButton
+                          onClick={() => navigate(`/districts/${district.id}/media`)}
+                          sx={{
+                            border: "1px solid #e0f2f1",
+                            color: "#00897b",
+                            backgroundColor: "#e0f7f5"
+                          }}
+                          aria-label={`Media for ${district.districtName}`}
+                          title="Media"
+                        >
+                          <Image size={16} />
                         </IconButton>
                         <IconButton
                           onClick={() => navigate(`/districts/${district.id}/edit`)}

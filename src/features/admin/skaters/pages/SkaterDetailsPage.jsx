@@ -11,6 +11,7 @@ import {
 } from "@mui/material";
 import BadgeOutlinedIcon from "@mui/icons-material/BadgeOutlined";
 import BlockOutlinedIcon from "@mui/icons-material/BlockOutlined";
+import EditOutlinedIcon from "@mui/icons-material/EditOutlined";
 import LockOpenOutlinedIcon from "@mui/icons-material/LockOpenOutlined";
 import LocationOnOutlinedIcon from "@mui/icons-material/LocationOnOutlined";
 import EmailOutlinedIcon from "@mui/icons-material/EmailOutlined";
@@ -313,6 +314,14 @@ export const SkaterDetailsPage = () => {
               Back to skaters
             </Button>
             <Button
+              variant="contained"
+              startIcon={<EditOutlinedIcon sx={{ fontSize: 18 }} />}
+              onClick={() => navigate(`/skaters/${skater._id}/edit`)}
+              sx={{ bgcolor: "#f6765e", "&:hover": { bgcolor: "#e85d3f" } }}
+            >
+              Edit skater
+            </Button>
+            <Button
               variant={skater.isBlocked ? "contained" : "outlined"}
               color={skater.isBlocked ? "success" : "error"}
               startIcon={
@@ -342,6 +351,7 @@ export const SkaterDetailsPage = () => {
               }}
             >
               <DetailItem label="KRSA ID" value={skater.krsaId} />
+              <DetailItem label="RSFI ID" value={skater.rsfiId} />
               <DetailItem label="Full name" value={skater.fullName} />
               <DetailItem label="Phone" value={skater.phone} />
               <DetailItem label="Email" value={skater.email} />

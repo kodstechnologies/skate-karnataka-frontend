@@ -22,6 +22,7 @@ import {
   CircularProgress
 } from "@mui/material";
 import VisibilityOutlinedIcon from "@mui/icons-material/VisibilityOutlined";
+import EditOutlinedIcon from "@mui/icons-material/EditOutlined";
 import BlockOutlinedIcon from "@mui/icons-material/BlockOutlined";
 import LockOpenOutlinedIcon from "@mui/icons-material/LockOpenOutlined";
 import { ChevronRight, Search, ShieldCheck, Trophy } from "lucide-react";
@@ -303,7 +304,7 @@ export const SkatersPage = () => {
                     sx={getStatusChipSx(skater.isBlocked)}
                   />
 
-                  <Stack direction="row" spacing={1}>
+                  <Stack direction="row" spacing={1} flexWrap="wrap">
                     <Button
                       variant="outlined"
                       startIcon={<VisibilityOutlinedIcon sx={{ fontSize: 18 }} />}
@@ -311,6 +312,14 @@ export const SkatersPage = () => {
                       fullWidth
                     >
                       View details
+                    </Button>
+                    <Button
+                      variant="contained"
+                      startIcon={<EditOutlinedIcon sx={{ fontSize: 18 }} />}
+                      onClick={() => navigate(`/skaters/${skater._id}/edit`)}
+                      fullWidth
+                    >
+                      Edit
                     </Button>
                     <Button
                       variant={skater.isBlocked ? "contained" : "outlined"}
@@ -417,6 +426,19 @@ export const SkatersPage = () => {
                             aria-label={`View ${skater.fullName}`}
                           >
                             <VisibilityOutlinedIcon sx={{ fontSize: 18 }} />
+                          </IconButton>
+                        </Tooltip>
+                        <Tooltip title="Edit skater">
+                          <IconButton
+                            onClick={() => navigate(`/skaters/${skater._id}/edit`)}
+                            sx={{
+                              border: "1px solid #efe2dc",
+                              backgroundColor: "#fff8f4",
+                              color: "#f6765e"
+                            }}
+                            aria-label={`Edit ${skater.fullName}`}
+                          >
+                            <EditOutlinedIcon sx={{ fontSize: 18 }} />
                           </IconButton>
                         </Tooltip>
                         <Tooltip title={skater.isBlocked ? "Unblock skater" : "Block skater"}>

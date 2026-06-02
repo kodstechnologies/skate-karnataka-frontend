@@ -1,8 +1,18 @@
-import { LayoutDashboard, CalendarDays, UserPlus, Users, FileSpreadsheet } from "lucide-react";
+import {
+  LayoutDashboard,
+  CalendarDays,
+  UserPlus,
+  Users,
+  FileSpreadsheet,
+  Image,
+  Layers
+} from "lucide-react";
 
 export const CLUB_NAV_SLUGS = new Set([
   "club-dashboard",
   "club-events",
+  "club-media",
+  "club-event-categories",
   "club-members",
   "club-members-list",
   "club-members-create",
@@ -11,6 +21,8 @@ export const CLUB_NAV_SLUGS = new Set([
 export const DISTRICT_NAV_SLUGS = new Set([
   "district-dashboard",
   "district-events",
+  "district-media",
+  "district-event-categories",
   "district-members",
   "district-members-list",
   "district-members-create",
@@ -32,6 +44,18 @@ export const clubNavigationGroups = [
         to: "/club/events",
         label: "Club Events",
         icon: CalendarDays
+      },
+      {
+        slug: "club-media",
+        to: "/club/media",
+        label: "Club Media",
+        icon: Image
+      },
+      {
+        slug: "club-event-categories",
+        to: "/club/event-categories",
+        label: "Event Categories",
+        icon: Layers
       },
       {
         slug: "club-members",
@@ -80,6 +104,18 @@ export const districtNavigationGroups = [
         icon: CalendarDays
       },
       {
+        slug: "district-media",
+        to: "/district/media",
+        label: "District Media",
+        icon: Image
+      },
+      {
+        slug: "district-event-categories",
+        to: "/district/event-categories",
+        label: "Event Categories",
+        icon: Layers
+      },
+      {
         slug: "district-members",
         to: "/district/members",
         label: "District Members",
@@ -112,6 +148,8 @@ export const districtNavigationGroups = [
 const CLUB_PATH_PREFIXES = [
   ["/club/dashboard", "club-dashboard"],
   ["/club/events", "club-events"],
+  ["/club/media", "club-media"],
+  ["/club/event-categories", "club-event-categories"],
   ["/club/members/create", "club-members-create"],
   ["/club/members/bulk", "club-members-bulk"],
   ["/club/members", "club-members-list"],
@@ -121,6 +159,8 @@ const CLUB_PATH_PREFIXES = [
 const DISTRICT_PATH_PREFIXES = [
   ["/district/dashboard", "district-dashboard"],
   ["/district/events", "district-events"],
+  ["/district/media", "district-media"],
+  ["/district/event-categories", "district-event-categories"],
   ["/district/members/create", "district-members-create"],
   ["/district/members/bulk", "district-members-bulk"],
   ["/district/members", "district-members-list"],

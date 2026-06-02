@@ -2,6 +2,7 @@ import { Bell, RefreshCw } from "lucide-react";
 import { useState } from "react";
 import {
   Box,
+  Button,
   Chip,
   CircularProgress,
   Divider,
@@ -62,16 +63,29 @@ const RoleBadge = ({ role, prefix = "From" }) => {
 export const NotificationBell = () => {
   const [anchorEl, setAnchorEl] = useState(null);
   const open = Boolean(anchorEl);
-  const { notifications, isLoading, error, refresh, hasUnread } = useNotifications();
+  const {
+    notifications,
+    pagination,
+    isLoading,
+    isLoadingMore,
+    error,
+    refresh,
+    openPanel,
+    loadMore,
+    hasMore,
+    hasUnread
+  } = useNotifications();
 
   const handleOpen = (event) => {
     setAnchorEl(event.currentTarget);
-    refresh();
+    openPanel();
   };
 
   const handleClose = () => {
     setAnchorEl(null);
   };
+
+  const totalCount = pagination?.total ?? notifications.length;
 
   return (
     <>
@@ -109,9 +123,16 @@ export const NotificationBell = () => {
       >
         <Box sx={{ px: 2.5, py: 2, bgcolor: "#fbf6f4", borderBottom: "1px solid #f0e3dd" }}>
           <Stack direction="row" alignItems="center" justifyContent="space-between">
-            <Typography sx={{ fontWeight: 700, color: "#2f2829", fontSize: "0.95rem" }}>
-              Notifications
-            </Typography>
+            <Stack spacing={0.25}>
+              <Typography sx={{ fontWeight: 700, color: "#2f2829", fontSize: "0.95rem" }}>
+                Notifications
+              </Typography>
+              {totalCount > 0 && (
+                <Typography sx={{ color: "#b19f99", fontSize: "0.72rem" }}>
+                  {totalCount} total
+                </Typography>
+              )}
+            </Stack>
             <IconButton
               size="small"
               onClick={refresh}
@@ -145,7 +166,13 @@ export const NotificationBell = () => {
             notifications.map((item, index) => (
               <Box key={item._id || index}>
                 {index > 0 && <Divider sx={{ borderColor: "#f5ebe6" }} />}
-                <Box sx={{ px: 2.5, py: 2 }}>
+                <Box
+                  sx={{
+                    px: 2.5,
+                    py: 2,
+                    bgcolor: item.isRead ? "transparent" : "#fffaf7"
+                  }}
+                >
                   <Stack
                     direction="row"
                     alignItems="flex-start"
@@ -154,7 +181,7 @@ export const NotificationBell = () => {
                   >
                     <Typography
                       sx={{
-                        fontWeight: 600,
+                        fontWeight: item.isRead ? 500 : 600,
                         color: "#2f2829",
                         fontSize: "0.875rem",
                         lineHeight: 1.35,
@@ -187,6 +214,25 @@ export const NotificationBell = () => {
                 </Box>
               </Box>
             ))
+          )}
+
+          {hasMore && (
+            <Box sx={{ px: 2.5, py: 2, borderTop: "1px solid #f5ebe6" }}>
+              <Button
+                fullWidth
+                size="small"
+                onClick={loadMore}
+                disabled={isLoadingMore}
+                sx={{
+                  textTransform: "none",
+                  borderRadius: "12px",
+                  color: "#f6765e",
+                  fontWeight: 600
+                }}
+              >
+                {isLoadingMore ? "Loading…" : "Load more"}
+              </Button>
+            </Box>
           )}
         </Box>
       </Popover>

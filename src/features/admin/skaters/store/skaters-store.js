@@ -10,6 +10,7 @@ export const useSkatersStore = create((set) => ({
 
   selectedSkater: null,
   isLoadingDetail: false,
+  isSaving: false,
 
   fetchSkaters: async (params = {}) => {
     set({ isLoading: true, error: null });
@@ -36,10 +37,45 @@ export const useSkatersStore = create((set) => ({
       const response = await skaterApi.getById(id);
       const skater = response?.data ?? response ?? null;
       set({ selectedSkater: skater, isLoadingDetail: false });
+      return skater;
     } catch (error) {
       console.error("Failed to fetch skater details:", error);
       set({ isLoadingDetail: false });
       toast.error(error.response?.data?.message || "Failed to fetch skater details");
+      return null;
+    }
+  },
+
+  updateSkater: async (id, formData) => {
+    set({ isSaving: true });
+    try {
+      const response = await skaterApi.update(id, formData);
+      const updated = response?.data ?? response;
+
+      set((state) => ({
+        isSaving: false,
+        selectedSkater:
+          state.selectedSkater?._id === id ? updated : state.selectedSkater,
+        skaters: state.skaters.map((skater) =>
+          skater._id === id
+            ? {
+                ...skater,
+                fullName: updated?.fullName ?? skater.fullName,
+                phone: updated?.phone ?? skater.phone,
+                email: updated?.email ?? skater.email,
+                rsfiId: updated?.rsfiId ?? skater.rsfiId
+              }
+            : skater
+        )
+      }));
+
+      toast.success(response?.message || "Skater updated successfully");
+      return true;
+    } catch (error) {
+      console.error("Failed to update skater:", error);
+      set({ isSaving: false });
+      toast.error(error.response?.data?.message || "Failed to update skater");
+      return false;
     }
   },
 

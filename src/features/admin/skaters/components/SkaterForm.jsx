@@ -1,11 +1,10 @@
 import { Box, MenuItem, TextField } from "@mui/material";
 import {
   bloodGroupOptions,
-  categoryOptions,
   genderOptions
 } from "@/features/admin/skaters/components/skaterFormConfig";
 
-export const SkaterForm = ({ formData, errors, onFieldChange }) => {
+export const SkaterForm = ({ formData, errors, onFieldChange, readOnlyMeta = false }) => {
   return (
     <Box
       sx={{
@@ -14,6 +13,20 @@ export const SkaterForm = ({ formData, errors, onFieldChange }) => {
         gap: 2
       }}
     >
+      {readOnlyMeta && (
+        <>
+          <TextField label="KRSA ID" value={formData.krsaId} fullWidth disabled />
+          <TextField label="District" value={formData.districtName} fullWidth disabled />
+          <TextField
+            label="Club"
+            value={formData.clubName}
+            fullWidth
+            disabled
+            sx={{ gridColumn: { lg: "1 / -1" } }}
+          />
+        </>
+      )}
+
       <TextField
         label="Full name"
         value={formData.fullName}
@@ -21,6 +34,7 @@ export const SkaterForm = ({ formData, errors, onFieldChange }) => {
         error={Boolean(errors.fullName)}
         helperText={errors.fullName}
         fullWidth
+        required
       />
       <TextField
         label="Phone"
@@ -28,6 +42,16 @@ export const SkaterForm = ({ formData, errors, onFieldChange }) => {
         onChange={onFieldChange("phone")}
         error={Boolean(errors.phone)}
         helperText={errors.phone}
+        fullWidth
+        required
+      />
+      <TextField
+        label="Email"
+        type="email"
+        value={formData.email}
+        onChange={onFieldChange("email")}
+        error={Boolean(errors.email)}
+        helperText={errors.email}
         fullWidth
       />
       <TextField
@@ -39,7 +63,7 @@ export const SkaterForm = ({ formData, errors, onFieldChange }) => {
         fullWidth
       />
       <TextField
-        label="DOB"
+        label="Date of birth"
         type="date"
         value={formData.dob}
         onChange={onFieldChange("dob")}
@@ -65,51 +89,13 @@ export const SkaterForm = ({ formData, errors, onFieldChange }) => {
         helperText={errors.gender}
         fullWidth
       >
+        <MenuItem value="">Select gender</MenuItem>
         {genderOptions.map((option) => (
           <MenuItem key={option} value={option}>
-            {option}
+            {option.charAt(0).toUpperCase() + option.slice(1)}
           </MenuItem>
         ))}
       </TextField>
-      <TextField
-        select
-        label="Category"
-        value={formData.category}
-        onChange={onFieldChange("category")}
-        error={Boolean(errors.category)}
-        helperText={errors.category}
-        fullWidth
-      >
-        {categoryOptions.map((option) => (
-          <MenuItem key={option} value={option}>
-            {option}
-          </MenuItem>
-        ))}
-      </TextField>
-      <TextField
-        label="Discipline"
-        value={formData.discipline}
-        onChange={onFieldChange("discipline")}
-        error={Boolean(errors.discipline)}
-        helperText={errors.discipline}
-        fullWidth
-      />
-      <TextField
-        label="District"
-        value={formData.district}
-        onChange={onFieldChange("district")}
-        error={Boolean(errors.district)}
-        helperText={errors.district}
-        fullWidth
-      />
-      <TextField
-        label="Club"
-        value={formData.club}
-        onChange={onFieldChange("club")}
-        error={Boolean(errors.club)}
-        helperText={errors.club}
-        fullWidth
-      />
       <TextField
         label="Parent / guardian"
         value={formData.parent}
@@ -127,6 +113,7 @@ export const SkaterForm = ({ formData, errors, onFieldChange }) => {
         helperText={errors.bloodGroup}
         fullWidth
       >
+        <MenuItem value="">Select blood group</MenuItem>
         {bloodGroupOptions.map((option) => (
           <MenuItem key={option} value={option}>
             {option}

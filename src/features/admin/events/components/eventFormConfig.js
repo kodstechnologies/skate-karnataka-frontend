@@ -62,6 +62,7 @@ export const initialEventFormValues = {
   status: "coming_soon",
   entryFee: "",
   skatingEventCategories: [],
+  categoryFormat: "standard",
   colorOne: "#f117d5",
   colorTwo: "#1838e3",
   textColor: "#000000"
@@ -165,6 +166,7 @@ export const createEventFormValues = (event = {}) => ({
   status: event.status ?? "coming_soon",
   entryFee: event.entryFee ?? "",
   skatingEventCategories: normalizeSkatingEventCategoryIds(event.skatingEventCategories),
+  categoryFormat: event.categoryFormat ?? event.categorySource ?? "standard",
   colorOne: event.colorOne ?? "#ffffff",
   colorTwo: event.colorTwo ?? "#ffffff",
   textColor: event.textColor ?? "#000000"

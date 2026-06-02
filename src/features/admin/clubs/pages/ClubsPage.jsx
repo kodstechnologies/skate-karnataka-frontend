@@ -30,6 +30,7 @@ import {
   Search,
   ShieldCheck,
   Trash2,
+  Image,
   Trophy,
   UserPlus,
   Users
@@ -531,6 +532,18 @@ export const ClubsPage = () => {
                           title="Events"
                         >
                           <CalendarDays size={16} />
+                        </IconButton>
+                        <IconButton
+                          onClick={() => navigate(`/clubs/${club.id}/media`)}
+                          sx={{
+                            border: "1px solid #e0f2f1",
+                            color: "#00897b",
+                            backgroundColor: "#e0f7f5"
+                          }}
+                          aria-label={`Media for ${club.name}`}
+                          title="Media"
+                        >
+                          <Image size={16} />
                         </IconButton>
                         <IconButton
                           onClick={() =>

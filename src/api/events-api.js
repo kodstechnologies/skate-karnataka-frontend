@@ -44,9 +44,13 @@ export const eventsApi = {
     return api.delete(`/event/v1/state/${id}`);
   },
 
-  /** Public skating category list for event forms (club/district create). */
-  getSkatingCategories: async () => {
-    return api.get("/event/v1/category");
+  /**
+   * Skating categories for event create (club/district).
+   * @param {{ source?: 'standard' | 'custom' }} opts
+   */
+  getSkatingCategories: async ({ source } = {}) => {
+    const params = source ? { source } : {};
+    return api.get("/event/v1/category", { params });
   },
 
   getClubEvents: async (params = {}) => {
@@ -73,7 +77,24 @@ export const eventsApi = {
     return api.get("/event/v1/district", { params });
   },
 
+  createDistrictEvent: async (payload) => {
+    return api.post("/event/v1/district", payload);
+  },
+
+  getDistrictEventById: async (id) => {
+    return api.get(`/event/v1/district/${id}`);
+  },
+
+  updateDistrictEvent: async (id, payload) => {
+    return api.patch(`/event/v1/district/${id}`, payload);
+  },
+
   deleteDistrictEvent: async (id) => {
     return api.delete(`/event/v1/district/${id}`);
-  }
+  },
+
+  approveEvent: (eventId) => api.patch(`/event/v1/admin/event/${eventId}/approve`),
+  rejectEvent: (eventId) => api.patch(`/event/v1/admin/event/${eventId}/reject`),
+  approveEventDelete: (eventId) => api.patch(`/event/v1/admin/event/${eventId}/approve-delete`),
+  rejectEventDelete: (eventId) => api.patch(`/event/v1/admin/event/${eventId}/reject-delete`),
 };

@@ -17,10 +17,13 @@ import { useEffect, useMemo, useState } from "react";
 import { Link as RouterLink, useNavigate } from "react-router-dom";
 import galleryHero from "@/assets/Gallery_header.jpg";
 import { ConfirmDeleteModal } from "@/components/ui/ConfirmDeleteModal";
+import { useAuthStore } from "@/features/auth/store/auth-store";
 import { useGalleryStore } from "@/features/admin/gallery/store/gallery-store";
 
 export const GalleryPage = () => {
   const navigate = useNavigate();
+  const role = useAuthStore((s) => s.role);
+  const canReviewApprovals = ["admin", "state"].includes(String(role || "").toLowerCase());
   const { items, pagination, isLoading, fetchItems, deleteItem } = useGalleryStore();
 
   const [page, setPage] = useState(0);
@@ -198,6 +201,24 @@ export const GalleryPage = () => {
             spacing={1.5}
             sx={{ width: { xs: "100%", sm: "auto" } }}
           >
+            {canReviewApprovals && (
+              <Button
+                variant="outlined"
+                onClick={() => navigate("/gallery/approvals")}
+                sx={{
+                  height: "48px",
+                  px: 3,
+                  borderRadius: "12px",
+                  whiteSpace: "nowrap",
+                  textTransform: "none",
+                  fontWeight: 700,
+                  borderColor: "#00897b",
+                  color: "#00897b"
+                }}
+              >
+                Pending approvals
+              </Button>
+            )}
             <Button
               variant="contained"
               startIcon={<Plus size={18} />}

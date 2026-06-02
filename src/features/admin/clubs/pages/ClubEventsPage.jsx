@@ -10,7 +10,7 @@ import {
   TextField,
   Typography
 } from "@mui/material";
-import { CalendarDays, ChevronRight, PencilLine, Search, Trash2 } from "lucide-react";
+import { CalendarDays, CheckCircle2, ChevronRight, PencilLine, Search, Trash2, XCircle } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link as RouterLink, useNavigate, useParams } from "react-router-dom";
 import clubHero from "@/assets/Club_header.jpg";
@@ -18,7 +18,9 @@ import eventsHero from "@/assets/Events_header.jpg";
 import { ConfirmDeleteModal } from "@/components/ui/ConfirmDeleteModal";
 import { clubApi } from "@/api/club-api";
 import { eventsApi } from "@/api/events-api";
+import { useAuthStore } from "@/features/auth/store/auth-store";
 import { useClubsStore } from "@/features/admin/clubs/store/clubs-store";
+import { canApproveEvents, getEventApprovalChipProps } from "@/utils/eventApprovalStatus";
 import toast from "react-hot-toast";
 
 const fmtDate = (v) => {
@@ -85,6 +87,8 @@ const getStatusColor = (status) => {
 export const ClubEventsPage = () => {
   const navigate = useNavigate();
   const { clubId } = useParams();
+  const role = useAuthStore((s) => s.role);
+  const canApprove = canApproveEvents(role);
 
   const clubs = useClubsStore((s) => s.clubs);
   const clubFromStore = useMemo(
@@ -156,20 +160,69 @@ export const ClubEventsPage = () => {
     setDeleting(true);
     try {
       const response = await eventsApi.delete(pendingDeleteEvent._id || pendingDeleteEvent.id);
-      setEvents((prev) =>
-        prev.filter(
-          (item) =>
-            item._id !== (pendingDeleteEvent._id || pendingDeleteEvent.id) &&
-            item.id !== (pendingDeleteEvent._id || pendingDeleteEvent.id)
-        )
-      );
-      setTotalCount((prev) => Math.max(0, prev - 1));
-      toast.success(response?.message || "Event deleted successfully");
+      const payload = response?.data?.data ?? response?.data ?? response;
+      const eventId = pendingDeleteEvent._id || pendingDeleteEvent.id;
+
+      if (payload?.pendingDelete) {
+        setEvents((prev) =>
+          prev.map((item) =>
+            item._id === eventId || item.id === eventId
+              ? { ...item, deleteApprovalStatus: "pending" }
+              : item
+          )
+        );
+      } else {
+        setEvents((prev) =>
+          prev.filter((item) => item._id !== eventId && item.id !== eventId)
+        );
+        setTotalCount((prev) => Math.max(0, prev - 1));
+      }
+      toast.success(payload?.message || response?.message || "Event deleted successfully");
     } catch (err) {
       toast.error(err?.response?.data?.message || "Failed to delete event");
     } finally {
       setDeleting(false);
       setPendingDeleteEvent(null);
+    }
+  };
+
+  const handleApprove = async (eventId) => {
+    try {
+      await eventsApi.approveEvent(eventId);
+      toast.success("Event approved");
+      fetchEvents(searchTerm, page + 1, rowsPerPage);
+    } catch (err) {
+      toast.error(err?.response?.data?.message || "Failed to approve event");
+    }
+  };
+
+  const handleReject = async (eventId) => {
+    try {
+      await eventsApi.rejectEvent(eventId);
+      toast.success("Event rejected");
+      fetchEvents(searchTerm, page + 1, rowsPerPage);
+    } catch (err) {
+      toast.error(err?.response?.data?.message || "Failed to reject event");
+    }
+  };
+
+  const handleApproveDelete = async (eventId) => {
+    try {
+      await eventsApi.approveEventDelete(eventId);
+      toast.success("Event deleted");
+      fetchEvents(searchTerm, page + 1, rowsPerPage);
+    } catch (err) {
+      toast.error(err?.response?.data?.message || "Failed to approve delete");
+    }
+  };
+
+  const handleRejectDelete = async (eventId) => {
+    try {
+      await eventsApi.rejectEventDelete(eventId);
+      toast.success("Delete request rejected");
+      fetchEvents(searchTerm, page + 1, rowsPerPage);
+    } catch (err) {
+      toast.error(err?.response?.data?.message || "Failed to reject delete");
     }
   };
 
@@ -376,17 +429,17 @@ export const ClubEventsPage = () => {
                     }
                   }}
                 >
-                  <Stack sx={{ px: 2, py: 1.5 }}>
+                  <Stack direction="row" spacing={1} sx={{ px: 2, py: 1.5, flexWrap: "wrap" }}>
                     <Chip
                       size="small"
                       label={getStatusLabel(event.status)}
                       sx={{
-                        alignSelf: "flex-start",
                         backgroundColor: getStatusColor(event.status),
                         color: "white",
                         fontWeight: 700
                       }}
                     />
+                    <Chip size="small" {...getEventApprovalChipProps(event)} />
                   </Stack>
 
                   <Stack spacing={1.35} sx={{ p: 2.25, pt: 0 }}>
@@ -449,29 +502,76 @@ export const ClubEventsPage = () => {
                       )}
                     </Box>
 
-                    <Stack direction="row" spacing={1} sx={{ pt: 1 }}>
+                    <Stack direction="row" spacing={1} sx={{ pt: 1, flexWrap: "wrap" }}>
+                      {canApprove && event.adminApprovalStatus === "pending" && (
+                        <>
+                          <Button
+                            variant="contained"
+                            size="small"
+                            startIcon={<CheckCircle2 size={16} />}
+                            onClick={() => handleApprove(event._id || event.id)}
+                            sx={{ backgroundColor: "#2e7d32", flex: 1 }}
+                          >
+                            Approve
+                          </Button>
+                          <Button
+                            variant="outlined"
+                            size="small"
+                            startIcon={<XCircle size={16} />}
+                            onClick={() => handleReject(event._id || event.id)}
+                            sx={{ flex: 1 }}
+                          >
+                            Reject
+                          </Button>
+                        </>
+                      )}
+                      {canApprove && event.deleteApprovalStatus === "pending" && (
+                        <>
+                          <Button
+                            variant="contained"
+                            size="small"
+                            startIcon={<CheckCircle2 size={16} />}
+                            onClick={() => handleApproveDelete(event._id || event.id)}
+                            sx={{ backgroundColor: "#c62828", flex: 1 }}
+                          >
+                            Approve delete
+                          </Button>
+                          <Button
+                            variant="outlined"
+                            size="small"
+                            onClick={() => handleRejectDelete(event._id || event.id)}
+                            sx={{ flex: 1 }}
+                          >
+                            Cancel delete
+                          </Button>
+                        </>
+                      )}
                       <Button
                         variant="outlined"
                         startIcon={<PencilLine size={16} />}
                         onClick={() =>
-                          navigate(`/events/${event._id || event.id}/edit`, { state: { event } })
+                          navigate(`/events/${event._id || event.id}/edit`, {
+                            state: { event, fromClubId: clubId }
+                          })
                         }
                         fullWidth
                       >
                         Edit
                       </Button>
-                      <Button
-                        variant="contained"
-                        startIcon={<Trash2 size={16} />}
-                        onClick={() => setPendingDeleteEvent(event)}
-                        fullWidth
-                        sx={{
-                          backgroundColor: "#f6765e",
-                          "&:hover": { backgroundColor: "#ea6b54" }
-                        }}
-                      >
-                        Delete
-                      </Button>
+                      {event.deleteApprovalStatus !== "pending" && (
+                        <Button
+                          variant="contained"
+                          startIcon={<Trash2 size={16} />}
+                          onClick={() => setPendingDeleteEvent(event)}
+                          fullWidth
+                          sx={{
+                            backgroundColor: "#f6765e",
+                            "&:hover": { backgroundColor: "#ea6b54" }
+                          }}
+                        >
+                          Delete
+                        </Button>
+                      )}
                     </Stack>
                   </Stack>
                 </Paper>

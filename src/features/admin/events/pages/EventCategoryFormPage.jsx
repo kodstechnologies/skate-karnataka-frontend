@@ -44,9 +44,8 @@ const buildFormState = (doc) => ({
 });
 
 /** Build the API payload from form state */
-const buildPayload = (form) => ({
-  typeName: form.typeName.trim(),
-  ageGroups: form.ageGroups
+const buildPayload = (form, { namesOnly = false } = {}) => {
+  const ageGroups = form.ageGroups
     .map((ag) => ({
       label: ag.label,
       categories: ag.categories
@@ -54,16 +53,44 @@ const buildPayload = (form) => ({
         .filter(Boolean)
         .map((name) => ({ name }))
     }))
-    .filter((ag) => ag.categories.length > 0)
-});
+    .filter((ag) => ag.categories.length > 0);
+
+  if (namesOnly) {
+    return { ageGroups };
+  }
+
+  return {
+    typeName: form.typeName.trim(),
+    ageGroups
+  };
+};
 
 /* ─────────────────────────────────────────────
    EventCategoryFormPage
 ───────────────────────────────────────────── */
-export default function EventCategoryFormPage() {
+const PORTAL_CONFIG = {
+  club: {
+    dashboard: "/club/dashboard",
+    list: "/club/event-categories",
+    label: "Club"
+  },
+  district: {
+    dashboard: "/district/dashboard",
+    list: "/district/event-categories",
+    label: "District"
+  }
+};
+
+export default function EventCategoryFormPage({
+  portalMode = false,
+  orgType = null,
+  orgOverrideMode = false
+}) {
   const navigate = useNavigate();
   const { categoryId } = useParams();
   const { state: routeState } = useLocation();
+  const portal = portalMode && orgType ? PORTAL_CONFIG[orgType] : null;
+  const isOrgOverride = Boolean(portal && orgOverrideMode);
 
   const isEditing = Boolean(categoryId);
 
@@ -130,25 +157,31 @@ export default function EventCategoryFormPage() {
 
   /* ── Submit ── */
   const handleSubmit = async () => {
-    // Validate
     const nextErrors = {};
-    if (!form.typeName.trim()) nextErrors.typeName = "Type name is required.";
+    if (!isOrgOverride && !form.typeName.trim()) {
+      nextErrors.typeName = "Type name is required.";
+    }
     if (Object.keys(nextErrors).length) {
       setErrors(nextErrors);
       return;
     }
 
-    const payload = buildPayload(form);
+    const payload = buildPayload(form, { namesOnly: isOrgOverride });
     setSaving(true);
     try {
       if (isEditing) {
         const { message } = await eventCategoriesApi.update(categoryId, payload);
-        toast.success(message || "Category updated successfully");
+        toast.success(
+          message ||
+            (isOrgOverride
+              ? "Your category names were saved for your organization"
+              : "Category updated successfully")
+        );
       } else {
         const { message } = await eventCategoriesApi.create(payload);
         toast.success(message || "Category created successfully");
       }
-      navigate(-1);
+      navigate(portal?.list ?? -1);
     } catch (err) {
       toast.error(extractError(err));
     } finally {
@@ -211,7 +244,7 @@ export default function EventCategoryFormPage() {
             >
               <Typography
                 component={RouterLink}
-                to="/dashboard"
+                to={portal?.dashboard ?? "/dashboard"}
                 sx={{
                   color: "inherit",
                   textDecoration: "none",
@@ -221,21 +254,23 @@ export default function EventCategoryFormPage() {
               >
                 Dashboard
               </Typography>
+              {!portal && (
+                <Typography
+                  component={RouterLink}
+                  to="/events/detail"
+                  sx={{
+                    color: "inherit",
+                    textDecoration: "none",
+                    fontWeight: 600,
+                    "&:hover": { color: "white" }
+                  }}
+                >
+                  Events
+                </Typography>
+              )}
               <Typography
                 component={RouterLink}
-                to="/events/detail"
-                sx={{
-                  color: "inherit",
-                  textDecoration: "none",
-                  fontWeight: 600,
-                  "&:hover": { color: "white" }
-                }}
-              >
-                Events
-              </Typography>
-              <Typography
-                component={RouterLink}
-                to="/events/category"
+                to={portal?.list ?? "/events/category"}
                 sx={{
                   color: "inherit",
                   textDecoration: "none",
@@ -251,12 +286,22 @@ export default function EventCategoryFormPage() {
             </Breadcrumbs>
 
             <Typography variant="h3" sx={{ fontWeight: 700, letterSpacing: "-0.05em", mb: 1.5 }}>
-              {isEditing ? "Edit Event Category" : "Create Event Category"}
+              {isOrgOverride
+                ? "Edit category names"
+                : isEditing
+                  ? "Edit Event Category"
+                  : "Create Event Category"}
             </Typography>
             <Typography sx={{ color: "rgba(255,255,255,0.86)", maxWidth: 620, lineHeight: 1.7 }}>
-              {isEditing
-                ? "Update the skating discipline, age groups, and lap categories below."
-                : "Define a new skating discipline with its age groups and lap / round categories."}
+              {isOrgOverride
+                ? `Type name is fixed by KRSA. Only lap / round names are saved for your ${portal.label.toLowerCase()}.`
+                : portal
+                  ? isEditing
+                    ? `Update your ${portal.label.toLowerCase()} custom category. Your club/district id is saved automatically.`
+                    : `Create a custom category for your ${portal.label.toLowerCase()}. It will be available alongside standard KRSA categories when you create events.`
+                  : isEditing
+                    ? "Update the skating discipline, age groups, and lap categories below."
+                    : "Define a new skating discipline with its age groups and lap / round categories."}
             </Typography>
 
             <Stack direction="row" spacing={1} useFlexGap sx={{ mt: 2.5, flexWrap: "wrap" }}>
@@ -285,16 +330,36 @@ export default function EventCategoryFormPage() {
         {/* Type Name */}
         <Box sx={{ mb: 3.5 }}>
           <Typography sx={{ fontWeight: 700, color: "#2f2829", mb: 1 }}>
-            Type Name <span style={{ color: "#f6765e" }}>*</span>
+            Type Name {!isOrgOverride ? <span style={{ color: "#f6765e" }}>*</span> : null}
           </Typography>
-          <TextField
-            placeholder='e.g. "Speed Skating", "Artistic Skating"'
-            value={form.typeName}
-            onChange={(e) => setTypeName(e.target.value)}
-            error={Boolean(errors.typeName)}
-            helperText={errors.typeName}
-            fullWidth
-          />
+          {isOrgOverride ? (
+            <Paper
+              elevation={0}
+              sx={{
+                px: 2,
+                py: 1.5,
+                borderRadius: "14px",
+                border: "1px solid #f0e8e5",
+                bgcolor: "#faf8f7"
+              }}
+            >
+              <Typography sx={{ fontWeight: 800, color: "#2f2829", fontSize: 18 }}>
+                {form.typeName || "—"}
+              </Typography>
+              <Typography sx={{ fontSize: 13, color: "#8d7f7b", mt: 0.5 }}>
+                Set by super admin — cannot be changed here.
+              </Typography>
+            </Paper>
+          ) : (
+            <TextField
+              placeholder='e.g. "Speed Skating", "Artistic Skating"'
+              value={form.typeName}
+              onChange={(e) => setTypeName(e.target.value)}
+              error={Boolean(errors.typeName)}
+              helperText={errors.typeName}
+              fullWidth
+            />
+          )}
         </Box>
 
         <Divider sx={{ borderColor: "#f5ebe7", mb: 3.5 }} />
@@ -403,7 +468,11 @@ export default function EventCategoryFormPage() {
             justifyContent: "flex-end"
           }}
         >
-          <Button variant="outlined" onClick={() => navigate("/events/category")} disabled={saving}>
+          <Button
+            variant="outlined"
+            onClick={() => navigate(portal?.list ?? "/events/category")}
+            disabled={saving}
+          >
             Cancel
           </Button>
           <Button
@@ -413,7 +482,13 @@ export default function EventCategoryFormPage() {
             disabled={saving}
             sx={{ backgroundColor: "#f6765e", "&:hover": { backgroundColor: "#ea6b54" } }}
           >
-            {saving ? "Saving…" : isEditing ? "Save Changes" : "Create Category"}
+            {saving
+              ? "Saving…"
+              : isOrgOverride
+                ? "Save my names"
+                : isEditing
+                  ? "Save Changes"
+                  : "Create Category"}
           </Button>
         </Stack>
       </Paper>

@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { Skeleton } from "@mui/material";
-import { CalendarDays, Trophy, Users } from "lucide-react";
+import { CalendarDays, Image, Trophy, Users } from "lucide-react";
 import { MemberAddMenuButton } from "@/components/members/MemberAddMenuButton";
 import { clubPortalApi } from "@/api/club-portal-api";
 import { useAuthStore } from "@/features/auth/store/auth-store";
@@ -111,7 +111,7 @@ export const ClubDashboard = () => {
         />
       </section>
 
-      <section className="grid gap-4 md:grid-cols-2">
+      <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
         <Link
           to="/club/events"
           className="flex items-center gap-4 rounded-[24px] border border-[#efe2dc] bg-white p-5 transition hover:-translate-y-0.5 hover:shadow-md"
@@ -122,6 +122,18 @@ export const ClubDashboard = () => {
           <div>
             <p className="font-semibold text-[#2f2829]">Club events</p>
             <p className="text-sm text-[#8f827e]">View and manage your club events</p>
+          </div>
+        </Link>
+        <Link
+          to="/club/media"
+          className="flex items-center gap-4 rounded-[24px] border border-[#efe2dc] bg-white p-5 transition hover:-translate-y-0.5 hover:shadow-md"
+        >
+          <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#e0f7f5] text-[#00897b]">
+            <Image className="h-5 w-5" />
+          </span>
+          <div>
+            <p className="font-semibold text-[#2f2829]">Club media</p>
+            <p className="text-sm text-[#8f827e]">Upload photos and videos for approval</p>
           </div>
         </Link>
         <div className="flex flex-col justify-between gap-4 rounded-[24px] border border-[#efe2dc] bg-white p-5 shadow-[0_12px_32px_rgba(145,110,98,0.06)]">

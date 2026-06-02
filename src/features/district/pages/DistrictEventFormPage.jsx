@@ -1,66 +1,33 @@
 import { useCallback, useEffect, useState } from "react";
 import { Box, Breadcrumbs, Button, Paper, Stack, Typography } from "@mui/material";
 import { ChevronRight, Save } from "lucide-react";
-import { Link as RouterLink, useNavigate, useParams } from "react-router-dom";
-import clubHero from "@/assets/Club_header.jpg";
+import { Link as RouterLink, useNavigate } from "react-router-dom";
+import districtHero from "@/assets/District_header.jpg";
 import { EventForm } from "@/features/admin/events/components/EventForm";
 import {
-  createEventFormValues,
   initialEventFormValues,
   normalizeSkatingEventCategoryIds,
   validateEventForm
 } from "@/features/admin/events/components/eventFormConfig";
-import { eventCategoriesApi } from "@/api/event-categories-api";
-import { eventsApi } from "@/api/events-api";
 import { unwrapOrgCategoryContext } from "@/features/admin/events/utils/categoryDisplay";
 import { unwrapSkatingCategories } from "@/features/admin/events/utils/parseEventApi";
+import { eventCategoriesApi } from "@/api/event-categories-api";
+import { eventsApi } from "@/api/events-api";
 import { useAuthStore } from "@/features/auth/store/auth-store";
 import toast from "react-hot-toast";
 
-export const ClubEventFormPage = () => {
+export const DistrictEventFormPage = () => {
   const navigate = useNavigate();
-  const { eventId } = useParams();
   const user = useAuthStore((s) => s.user);
-  const isEditing = Boolean(eventId);
-  const [existingEvent, setExistingEvent] = useState(null);
-  const [loading, setLoading] = useState(isEditing);
   const [saving, setSaving] = useState(false);
   const [eventCategories, setEventCategories] = useState([]);
   const [categoryFormat, setCategoryFormat] = useState("standard");
   const [categorySourceUsesStandardFallback, setCategorySourceUsesStandardFallback] =
     useState(false);
-
   const [formData, setFormData] = useState(initialEventFormValues);
   const [errors, setErrors] = useState({});
 
-  const clubName = user?.name || "Club";
-
-  useEffect(() => {
-    if (!isEditing || !eventId) return;
-
-    let cancelled = false;
-    setLoading(true);
-
-    eventsApi
-      .getClubEventById(eventId)
-      .then((response) => {
-        if (cancelled) return;
-        const ev = response?.data ?? response;
-        setExistingEvent(ev);
-        setFormData(createEventFormValues(ev));
-      })
-      .catch((err) => {
-        if (cancelled) return;
-        toast.error(err?.response?.data?.message || "Failed to load event");
-      })
-      .finally(() => {
-        if (!cancelled) setLoading(false);
-      });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [isEditing, eventId]);
+  const districtName = user?.districtName || user?.name || "District";
 
   const loadCategories = useCallback(async (format) => {
     try {
@@ -100,15 +67,11 @@ export const ClubEventFormPage = () => {
         : event.target.value;
 
     setFormData((current) => ({ ...current, [field]: value }));
-    setErrors((current) => ({
-      ...current,
-      [field]: ""
-    }));
+    setErrors((current) => ({ ...current, [field]: "" }));
   };
 
   const handleSubmit = async () => {
     const nextErrors = validateEventForm(formData);
-
     if (Object.keys(nextErrors).length > 0) {
       setErrors(nextErrors);
       return;
@@ -116,50 +79,18 @@ export const ClubEventFormPage = () => {
 
     setSaving(true);
     try {
-      const payload = { ...formData };
-
-      if (isEditing && existingEvent) {
-        const response = await eventsApi.updateClubEvent(
-          existingEvent._id || existingEvent.id,
-          payload
-        );
-        const msg =
-          response?.message ||
-          response?.data?.message ||
-          "Event updated successfully";
-        toast.success(msg);
-      } else {
-        const response = await eventsApi.createClubEvent(payload);
-        toast.success(response?.message || "Club event created successfully");
-      }
-      navigate("/club/events");
+      const response = await eventsApi.createDistrictEvent({ ...formData });
+      toast.success(
+        response?.message ||
+          "District event submitted — pending super admin approval"
+      );
+      navigate("/district/events");
     } catch (err) {
-      toast.error(err?.response?.data?.message || "Failed to save event");
+      toast.error(err?.response?.data?.message || err?.message || "Failed to create event");
     } finally {
       setSaving(false);
     }
   };
-
-  if (loading) {
-    return (
-      <Paper elevation={0} sx={{ p: 4, borderRadius: "28px", textAlign: "center" }}>
-        <Typography>Loading event details...</Typography>
-      </Paper>
-    );
-  }
-
-  if (isEditing && !existingEvent && !loading) {
-    return (
-      <Paper elevation={0} sx={{ p: 4, borderRadius: "28px", textAlign: "center" }}>
-        <Typography variant="h5" sx={{ fontWeight: 700, color: "#2f2829" }}>
-          Event not found
-        </Typography>
-        <Button sx={{ mt: 3 }} variant="contained" onClick={() => navigate("/club/events")}>
-          Back to club events
-        </Button>
-      </Paper>
-    );
-  }
 
   return (
     <Box className="space-y-5">
@@ -170,9 +101,8 @@ export const ClubEventFormPage = () => {
           minHeight: { xs: 220, md: 260 },
           borderRadius: "32px",
           overflow: "hidden",
-          position: "relative",
           border: "1px solid rgba(255,255,255,0.65)",
-          background: `linear-gradient(120deg, rgba(18,14,16,0.92) 0%, rgba(38,25,26,0.76) 34%, rgba(246,118,94,0.28) 100%), url("${clubHero}")`,
+          background: `linear-gradient(120deg, rgba(18,14,16,0.92) 0%, rgba(38,25,26,0.76) 34%, rgba(83,199,197,0.28) 100%), url("${districtHero}")`,
           backgroundPosition: "center",
           backgroundSize: "cover",
           color: "white",
@@ -190,30 +120,27 @@ export const ClubEventFormPage = () => {
           >
             <Typography
               component={RouterLink}
-              to="/club/dashboard"
+              to="/district/dashboard"
               sx={{ color: "inherit", textDecoration: "none", fontWeight: 600 }}
             >
               Dashboard
             </Typography>
             <Typography
               component={RouterLink}
-              to="/club/events"
+              to="/district/events"
               sx={{ color: "inherit", textDecoration: "none", fontWeight: 600 }}
             >
-              Club Events
+              District Events
             </Typography>
-            <Typography sx={{ color: "white", fontWeight: 700 }}>
-              {isEditing ? "Edit" : "Create"}
-            </Typography>
+            <Typography sx={{ color: "white", fontWeight: 700 }}>Create</Typography>
           </Breadcrumbs>
 
           <Typography variant="h3" sx={{ fontWeight: 800, letterSpacing: "-0.06em", mb: 1 }}>
-            {isEditing ? "Update Club Event" : "Create Club Event"}
+            Create District Event
           </Typography>
           <Typography sx={{ color: "rgba(255,255,255,0.86)", maxWidth: 640, lineHeight: 1.7 }}>
-            {isEditing
-              ? `Update event details for ${clubName}.`
-              : `Publish a new event for ${clubName} with registration dates and categories.`}
+            Publish a new event for {districtName}. It will appear to skaters after super admin
+            approval.
           </Typography>
         </Stack>
       </Paper>
@@ -223,37 +150,16 @@ export const ClubEventFormPage = () => {
         sx={{
           p: { xs: 2, md: 3 },
           borderRadius: "32px",
-          border: "1px solid rgba(246, 228, 221, 0.95)",
+          border: "1px solid rgba(200, 230, 228, 0.95)",
           boxShadow: "0 26px 80px rgba(48, 30, 24, 0.07)"
         }}
       >
-        {isEditing && existingEvent?.adminApprovalStatus === "rejected" && (
-          <Paper
-            elevation={0}
-            sx={{
-              mb: 2,
-              p: 2,
-              borderRadius: "16px",
-              border: "1px solid #ffcdd2",
-              bgcolor: "#fff8e1"
-            }}
-          >
-            <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap">
-              <Typography sx={{ fontWeight: 600, color: "#5d4037" }}>
-                This event was rejected by the admin. Update the details and save to resubmit for
-                approval.
-              </Typography>
-            </Stack>
-          </Paper>
-        )}
-
         <EventForm
           formData={formData}
           errors={errors}
           onFieldChange={handleFieldChange}
           disabled={saving}
           eventCategories={eventCategories}
-          categorySeedFromEvent={existingEvent?.skatingEventCategories}
           showCategorySourcePicker
           onCategoryFormatChange={handleCategoryFormatChange}
           categorySourceUsesStandardFallback={categorySourceUsesStandardFallback}
@@ -262,14 +168,9 @@ export const ClubEventFormPage = () => {
         <Stack
           direction={{ xs: "column", sm: "row" }}
           spacing={1.5}
-          sx={{
-            mt: 3,
-            pt: 3,
-            borderTop: "1px solid rgba(240, 219, 210, 0.9)",
-            justifyContent: "flex-end"
-          }}
+          sx={{ mt: 3, pt: 3, borderTop: "1px solid rgba(200, 230, 228, 0.9)", justifyContent: "flex-end" }}
         >
-          <Button variant="outlined" onClick={() => navigate("/club/events")} disabled={saving}>
+          <Button variant="outlined" onClick={() => navigate("/district/events")} disabled={saving}>
             Cancel
           </Button>
           <Button
@@ -277,8 +178,9 @@ export const ClubEventFormPage = () => {
             startIcon={!saving && <Save size={16} />}
             onClick={handleSubmit}
             disabled={saving}
+            sx={{ bgcolor: "#53c7c5", "&:hover": { bgcolor: "#45b3b1" } }}
           >
-            {saving ? "Processing..." : isEditing ? "Save changes" : "Create club event"}
+            {saving ? "Processing..." : "Create district event"}
           </Button>
         </Stack>
       </Paper>

@@ -15,6 +15,7 @@ import { useCallback, useEffect, useState } from "react";
 import { Link as RouterLink, useNavigate } from "react-router-dom";
 import { ConfirmDeleteModal } from "@/components/ui/ConfirmDeleteModal";
 import { eventCategoriesApi } from "@/api/event-categories-api";
+import { unwrapOrgCategoryContext } from "@/features/admin/events/utils/categoryDisplay";
 import eventsHero from "@/assets/Events_header.jpg";
 import toast from "react-hot-toast";
 
@@ -24,11 +25,34 @@ import toast from "react-hot-toast";
 const extractError = (err) =>
   err?.response?.data?.message || err?.message || "An unexpected error occurred.";
 
+const PORTAL_CONFIG = {
+  club: {
+    dashboard: "/club/dashboard",
+    list: "/club/event-categories",
+    create: "/club/event-categories/create",
+    edit: (id) => `/club/event-categories/${id}/edit`,
+    label: "Club"
+  },
+  district: {
+    dashboard: "/district/dashboard",
+    list: "/district/event-categories",
+    create: "/district/event-categories/create",
+    edit: (id) => `/district/event-categories/${id}/edit`,
+    label: "District"
+  }
+};
+
 /* ─────────────────────────────────────────────
    EventCategoryPage
 ───────────────────────────────────────────── */
-export default function EventCategoryPage() {
+export default function EventCategoryPage({
+  portalMode = false,
+  orgType = null,
+  orgOverrideList = false
+}) {
   const navigate = useNavigate();
+  const portal = portalMode && orgType ? PORTAL_CONFIG[orgType] : null;
+  const isOrgOverrideList = Boolean(portal && orgOverrideList);
 
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -42,16 +66,22 @@ export default function EventCategoryPage() {
     setLoading(true);
     setFetchError(null);
     try {
-      const res = await eventCategoriesApi.getAll();
-      const data = res?.data?.data ?? res?.data ?? [];
-      setCategories(Array.isArray(data) ? data : []);
+      if (isOrgOverrideList) {
+        const res = await eventCategoriesApi.getOrgContext();
+        const ctx = unwrapOrgCategoryContext(res);
+        setCategories(ctx.categories);
+      } else {
+        const res = await eventCategoriesApi.getAll();
+        const data = res?.data?.data ?? res?.data ?? [];
+        setCategories(Array.isArray(data) ? data : []);
+      }
     } catch (err) {
       toast.error(extractError(err));
       setFetchError(extractError(err));
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [isOrgOverrideList]);
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
@@ -121,7 +151,7 @@ export default function EventCategoryPage() {
             >
               <Typography
                 component={RouterLink}
-                to="/dashboard"
+                to={portal?.dashboard ?? "/dashboard"}
                 sx={{
                   color: "inherit",
                   textDecoration: "none",
@@ -131,26 +161,32 @@ export default function EventCategoryPage() {
               >
                 Dashboard
               </Typography>
-              <Typography
-                component={RouterLink}
-                to="/events/detail"
-                sx={{
-                  color: "inherit",
-                  textDecoration: "none",
-                  fontWeight: 600,
-                  "&:hover": { color: "white" }
-                }}
-              >
-                Events
-              </Typography>
+              {!portal && (
+                <Typography
+                  component={RouterLink}
+                  to="/events/detail"
+                  sx={{
+                    color: "inherit",
+                    textDecoration: "none",
+                    fontWeight: 600,
+                    "&:hover": { color: "white" }
+                  }}
+                >
+                  Events
+                </Typography>
+              )}
               <Typography sx={{ color: "white", fontWeight: 700 }}>Categories</Typography>
             </Breadcrumbs>
 
             <Typography variant="h3" sx={{ fontWeight: 700, letterSpacing: "-0.05em", mb: 1.5 }}>
-              Event Categories
+              {portal ? `${portal.label} event categories` : "Event Categories"}
             </Typography>
             <Typography sx={{ color: "rgba(255,255,255,0.86)", maxWidth: 620, lineHeight: 1.7 }}>
-              Define skating disciplines, age groups, and lap categories used across events.
+              {isOrgOverrideList
+                ? `KRSA category types are fixed. Edit only lap / round names — your changes are saved for your ${portal.label.toLowerCase()} only.`
+                : portal
+                  ? `Manage custom categories for your ${portal.label.toLowerCase()} plus KRSA standard categories when creating events.`
+                  : "Define standard (KRSA-wide) and custom (club/district) skating disciplines with age groups and lap categories."}
             </Typography>
 
             <Stack direction="row" spacing={1.25} useFlexGap sx={{ mt: 3, flexWrap: "wrap" }}>
@@ -186,7 +222,9 @@ export default function EventCategoryPage() {
               Event Category Management
             </Typography>
             <Typography sx={{ mt: 0.75, color: "#8d7f7b" }}>
-              Each category defines a skating type with its age groups and lap / round categories.
+              {isOrgOverrideList
+                ? "Type name is set by super admin. Use Edit to change category names for your events."
+                : "Each category defines a skating type with its age groups and lap / round categories."}
             </Typography>
           </Box>
 
@@ -199,14 +237,16 @@ export default function EventCategoryPage() {
             >
               Refresh
             </Button>
-            <Button
-              variant="contained"
-              startIcon={<Plus size={16} />}
-              onClick={() => navigate("/events/category/create")}
-              sx={{ backgroundColor: "#f6765e", "&:hover": { backgroundColor: "#ea6b54" } }}
-            >
-              Add Category
-            </Button>
+            {!isOrgOverrideList ? (
+              <Button
+                variant="contained"
+                startIcon={<Plus size={16} />}
+                onClick={() => navigate(portal?.create ?? "/events/category/create")}
+                sx={{ backgroundColor: "#f6765e", "&:hover": { backgroundColor: "#ea6b54" } }}
+              >
+                Add Category
+              </Button>
+            ) : null}
           </Stack>
         </Stack>
 
@@ -341,7 +381,9 @@ export default function EventCategoryPage() {
               elevation={0}
               sx={{ p: 5, borderRadius: "22px", textAlign: "center", color: "#978a86" }}
             >
-              No event categories found. Click &quot;Add Category&quot; to create the first one.
+              {isOrgOverrideList
+                ? "No KRSA standard categories yet. Ask super admin to create them first."
+                : 'No event categories found. Click "Add Category" to create the first one.'}
             </Paper>
           ) : (
             /* Category cards */
@@ -415,10 +457,43 @@ export default function EventCategoryPage() {
                         >
                           {cat.typeName}
                         </Typography>
-                        <Typography sx={{ fontSize: 12, color: "#8d7f7b", mt: 0.25 }}>
-                          {activeAgeGroups.length} age group
-                          {activeAgeGroups.length !== 1 ? "s" : ""}
-                        </Typography>
+                        <Stack direction="row" spacing={0.75} alignItems="center" sx={{ mt: 0.5 }}>
+                          <Chip
+                            size="small"
+                            label={
+                              isOrgOverrideList
+                                ? cat.hasOrgOverride
+                                  ? "Your version"
+                                  : "KRSA default"
+                                : cat.categoryStatus === "custom"
+                                  ? "Custom"
+                                  : "Standard"
+                            }
+                            sx={{
+                              height: 22,
+                              fontSize: 11,
+                              fontWeight: 700,
+                              bgcolor: isOrgOverrideList
+                                ? cat.hasOrgOverride
+                                  ? "#e0f7f5"
+                                  : "#fff1eb"
+                                : cat.categoryStatus === "custom"
+                                  ? "#e0f7f5"
+                                  : "#fff1eb",
+                              color: isOrgOverrideList
+                                ? cat.hasOrgOverride
+                                  ? "#00897b"
+                                  : "#f6765e"
+                                : cat.categoryStatus === "custom"
+                                  ? "#00897b"
+                                  : "#f6765e"
+                            }}
+                          />
+                          <Typography sx={{ fontSize: 12, color: "#8d7f7b" }}>
+                            {activeAgeGroups.length} age group
+                            {activeAgeGroups.length !== 1 ? "s" : ""}
+                          </Typography>
+                        </Stack>
                       </Box>
                     </Stack>
 
@@ -472,30 +547,58 @@ export default function EventCategoryPage() {
 
                     {/* Action buttons */}
                     <Stack direction="row" spacing={1} sx={{ p: 2.5, pt: 2 }}>
-                      <Button
-                        variant="outlined"
-                        startIcon={<PencilLine size={15} />}
-                        onClick={() =>
-                          navigate(`/events/category/${catId}/edit`, {
-                            state: { category: cat }
-                          })
-                        }
-                        fullWidth
-                      >
-                        Edit
-                      </Button>
-                      <Button
-                        variant="contained"
-                        startIcon={<Trash2 size={15} />}
-                        onClick={() => setPendingDelete(cat)}
-                        fullWidth
-                        sx={{
-                          backgroundColor: "#f6765e",
-                          "&:hover": { backgroundColor: "#ea6b54" }
-                        }}
-                      >
-                        Delete
-                      </Button>
+                      {isOrgOverrideList ? (
+                        <Button
+                          variant="contained"
+                          startIcon={<PencilLine size={15} />}
+                          onClick={() =>
+                            navigate(portal.edit(catId), { state: { category: cat } })
+                          }
+                          fullWidth
+                          sx={{
+                            backgroundColor: "#f6765e",
+                            "&:hover": { backgroundColor: "#ea6b54" }
+                          }}
+                        >
+                          Edit names
+                        </Button>
+                      ) : null}
+                      {!isOrgOverrideList && (!portal || cat.categoryStatus === "custom") ? (
+                        <>
+                          <Button
+                            variant="outlined"
+                            startIcon={<PencilLine size={15} />}
+                            onClick={() =>
+                              navigate(
+                                portal
+                                  ? portal.edit(catId)
+                                  : `/events/category/${catId}/edit`,
+                                { state: { category: cat } }
+                              )
+                            }
+                            fullWidth
+                          >
+                            Edit
+                          </Button>
+                          <Button
+                            variant="contained"
+                            startIcon={<Trash2 size={15} />}
+                            onClick={() => setPendingDelete(cat)}
+                            fullWidth
+                            sx={{
+                              backgroundColor: "#f6765e",
+                              "&:hover": { backgroundColor: "#ea6b54" }
+                            }}
+                          >
+                            Delete
+                          </Button>
+                        </>
+                      ) : null}
+                      {portal && !isOrgOverrideList && cat.categoryStatus === "standard" ? (
+                        <Typography sx={{ fontSize: 13, color: "#8d7f7b", px: 1 }}>
+                          Standard KRSA category — read only for your {portal.label.toLowerCase()}.
+                        </Typography>
+                      ) : null}
                     </Stack>
                   </Paper>
                 );

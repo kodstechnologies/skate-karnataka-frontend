@@ -1,52 +1,48 @@
-import { useMemo, useState } from "react";
-import { Box, Breadcrumbs, Button, Paper, Stack, Typography } from "@mui/material";
+import { useEffect, useState } from "react";
+import {
+  Box,
+  Breadcrumbs,
+  Button,
+  CircularProgress,
+  Paper,
+  Stack,
+  Typography
+} from "@mui/material";
 import { ChevronRight, Save } from "lucide-react";
-import { useNavigate, useParams } from "react-router-dom";
+import { Link as RouterLink, useNavigate, useParams } from "react-router-dom";
 import skatersHero from "@/assets/Skating_header.jpg";
 import { SkaterForm } from "@/features/admin/skaters/components/SkaterForm";
 import {
+  buildSkaterUpdatePayload,
   createSkaterFormValues,
-  initialSkaterFormValues,
   skaterFieldLabels
 } from "@/features/admin/skaters/components/skaterFormConfig";
 import { useSkatersStore } from "@/features/admin/skaters/store/skaters-store";
 
 const validateSkaterForm = (formData) => {
   const errors = {};
-  const requiredFields = [
-    "fullName",
-    "phone",
-    "dob",
-    "aadharNumber",
-    "gender",
-    "category",
-    "discipline",
-    "address",
-    "district",
-    "club",
-    "parent",
-    "bloodGroup"
-  ];
 
-  requiredFields.forEach((field) => {
-    if (!String(formData[field] ?? "").trim()) {
-      errors[field] = `${skaterFieldLabels[field]} is required`;
-    }
-  });
-
-  if (formData.fullName.trim() && formData.fullName.trim().length < 2) {
-    errors.fullName = "Full name must be at least 2 characters";
+  if (!String(formData.fullName ?? "").trim()) {
+    errors.fullName = `${skaterFieldLabels.fullName} is required`;
+  } else if (formData.fullName.trim().length < 3) {
+    errors.fullName = "Full name must be at least 3 characters";
   }
 
-  if (formData.phone.trim() && !/^[0-9]{10}$/.test(formData.phone.trim())) {
-    errors.phone = "Phone must be a 10 digit number";
+  if (!String(formData.phone ?? "").trim()) {
+    errors.phone = `${skaterFieldLabels.phone} is required`;
+  } else if (!/^[6-9]\d{9}$/.test(formData.phone.trim())) {
+    errors.phone = "Phone must be a valid 10-digit Indian mobile number";
   }
 
-  if (formData.aadharNumber.trim() && !/^[0-9]{12}$/.test(formData.aadharNumber.trim())) {
+  if (formData.email.trim() && !/^\S+@\S+\.\S+$/.test(formData.email.trim())) {
+    errors.email = "Enter a valid email address";
+  }
+
+  if (formData.aadharNumber.trim() && !/^\d{12}$/.test(formData.aadharNumber.trim())) {
     errors.aadharNumber = "Aadhaar number must be 12 digits";
   }
 
-  if (formData.address.trim() && formData.address.trim().length > 200) {
+  if (formData.address.trim().length > 200) {
     errors.address = "Address must be 200 characters or less";
   }
 
@@ -56,44 +52,58 @@ const validateSkaterForm = (formData) => {
 export const SkaterFormPage = () => {
   const navigate = useNavigate();
   const { skaterId } = useParams();
-  const isEditing = Boolean(skaterId);
-  const skaters = useSkatersStore((state) => state.skaters);
-  const addSkater = useSkatersStore((state) => state.addSkater);
-  const updateSkater = useSkatersStore((state) => state.updateSkater);
+  const {
+    selectedSkater,
+    isLoadingDetail,
+    isSaving,
+    fetchSkaterById,
+    updateSkater
+  } = useSkatersStore();
 
-  const existingSkater = useMemo(
-    () => skaters.find((skater) => skater.id === skaterId) ?? null,
-    [skaterId, skaters]
-  );
-
-  const [formData, setFormData] = useState(
-    isEditing && existingSkater ? createSkaterFormValues(existingSkater) : initialSkaterFormValues
-  );
+  const [formData, setFormData] = useState(null);
   const [errors, setErrors] = useState({});
+
+  useEffect(() => {
+    if (skaterId) {
+      fetchSkaterById(skaterId);
+    }
+  }, [skaterId, fetchSkaterById]);
+
+  useEffect(() => {
+    if (selectedSkater?._id === skaterId) {
+      setFormData(createSkaterFormValues(selectedSkater));
+    }
+  }, [selectedSkater, skaterId]);
 
   const handleFieldChange = (field) => (event) => {
     setFormData((current) => ({ ...current, [field]: event.target.value }));
     setErrors((current) => ({ ...current, [field]: "" }));
   };
 
-  const handleSubmit = () => {
-    const nextErrors = validateSkaterForm(formData);
+  const handleSubmit = async () => {
+    if (!formData || !skaterId) return;
 
+    const nextErrors = validateSkaterForm(formData);
     if (Object.keys(nextErrors).length > 0) {
       setErrors(nextErrors);
       return;
     }
 
-    if (isEditing && existingSkater) {
-      updateSkater(existingSkater.id, formData);
-    } else {
-      addSkater(formData);
+    const success = await updateSkater(skaterId, buildSkaterUpdatePayload(formData));
+    if (success) {
+      navigate(`/skaters/${skaterId}`);
     }
-
-    navigate("/skaters");
   };
 
-  if (isEditing && !existingSkater) {
+  if (isLoadingDetail || !formData) {
+    return (
+      <Box sx={{ display: "flex", justifyContent: "center", py: 8 }}>
+        <CircularProgress sx={{ color: "#f6765e" }} />
+      </Box>
+    );
+  }
+
+  if (!selectedSkater) {
     return (
       <Paper elevation={0} sx={{ p: 4, borderRadius: "28px", textAlign: "center" }}>
         <Typography variant="h5" sx={{ fontWeight: 700, color: "#2f2829" }}>
@@ -126,40 +136,35 @@ export const SkaterFormPage = () => {
           color: "white"
         }}
       >
-        <Box
-          sx={{
-            position: "absolute",
-            inset: 0,
-            background: "linear-gradient(180deg, rgba(246,118,94,0.18) 0%, rgba(0,0,0,0.04) 100%)",
-            pointerEvents: "none"
-          }}
-        />
-
-        <Stack
-          sx={{ position: "relative", zIndex: 1, height: "100%", justifyContent: "space-between" }}
-        >
-          <Box sx={{ maxWidth: 760 }}>
-            <Breadcrumbs
-              separator={<ChevronRight size={14} />}
-              sx={{
-                mb: 2,
-                "& .MuiBreadcrumbs-separator": { color: "rgba(255,255,255,0.6)" },
-                "& .MuiBreadcrumbs-li": { color: "rgba(255,255,255,0.78)", fontSize: 12 }
-              }}
-            >
-              <span>Dashboard</span>
-              <span>Skaters</span>
-              <span>{isEditing ? "Edit" : "Create"}</span>
-            </Breadcrumbs>
-
-            <Typography variant="h3" sx={{ fontWeight: 700, letterSpacing: "-0.05em", mb: 1.5 }}>
-              {isEditing ? "Update Skater Profile" : "Create Skater Profile"}
+        <Stack sx={{ position: "relative", zIndex: 1 }}>
+          <Breadcrumbs
+            separator={<ChevronRight size={14} />}
+            sx={{
+              mb: 2,
+              "& .MuiBreadcrumbs-separator": { color: "rgba(255,255,255,0.6)" },
+              "& a": { color: "rgba(255,255,255,0.86)", textDecoration: "none", fontSize: 14 },
+              "& .MuiTypography-root": { color: "white", fontSize: 14, fontWeight: 600 }
+            }}
+          >
+            <Typography component={RouterLink} to="/dashboard">
+              Dashboard
             </Typography>
-            <Typography sx={{ color: "rgba(255,255,255,0.86)", maxWidth: 660, lineHeight: 1.7 }}>
-              Fill in athlete identity, guardian, school, and club details to keep the KRSA registry
-              accurate and event-ready.
+            <Typography component={RouterLink} to="/skaters">
+              Skaters
             </Typography>
-          </Box>
+            <Typography component={RouterLink} to={`/skaters/${skaterId}`}>
+              {selectedSkater.fullName}
+            </Typography>
+            <Typography>Edit</Typography>
+          </Breadcrumbs>
+
+          <Typography variant="h3" sx={{ fontWeight: 700, letterSpacing: "-0.05em", mb: 1.5 }}>
+            Edit skater profile
+          </Typography>
+          <Typography sx={{ color: "rgba(255,255,255,0.86)", maxWidth: 660, lineHeight: 1.7 }}>
+            Update athlete contact and registration details. KRSA ID, district, and club are shown
+            for reference.
+          </Typography>
         </Stack>
       </Paper>
 
@@ -178,27 +183,35 @@ export const SkaterFormPage = () => {
         >
           <Box>
             <Typography variant="h5" sx={{ fontWeight: 700, letterSpacing: "-0.04em" }}>
-              {isEditing ? "Edit registry entry" : "New registry entry"}
+              {selectedSkater.fullName}
             </Typography>
             <Typography sx={{ mt: 0.75, color: "#8d7f7b" }}>
-              {isEditing
-                ? "Update the stored details for this athlete."
-                : "Add a new athlete to the KRSA skater registry."}
+              Changes are saved to the KRSA registry immediately.
             </Typography>
           </Box>
 
           <Stack direction={{ xs: "column", sm: "row" }} spacing={1.5}>
-            <Button variant="outlined" onClick={() => navigate("/skaters")}>
+            <Button variant="outlined" onClick={() => navigate(`/skaters/${skaterId}`)}>
               Cancel
             </Button>
-            <Button variant="contained" startIcon={<Save size={16} />} onClick={handleSubmit}>
-              {isEditing ? "Save changes" : "Create skater"}
+            <Button
+              variant="contained"
+              startIcon={isSaving ? null : <Save size={16} />}
+              onClick={handleSubmit}
+              disabled={isSaving}
+            >
+              {isSaving ? "Saving…" : "Save changes"}
             </Button>
           </Stack>
         </Stack>
 
         <Box sx={{ px: 3, pb: 3 }}>
-          <SkaterForm formData={formData} errors={errors} onFieldChange={handleFieldChange} />
+          <SkaterForm
+            formData={formData}
+            errors={errors}
+            onFieldChange={handleFieldChange}
+            readOnlyMeta
+          />
         </Box>
       </Paper>
     </Box>

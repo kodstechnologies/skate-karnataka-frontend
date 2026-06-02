@@ -1,38 +1,41 @@
+const formatDateInput = (value) => {
+  if (!value) return "";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "";
+  return date.toISOString().slice(0, 10);
+};
+
 export const initialSkaterFormValues = {
   fullName: "",
   phone: "",
+  email: "",
   rsfiId: "",
   dob: "",
   aadharNumber: "",
   gender: "",
-  category: "",
-  discipline: "",
   address: "",
-  district: "",
-  club: "",
   parent: "",
   bloodGroup: "",
   school: "",
   grade: "",
-  signature: ""
+  signature: "",
+  krsaId: "",
+  districtName: "",
+  clubName: ""
 };
 
 export const genderOptions = ["male", "female", "other"];
-export const categoryOptions = ["Junior", "Senior"];
 export const bloodGroupOptions = ["A+", "A-", "B+", "B-", "O+", "O-", "AB+", "AB-"];
 
 export const skaterFieldLabels = {
   fullName: "Full name",
   phone: "Phone",
+  email: "Email",
   rsfiId: "RSFI ID",
-  dob: "DOB",
+  dob: "Date of birth",
   aadharNumber: "Aadhaar number",
   gender: "Gender",
-  category: "Category",
-  discipline: "Discipline",
   address: "Address",
-  district: "District",
-  club: "Club",
   parent: "Parent / guardian",
   bloodGroup: "Blood group",
   school: "School",
@@ -43,18 +46,46 @@ export const skaterFieldLabels = {
 export const createSkaterFormValues = (skater = {}) => ({
   fullName: skater.fullName ?? "",
   phone: skater.phone ?? "",
+  email: skater.email ?? "",
   rsfiId: skater.rsfiId ?? "",
-  dob: skater.dob ?? "",
+  dob: formatDateInput(skater.dob),
   aadharNumber: skater.aadharNumber ?? "",
   gender: skater.gender ?? "",
-  category: skater.category ?? "",
-  discipline: skater.discipline ?? "",
   address: skater.address ?? "",
-  district: skater.district ?? "",
-  club: skater.club ?? "",
   parent: skater.parent ?? "",
   bloodGroup: skater.bloodGroup ?? "",
   school: skater.school ?? "",
   grade: skater.grade ?? "",
-  signature: skater.signature ?? ""
+  signature: skater.signature ?? "",
+  krsaId: skater.krsaId ?? "",
+  districtName:
+    skater.districtDetails?.name ?? skater.districtName ?? skater.district?.name ?? "",
+  clubName: skater.club?.name ?? ""
 });
+
+/** Payload for PATCH /admin/v1/skater/:id */
+export const buildSkaterUpdatePayload = (formData) => {
+  const payload = {
+    fullName: formData.fullName.trim(),
+    phone: formData.phone.trim(),
+    email: formData.email.trim(),
+    rsfiId: formData.rsfiId.trim(),
+    gender: formData.gender.trim(),
+    address: formData.address.trim(),
+    parent: formData.parent.trim(),
+    bloodGroup: formData.bloodGroup.trim(),
+    school: formData.school.trim(),
+    grade: formData.grade.trim(),
+    signature: formData.signature.trim()
+  };
+
+  if (formData.dob) {
+    payload.dob = formData.dob;
+  }
+
+  if (formData.aadharNumber.trim()) {
+    payload.aadharNumber = formData.aadharNumber.trim();
+  }
+
+  return payload;
+};

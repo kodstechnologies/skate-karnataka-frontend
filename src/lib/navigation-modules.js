@@ -33,6 +33,8 @@ const PATH_PREFIX_TO_SLUG = [
   ["/events", "events"],
   ["/event", "events"],
   ["/gallery", "gallery"],
+  ["/gallery/approvals", "gallery"],
+  ["/state/media", "gallery"],
   ["/districts", "districts"],
   ["/discipline", "discipline"],
   ["/reports", "reports"],

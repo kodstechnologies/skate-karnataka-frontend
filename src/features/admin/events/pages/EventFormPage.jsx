@@ -1,7 +1,15 @@
-import { useEffect, useState } from "react";
-import { Box, Breadcrumbs, Button, Paper, Stack, Typography } from "@mui/material";
-import { ChevronRight, Save } from "lucide-react";
-import { Link as RouterLink, useNavigate, useParams } from "react-router-dom";
+import { useEffect, useMemo, useState } from "react";
+import {
+  Box,
+  Breadcrumbs,
+  Button,
+  Chip,
+  Paper,
+  Stack,
+  Typography
+} from "@mui/material";
+import { CheckCircle2, ChevronRight, Save, XCircle } from "lucide-react";
+import { Link as RouterLink, useLocation, useNavigate, useParams } from "react-router-dom";
 import eventsHero from "@/assets/Events_header.jpg";
 import { EventForm } from "@/features/admin/events/components/EventForm";
 import {
@@ -10,13 +18,32 @@ import {
   normalizeSkatingEventCategoryIds,
   validateEventForm
 } from "@/features/admin/events/components/eventFormConfig";
+import {
+  unwrapApiMessage,
+  unwrapEventPayload,
+  unwrapSkatingCategories
+} from "@/features/admin/events/utils/parseEventApi";
 import { eventsApi } from "@/api/events-api";
+import { canApproveEvents, getEventApprovalChipProps } from "@/utils/eventApprovalStatus";
+import { useAuthStore } from "@/features/auth/store/auth-store";
 import toast from "react-hot-toast";
+
+/** Admin edit page: all event types save via PATCH /event/v1/state/:id (Admin/State auth). */
+const updateEventAsAdmin = async (event, payload) => {
+  const id = event._id || event.id;
+  return eventsApi.update(id, payload);
+};
 
 export const EventFormPage = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { eventId } = useParams();
+  const role = useAuthStore((s) => s.role);
+  const canApprove = canApproveEvents(role);
   const isEditing = Boolean(eventId);
+
+  const stateEventPreview = location.state?.event ?? null;
+
   const [existingEvent, setExistingEvent] = useState(null);
   const [loading, setLoading] = useState(isEditing);
   const [saving, setSaving] = useState(false);
@@ -25,8 +52,24 @@ export const EventFormPage = () => {
   const [formData, setFormData] = useState(initialEventFormValues);
   const [errors, setErrors] = useState({});
 
+  const backPath = useMemo(() => {
+    const type = String(existingEvent?.eventType || stateEventPreview?.eventType || "").toLowerCase();
+    if (type === "club" && location.state?.fromClubId) {
+      return `/clubs/${location.state.fromClubId}/events`;
+    }
+    if (type === "district" && location.state?.fromDistrictId) {
+      return `/districts/${location.state.fromDistrictId}/events`;
+    }
+    return "/events/detail";
+  }, [existingEvent, stateEventPreview, location.state]);
+
   useEffect(() => {
     if (!isEditing || !eventId) return;
+
+    if (stateEventPreview) {
+      setExistingEvent(stateEventPreview);
+      setFormData(createEventFormValues(stateEventPreview));
+    }
 
     let cancelled = false;
     setLoading(true);
@@ -35,13 +78,21 @@ export const EventFormPage = () => {
       .getById(eventId)
       .then((response) => {
         if (cancelled) return;
-        const ev = response?.data ?? response;
+        const ev = unwrapEventPayload(response);
+        if (!ev) {
+          if (!stateEventPreview) {
+            toast.error("Could not load event details");
+          }
+          return;
+        }
         setExistingEvent(ev);
         setFormData(createEventFormValues(ev));
       })
       .catch((err) => {
         if (cancelled) return;
-        toast.error(err?.response?.data?.message || "Failed to load event");
+        if (!stateEventPreview) {
+          toast.error(err?.response?.data?.message || err?.message || "Failed to load event");
+        }
       })
       .finally(() => {
         if (!cancelled) setLoading(false);
@@ -50,14 +101,13 @@ export const EventFormPage = () => {
     return () => {
       cancelled = true;
     };
-  }, [isEditing, eventId]);
+  }, [isEditing, eventId, stateEventPreview]);
 
   useEffect(() => {
     eventsApi
       .getSkatingCategories()
       .then((res) => {
-        const list = res?.data ?? [];
-        setEventCategories(Array.isArray(list) ? list : []);
+        setEventCategories(unwrapSkatingCategories(res));
       })
       .catch(() => {
         setEventCategories([]);
@@ -91,21 +141,63 @@ export const EventFormPage = () => {
       const payload = { ...formData };
 
       if (isEditing && existingEvent) {
-        const { message } = await eventsApi.update(existingEvent._id || existingEvent.id, payload);
-        toast.success(message || "Event updated successfully");
+        const response = await updateEventAsAdmin(existingEvent, payload);
+        const message =
+          unwrapApiMessage(response) ||
+          response?.message ||
+          "Event updated successfully";
+        toast.success(message);
       } else {
-        const { message } = await eventsApi.create(payload);
-        toast.success(message || "Event created successfully");
+        const response = await eventsApi.create(payload);
+        toast.success(unwrapApiMessage(response) || response?.message || "Event created successfully");
       }
-      navigate(-1);
+      navigate(backPath);
     } catch (err) {
-      toast.error(err?.response?.data?.message || "Failed to save event");
+      toast.error(err?.response?.data?.message || err?.message || "Failed to save event");
     } finally {
       setSaving(false);
     }
   };
 
-  if (loading) {
+  const handleApprove = async () => {
+    if (!existingEvent) return;
+    try {
+      await eventsApi.approveEvent(existingEvent._id || existingEvent.id);
+      toast.success("Event approved");
+      const response = await eventsApi.getById(eventId);
+      const ev = unwrapEventPayload(response);
+      if (ev) {
+        setExistingEvent(ev);
+        setFormData(createEventFormValues(ev));
+      }
+    } catch (err) {
+      toast.error(err?.response?.data?.message || "Failed to approve event");
+    }
+  };
+
+  const handleReject = async () => {
+    if (!existingEvent) return;
+    try {
+      await eventsApi.rejectEvent(existingEvent._id || existingEvent.id);
+      toast.success("Event rejected");
+      const response = await eventsApi.getById(eventId);
+      const ev = unwrapEventPayload(response);
+      if (ev) {
+        setExistingEvent(ev);
+        setFormData(createEventFormValues(ev));
+      }
+    } catch (err) {
+      toast.error(err?.response?.data?.message || "Failed to reject event");
+    }
+  };
+
+  const eventTypeLabel = existingEvent?.eventType || stateEventPreview?.eventType || "Event";
+  const showApprovalActions =
+    canApprove &&
+    existingEvent &&
+    (existingEvent.eventType === "Club" || existingEvent.eventType === "District");
+
+  if (loading && !existingEvent && !stateEventPreview) {
     return (
       <Paper elevation={0} sx={{ p: 4, borderRadius: "28px", textAlign: "center" }}>
         <Typography>Loading event details...</Typography>
@@ -113,7 +205,7 @@ export const EventFormPage = () => {
     );
   }
 
-  if (isEditing && !existingEvent && !loading) {
+  if (isEditing && !existingEvent && !stateEventPreview && !loading) {
     return (
       <Paper elevation={0} sx={{ p: 4, borderRadius: "28px", textAlign: "center" }}>
         <Typography variant="h5" sx={{ fontWeight: 700, color: "#2f2829" }}>
@@ -122,7 +214,7 @@ export const EventFormPage = () => {
         <Typography sx={{ mt: 1.5, color: "#8d7f7b" }}>
           The event you are trying to edit is not available.
         </Typography>
-        <Button sx={{ mt: 3 }} variant="contained" onClick={() => navigate("/events")}>
+        <Button sx={{ mt: 3 }} variant="contained" onClick={() => navigate("/events/detail")}>
           Back to events
         </Button>
       </Paper>
@@ -162,24 +254,14 @@ export const EventFormPage = () => {
             <Typography
               component={RouterLink}
               to="/dashboard"
-              sx={{
-                color: "inherit",
-                textDecoration: "none",
-                fontWeight: 600,
-                "&:hover": { color: "white" }
-              }}
+              sx={{ color: "inherit", textDecoration: "none", fontWeight: 600 }}
             >
               Dashboard
             </Typography>
             <Typography
               component={RouterLink}
-              to="/events/detail"
-              sx={{
-                color: "inherit",
-                textDecoration: "none",
-                fontWeight: 600,
-                "&:hover": { color: "white" }
-              }}
+              to={backPath}
+              sx={{ color: "inherit", textDecoration: "none", fontWeight: 600 }}
             >
               Events
             </Typography>
@@ -188,15 +270,41 @@ export const EventFormPage = () => {
             </Typography>
           </Breadcrumbs>
 
+          <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap" sx={{ mb: 1 }}>
+            <Chip
+              size="small"
+              label={eventTypeLabel}
+              sx={{ bgcolor: "rgba(255,255,255,0.2)", color: "white", fontWeight: 700 }}
+            />
+            {existingEvent && <Chip size="small" {...getEventApprovalChipProps(existingEvent)} />}
+          </Stack>
+
           <Typography variant="h3" sx={{ fontWeight: 800, letterSpacing: "-0.06em", mb: 1.5 }}>
             {isEditing ? "Update Event" : "Create Event"}
           </Typography>
           <Typography sx={{ color: "rgba(255,255,255,0.86)", maxWidth: 700, lineHeight: 1.7 }}>
-            Create and publish event schedules for state, district, and club level participation
-            with complete registration windows.
+            {isEditing
+              ? `Edit ${eventTypeLabel} event details. Club and district events require admin approval before skaters can see them.`
+              : "Create and publish event schedules for state, district, and club level participation."}
           </Typography>
         </Stack>
       </Paper>
+
+      {existingEvent?.adminApprovalStatus === "rejected" && (
+        <Paper
+          elevation={0}
+          sx={{
+            p: 2,
+            borderRadius: "16px",
+            border: "1px solid #ffcdd2",
+            bgcolor: "#fff8e1"
+          }}
+        >
+          <Typography sx={{ fontWeight: 600, color: "#5d4037" }}>
+            This event was rejected. Saving changes as club/district will resubmit it for approval.
+          </Typography>
+        </Paper>
+      )}
 
       <Paper
         elevation={0}
@@ -225,10 +333,33 @@ export const EventFormPage = () => {
             mt: 3,
             pt: 3,
             borderTop: "1px solid rgba(240, 219, 210, 0.9)",
-            justifyContent: "flex-end"
+            justifyContent: "flex-end",
+            flexWrap: "wrap"
           }}
         >
-          <Button variant="outlined" onClick={() => navigate("/events/detail")} disabled={saving}>
+          {showApprovalActions && existingEvent.adminApprovalStatus === "pending" && (
+            <>
+              <Button
+                variant="contained"
+                startIcon={<CheckCircle2 size={16} />}
+                onClick={handleApprove}
+                disabled={saving}
+                sx={{ backgroundColor: "#2e7d32" }}
+              >
+                Approve event
+              </Button>
+              <Button
+                variant="outlined"
+                startIcon={<XCircle size={16} />}
+                onClick={handleReject}
+                disabled={saving}
+                color="error"
+              >
+                Reject
+              </Button>
+            </>
+          )}
+          <Button variant="outlined" onClick={() => navigate(backPath)} disabled={saving}>
             Cancel
           </Button>
           <Button
