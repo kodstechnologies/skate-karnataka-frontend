@@ -237,7 +237,24 @@ export default function EventCategoryPage({
   }, [fetchCategories]);
 
   const openEditor = (catOrNew) => {
-    const id = catOrNew === "new" ? "new" : getCategoryId(catOrNew);
+    if (catOrNew === "new") {
+      setEditorOpen(true);
+      setActiveCategoryId("new");
+      loadFormForId("new");
+      setFormErrors({});
+      return;
+    }
+    // Virtual "Standard" group card — open the first standard category
+    if (catOrNew?._id === "__standard__" && catOrNew?._items?.length) {
+      const firstStandard = catOrNew._items[0];
+      const id = getCategoryId(firstStandard);
+      setEditorOpen(true);
+      setActiveCategoryId(id);
+      loadFormForId(id);
+      setFormErrors({});
+      return;
+    }
+    const id = getCategoryId(catOrNew);
     setEditorOpen(true);
     setActiveCategoryId(id);
     loadFormForId(id);
@@ -354,6 +371,16 @@ export default function EventCategoryPage({
       setDeleting(false);
     }
   };
+
+  // Group all standard categories into one virtual "Standard" card
+  const standardCategories = categories.filter((c) => c.categoryStatus !== "custom");
+  const customCategories = categories.filter((c) => c.categoryStatus === "custom");
+  const displayCards = [
+    ...(standardCategories.length > 0
+      ? [{ _id: "__standard__", typeName: "Standard", categoryStatus: "standard", _items: standardCategories }]
+      : []),
+    ...customCategories
+  ];
 
   const showCreateTab = !isOrgOverrideList && !portal && editorOpen;
   const readOnlyEditor = editorOpen && !canEditActive();
@@ -476,7 +503,7 @@ export default function EventCategoryPage({
         <Box sx={{ px: 3, pb: 3 }}>
           {loading ? (
             <Box sx={{ display: "flex", justifyContent: "center", gap: 2, flexWrap: "wrap" }}>
-              {[1, 2, 3].map((i) => (
+              {[1].map((i) => (
                 <Skeleton key={i} variant="rounded" width={220} height={140} sx={{ borderRadius: "24px" }} />
               ))}
             </Box>
@@ -503,7 +530,7 @@ export default function EventCategoryPage({
                 py: 2
               }}
             >
-              {categories.map((cat) => (
+              {displayCards.map((cat) => (
                 <CategoryPickerCard key={getCategoryId(cat)} cat={cat} onOpen={openEditor} />
               ))}
             </Box>

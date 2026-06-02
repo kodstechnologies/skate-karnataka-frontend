@@ -69,6 +69,8 @@ import EventCategoryPage from "../features/admin/events/pages/EventCategoryPage"
 import EventCategoryFormPage from "../features/admin/events/pages/EventCategoryFormPage";
 import ClubEventCategoriesPage from "../features/admin/events/pages/ClubEventCategoriesPage";
 import DistrictEventCategoriesPage from "../features/admin/events/pages/DistrictEventCategoriesPage";
+import OrgStandardCategoriesPage from "../features/admin/events/pages/OrgStandardCategoriesPage";
+import OrgCustomCategoryPage from "../features/admin/events/pages/OrgCustomCategoryPage";
 import ProtectedRoutes from "./ProtectedRoutes";
 import { ClubDashboard } from "@/features/club/pages/ClubDashboard";
 import { ClubEventFormPage } from "@/features/club/pages/ClubEventFormPage";
@@ -104,6 +106,8 @@ export const AppRoutes = () => {
         <Route path="/club/events/:eventId/edit" element={<ClubEventFormPage />} />
         <Route path="/club/media" element={<ClubPortalMediaPage />} />
         <Route path="/club/event-categories" element={<ClubEventCategoriesPage />} />
+        <Route path="/club/event-categories/standard" element={<OrgStandardCategoriesPage orgType="club" />} />
+        <Route path="/club/event-categories/custom" element={<OrgCustomCategoryPage orgType="club" />} />
         <Route
           path="/club/event-categories/:categoryId/edit"
           element={<EventCategoryFormPage portalMode orgType="club" orgOverrideMode />}
@@ -114,6 +118,8 @@ export const AppRoutes = () => {
         <Route path="/club/members/:memberId/edit" element={<ClubMemberFormPage />} />
         <Route path="/district/media" element={<DistrictPortalMediaPage />} />
         <Route path="/district/event-categories" element={<DistrictEventCategoriesPage />} />
+        <Route path="/district/event-categories/standard" element={<OrgStandardCategoriesPage orgType="district" />} />
+        <Route path="/district/event-categories/custom" element={<OrgCustomCategoryPage orgType="district" />} />
         <Route
           path="/district/event-categories/:categoryId/edit"
           element={<EventCategoryFormPage portalMode orgType="district" orgOverrideMode />}
