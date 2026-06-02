@@ -3,54 +3,174 @@ import {
   Breadcrumbs,
   Button,
   Chip,
-  CircularProgress,
   Divider,
   Paper,
   Stack,
   Typography,
   Skeleton
 } from "@mui/material";
-import { ChevronRight, Layers, PencilLine, Plus, RefreshCw, Trash2 } from "lucide-react";
+import { ChevronRight, Layers, Plus, RefreshCw, Trash2 } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
-import { Link as RouterLink, useNavigate } from "react-router-dom";
+import { Link as RouterLink } from "react-router-dom";
 import { ConfirmDeleteModal } from "@/components/ui/ConfirmDeleteModal";
 import { eventCategoriesApi } from "@/api/event-categories-api";
+import CategoryInlineEditor from "@/features/admin/events/components/CategoryInlineEditor";
+import { buildFormState, buildPayload } from "@/features/admin/events/utils/categoryFormUtils";
 import { unwrapOrgCategoryContext } from "@/features/admin/events/utils/categoryDisplay";
 import eventsHero from "@/assets/Events_header.jpg";
 import toast from "react-hot-toast";
 
-/* ─────────────────────────────────────────────
-   Helper
-───────────────────────────────────────────── */
 const extractError = (err) =>
   err?.response?.data?.message || err?.message || "An unexpected error occurred.";
+
+const getCategoryId = (cat) => String(cat?._id ?? cat?.id ?? "");
+
+const CATEGORY_CARD_SX = {
+  borderRadius: "24px",
+  border: "1px solid #f0ddd5",
+  overflow: "hidden",
+  background: "linear-gradient(135deg, #fff9f7 0%, #fef0eb 100%)",
+  boxShadow: "0 20px 50px rgba(56,36,29,0.08)",
+  cursor: "pointer",
+  transition: "transform 0.2s ease, box-shadow 0.2s ease",
+  "&:hover": {
+    transform: "translateY(-3px)",
+    boxShadow: "0 28px 65px rgba(56,36,29,0.12)"
+  }
+};
+
+const CategoryTypeTabs = ({ categories, activeId, onSelect, showNewTab }) => (
+  <Box
+    sx={{
+      display: "flex",
+      gap: 0,
+      overflowX: "auto",
+      px: 2,
+      pt: 1.5,
+      borderBottom: "1px solid #e8dcd6",
+      "&::-webkit-scrollbar": { height: 4 },
+      "&::-webkit-scrollbar-thumb": { backgroundColor: "#e8dcd6", borderRadius: 4 }
+    }}
+  >
+    {categories.map((cat) => {
+      const catId = getCategoryId(cat);
+      const isActive = catId === activeId;
+      return (
+        <Box
+          key={catId}
+          component="button"
+          type="button"
+          onClick={() => onSelect(catId)}
+          sx={{
+            flexShrink: 0,
+            px: 2,
+            py: 1.25,
+            border: "none",
+            cursor: "pointer",
+            background: "transparent",
+            fontFamily: "inherit",
+            fontSize: 15,
+            fontWeight: isActive ? 700 : 500,
+            color: isActive ? "#f6765e" : "#8d7f7b",
+            borderBottom: isActive ? "2px solid #f6765e" : "2px solid transparent",
+            marginBottom: "-1px",
+            "&:hover": { color: isActive ? "#f6765e" : "#5f5552" }
+          }}
+        >
+          {cat.typeName || "Unnamed"}
+        </Box>
+      );
+    })}
+    {showNewTab ? (
+      <Box
+        component="button"
+        type="button"
+        onClick={() => onSelect("new")}
+        sx={{
+          flexShrink: 0,
+          px: 2,
+          py: 1.25,
+          border: "none",
+          cursor: "pointer",
+          background: "transparent",
+          fontFamily: "inherit",
+          fontSize: 15,
+          fontWeight: activeId === "new" ? 700 : 500,
+          color: activeId === "new" ? "#f6765e" : "#8d7f7b",
+          borderBottom: activeId === "new" ? "2px solid #f6765e" : "2px solid transparent",
+          marginBottom: "-1px"
+        }}
+      >
+        New type
+      </Box>
+    ) : null}
+  </Box>
+);
+
+const CategoryPickerCard = ({ cat, onOpen }) => (
+  <Paper
+    elevation={0}
+    onClick={() => onOpen(cat)}
+    sx={{
+      ...CATEGORY_CARD_SX,
+      width: { xs: "100%", sm: 220 },
+      maxWidth: 280,
+      py: 3.5,
+      px: 2,
+      textAlign: "center"
+    }}
+  >
+    <Box
+      sx={{
+        display: "inline-flex",
+        alignItems: "center",
+        justifyContent: "center",
+        width: 48,
+        height: 48,
+        borderRadius: "14px",
+        backgroundColor: "#fff1eb",
+        color: "#f6765e",
+        mb: 1.5
+      }}
+    >
+      <Layers size={22} />
+    </Box>
+    <Typography sx={{ fontSize: 18, fontWeight: 800, color: "#2f2829" }}>
+      {cat.typeName || "Unnamed"}
+    </Typography>
+    <Chip
+      size="small"
+      label={cat.categoryStatus === "custom" ? "Custom" : "Standard"}
+      sx={{
+        mt: 1.25,
+        height: 22,
+        fontSize: 11,
+        fontWeight: 700,
+        bgcolor: cat.categoryStatus === "custom" ? "#e0f7f5" : "#fff1eb",
+        color: cat.categoryStatus === "custom" ? "#00897b" : "#f6765e"
+      }}
+    />
+  </Paper>
+);
 
 const PORTAL_CONFIG = {
   club: {
     dashboard: "/club/dashboard",
     list: "/club/event-categories",
-    create: "/club/event-categories/create",
-    edit: (id) => `/club/event-categories/${id}/edit`,
     label: "Club"
   },
   district: {
     dashboard: "/district/dashboard",
     list: "/district/event-categories",
-    create: "/district/event-categories/create",
-    edit: (id) => `/district/event-categories/${id}/edit`,
     label: "District"
   }
 };
 
-/* ─────────────────────────────────────────────
-   EventCategoryPage
-───────────────────────────────────────────── */
 export default function EventCategoryPage({
   portalMode = false,
   orgType = null,
   orgOverrideList = false
 }) {
-  const navigate = useNavigate();
   const portal = portalMode && orgType ? PORTAL_CONFIG[orgType] : null;
   const isOrgOverrideList = Boolean(portal && orgOverrideList);
 
@@ -58,37 +178,163 @@ export default function EventCategoryPage({
   const [loading, setLoading] = useState(true);
   const [fetchError, setFetchError] = useState(null);
 
+  const [editorOpen, setEditorOpen] = useState(false);
+  const [activeCategoryId, setActiveCategoryId] = useState(null);
+  const [form, setForm] = useState(() => buildFormState(null));
+  const [formErrors, setFormErrors] = useState({});
+  const [saving, setSaving] = useState(false);
+
   const [pendingDelete, setPendingDelete] = useState(null);
   const [deleting, setDeleting] = useState(false);
 
-  /* ── Fetch ── */
+  const canEditActive = () => {
+    if (isOrgOverrideList) return true;
+    if (!portal) return true;
+    if (activeCategoryId === "new") return true;
+    const cat = categories.find((c) => getCategoryId(c) === activeCategoryId);
+    return cat?.categoryStatus === "custom";
+  };
+
+  const loadFormForId = useCallback(
+    (id) => {
+      if (id === "new") {
+        setForm(buildFormState(null));
+        return;
+      }
+      const cat = categories.find((c) => getCategoryId(c) === id);
+      setForm(buildFormState(cat ?? null));
+    },
+    [categories]
+  );
+
   const fetchCategories = useCallback(async () => {
     setLoading(true);
     setFetchError(null);
     try {
+      let list = [];
       if (isOrgOverrideList) {
         const res = await eventCategoriesApi.getOrgContext();
         const ctx = unwrapOrgCategoryContext(res);
-        setCategories(ctx.categories);
+        list = ctx.categories;
       } else {
         const res = await eventCategoriesApi.getAll();
         const data = res?.data?.data ?? res?.data ?? [];
-        setCategories(Array.isArray(data) ? data : []);
+        list = Array.isArray(data) ? data : [];
       }
+      setCategories(list);
+      return list;
     } catch (err) {
       toast.error(extractError(err));
       setFetchError(extractError(err));
+      return [];
     } finally {
       setLoading(false);
     }
   }, [isOrgOverrideList]);
 
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchCategories();
   }, [fetchCategories]);
 
-  /* ── Delete ── */
+  const openEditor = (catOrNew) => {
+    const id = catOrNew === "new" ? "new" : getCategoryId(catOrNew);
+    setEditorOpen(true);
+    setActiveCategoryId(id);
+    loadFormForId(id);
+    setFormErrors({});
+  };
+
+  const closeEditor = () => {
+    setEditorOpen(false);
+    setActiveCategoryId(null);
+    setFormErrors({});
+  };
+
+  const handleTabSelect = (id) => {
+    setActiveCategoryId(id);
+    loadFormForId(id);
+    setFormErrors({});
+  };
+
+  const setTypeName = (value) => {
+    setForm((f) => ({ ...f, typeName: value }));
+    setFormErrors((e) => ({ ...e, typeName: "" }));
+  };
+
+  const setCategoryName = (ageIdx, catIdx, value) => {
+    setForm((f) => ({
+      ...f,
+      ageGroups: f.ageGroups.map((ag, ai) =>
+        ai === ageIdx
+          ? {
+              ...ag,
+              categories: ag.categories.map((c, ci) => (ci === catIdx ? value : c))
+            }
+          : ag
+      )
+    }));
+  };
+
+  const addCategoryRow = (ageIdx) => {
+    setForm((f) => ({
+      ...f,
+      ageGroups: f.ageGroups.map((ag, ai) =>
+        ai === ageIdx ? { ...ag, categories: [...ag.categories, ""] } : ag
+      )
+    }));
+  };
+
+  const removeCategoryRow = (ageIdx, catIdx) => {
+    setForm((f) => ({
+      ...f,
+      ageGroups: f.ageGroups.map((ag, ai) => {
+        if (ai !== ageIdx) return ag;
+        const filtered = ag.categories.filter((_, ci) => ci !== catIdx);
+        return { ...ag, categories: filtered.length ? filtered : [""] };
+      })
+    }));
+  };
+
+  const handleUpdate = async () => {
+    const nextErrors = {};
+    if (!isOrgOverrideList && activeCategoryId === "new" && !form.typeName.trim()) {
+      nextErrors.typeName = "Type name is required.";
+    }
+    if (Object.keys(nextErrors).length) {
+      setFormErrors(nextErrors);
+      return;
+    }
+
+    const payload = buildPayload(form, { namesOnly: isOrgOverrideList });
+    setSaving(true);
+    try {
+      if (activeCategoryId === "new") {
+        const res = await eventCategoriesApi.create(payload);
+        toast.success(res?.message || "Category created successfully");
+        const list = await fetchCategories();
+        const created = res?.data?.data ?? res?.data;
+        const newId = created ? getCategoryId(created) : null;
+        const fromList = newId ? list.find((c) => getCategoryId(c) === newId) : list.at(-1);
+        if (fromList) {
+          setActiveCategoryId(getCategoryId(fromList));
+          setForm(buildFormState(fromList));
+        } else {
+          closeEditor();
+        }
+      } else {
+        const res = await eventCategoriesApi.update(activeCategoryId, payload);
+        toast.success(res?.message || "Category updated successfully");
+        const list = await fetchCategories();
+        const updated = list.find((c) => getCategoryId(c) === activeCategoryId);
+        if (updated) setForm(buildFormState(updated));
+      }
+    } catch (err) {
+      toast.error(extractError(err));
+    } finally {
+      setSaving(false);
+    }
+  };
+
   const handleDelete = async () => {
     if (!pendingDelete) return;
     setDeleting(true);
@@ -96,7 +342,10 @@ export default function EventCategoryPage({
       const id = pendingDelete._id ?? pendingDelete.id;
       const { message } = await eventCategoriesApi.delete(id);
       toast.success(message || "Category deleted successfully");
-      setCategories((prev) => prev.filter((c) => (c._id ?? c.id) !== id));
+      if (getCategoryId(pendingDelete) === activeCategoryId) {
+        closeEditor();
+      }
+      setCategories((prev) => prev.filter((c) => getCategoryId(c) !== String(id)));
       setPendingDelete(null);
     } catch (err) {
       toast.error(extractError(err));
@@ -106,10 +355,11 @@ export default function EventCategoryPage({
     }
   };
 
-  /* ── Render ── */
+  const showCreateTab = !isOrgOverrideList && !portal && editorOpen;
+  const readOnlyEditor = editorOpen && !canEditActive();
+
   return (
     <Box className="space-y-5">
-      {/* ── Hero Banner (DistrictsPage pattern) ── */}
       <Paper
         elevation={0}
         sx={{
@@ -133,85 +383,54 @@ export default function EventCategoryPage({
             pointerEvents: "none"
           }}
         />
-
-        <Stack
-          sx={{ position: "relative", zIndex: 1, height: "100%", justifyContent: "space-between" }}
-        >
-          <Box sx={{ maxWidth: 720 }}>
-            <Breadcrumbs
-              separator={<ChevronRight size={14} />}
-              sx={{
-                mb: 2,
-                "& .MuiBreadcrumbs-separator": { color: "rgba(255,255,255,0.6)" },
-                "& .MuiBreadcrumbs-li": {
-                  color: "rgba(255,255,255,0.86)",
-                  fontSize: { xs: 14, md: 16 }
-                }
-              }}
+        <Stack sx={{ position: "relative", zIndex: 1 }}>
+          <Breadcrumbs
+            separator={<ChevronRight size={14} />}
+            sx={{
+              mb: 2,
+              "& .MuiBreadcrumbs-separator": { color: "rgba(255,255,255,0.6)" },
+              "& .MuiBreadcrumbs-li": { color: "rgba(255,255,255,0.86)", fontSize: { xs: 14, md: 16 } }
+            }}
+          >
+            <Typography
+              component={RouterLink}
+              to={portal?.dashboard ?? "/dashboard"}
+              sx={{ color: "inherit", textDecoration: "none", fontWeight: 600, "&:hover": { color: "white" } }}
             >
+              Dashboard
+            </Typography>
+            {!portal && (
               <Typography
                 component={RouterLink}
-                to={portal?.dashboard ?? "/dashboard"}
-                sx={{
-                  color: "inherit",
-                  textDecoration: "none",
-                  fontWeight: 600,
-                  "&:hover": { color: "white" }
-                }}
+                to="/events/detail"
+                sx={{ color: "inherit", textDecoration: "none", fontWeight: 600, "&:hover": { color: "white" } }}
               >
-                Dashboard
+                Events
               </Typography>
-              {!portal && (
-                <Typography
-                  component={RouterLink}
-                  to="/events/detail"
-                  sx={{
-                    color: "inherit",
-                    textDecoration: "none",
-                    fontWeight: 600,
-                    "&:hover": { color: "white" }
-                  }}
-                >
-                  Events
-                </Typography>
-              )}
-              <Typography sx={{ color: "white", fontWeight: 700 }}>Categories</Typography>
-            </Breadcrumbs>
-
-            <Typography variant="h3" sx={{ fontWeight: 700, letterSpacing: "-0.05em", mb: 1.5 }}>
-              {portal ? `${portal.label} event categories` : "Event Categories"}
-            </Typography>
-            <Typography sx={{ color: "rgba(255,255,255,0.86)", maxWidth: 620, lineHeight: 1.7 }}>
-              {isOrgOverrideList
-                ? `KRSA category types are fixed. Edit only lap / round names — your changes are saved for your ${portal.label.toLowerCase()} only.`
-                : portal
-                  ? `Manage custom categories for your ${portal.label.toLowerCase()} plus KRSA standard categories when creating events.`
-                  : "Define standard (KRSA-wide) and custom (club/district) skating disciplines with age groups and lap categories."}
-            </Typography>
-
-            <Stack direction="row" spacing={1.25} useFlexGap sx={{ mt: 3, flexWrap: "wrap" }}>
-              <Chip
-                label={`${categories.length} Type${categories.length !== 1 ? "s" : ""}`}
-                sx={{ color: "white", backgroundColor: "rgba(255,255,255,0.14)" }}
-              />
-            </Stack>
-          </Box>
+            )}
+            <Typography sx={{ color: "white", fontWeight: 700 }}>Categories</Typography>
+          </Breadcrumbs>
+          <Typography variant="h3" sx={{ fontWeight: 700, letterSpacing: "-0.05em", mb: 1.5 }}>
+            {portal ? `${portal.label} event categories` : "Event Categories"}
+          </Typography>
+          <Typography sx={{ color: "rgba(255,255,255,0.86)", maxWidth: 620, lineHeight: 1.7 }}>
+            {isOrgOverrideList
+              ? `Click a type to edit lap names for your ${portal.label.toLowerCase()}. Update saves that type only.`
+              : "Click a type card to open details. Use + to add rows, then Update at the bottom for that type."}
+          </Typography>
         </Stack>
       </Paper>
 
-      {/* ── Management Panel ── */}
       <Paper
         elevation={0}
         sx={{
           borderRadius: "32px",
           border: "1px solid rgba(246,228,221,0.95)",
           overflow: "hidden",
-          background:
-            "linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(255,249,246,0.98) 100%)",
+          background: "linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(255,249,246,0.98) 100%)",
           boxShadow: "0 26px 80px rgba(48,30,24,0.07)"
         }}
       >
-        {/* Header row */}
         <Stack
           direction={{ xs: "column", lg: "row" }}
           spacing={2}
@@ -222,13 +441,17 @@ export default function EventCategoryPage({
               Event Category Management
             </Typography>
             <Typography sx={{ mt: 0.75, color: "#8d7f7b" }}>
-              {isOrgOverrideList
-                ? "Type name is set by super admin. Use Edit to change category names for your events."
-                : "Each category defines a skating type with its age groups and lap / round categories."}
+              {editorOpen
+                ? "Switch tabs to edit another type. Update applies to the active tab only."
+                : "Select a type below to open the editor."}
             </Typography>
           </Box>
-
           <Stack direction={{ xs: "column", sm: "row" }} spacing={1.5}>
+            {editorOpen ? (
+              <Button variant="outlined" onClick={closeEditor} disabled={saving}>
+                Back to types
+              </Button>
+            ) : null}
             <Button
               variant="outlined"
               startIcon={<RefreshCw size={16} />}
@@ -237,383 +460,130 @@ export default function EventCategoryPage({
             >
               Refresh
             </Button>
-            {!isOrgOverrideList ? (
+            {!isOrgOverrideList && !portal ? (
               <Button
                 variant="contained"
                 startIcon={<Plus size={16} />}
-                onClick={() => navigate(portal?.create ?? "/events/category/create")}
+                onClick={() => openEditor("new")}
                 sx={{ backgroundColor: "#f6765e", "&:hover": { backgroundColor: "#ea6b54" } }}
               >
-                Add Category
+                Add type
               </Button>
             ) : null}
           </Stack>
         </Stack>
 
         <Box sx={{ px: 3, pb: 3 }}>
-          {/* Loading */}
           {loading ? (
-            <Box
-              sx={{
-                display: "grid",
-                gridTemplateColumns: {
-                  xs: "1fr",
-                  md: "repeat(2, minmax(0,1fr))",
-                  xl: "repeat(3, minmax(0,1fr))"
-                },
-                gap: 2
-              }}
-            >
-              {[...Array(6)].map((_, index) => (
-                <Paper
-                  key={index}
-                  elevation={0}
-                  sx={{
-                    borderRadius: "24px",
-                    border: "1px solid #f0ddd5",
-                    overflow: "hidden",
-                    background: "linear-gradient(135deg, #fff9f7 0%, #fef0eb 100%)",
-                    boxShadow: "0 20px 50px rgba(56,36,29,0.08)"
-                  }}
-                >
-                  <Stack
-                    direction="row"
-                    alignItems="center"
-                    gap={1.5}
-                    sx={{ px: 2.5, pt: 2.5, pb: 1.5 }}
-                  >
-                    <Skeleton
-                      variant="rounded"
-                      width={42}
-                      height={42}
-                      sx={{ borderRadius: "14px" }}
-                    />
-                    <Box sx={{ flex: 1 }}>
-                      <Skeleton variant="text" width="60%" height={24} />
-                      <Skeleton variant="text" width="40%" height={16} />
-                    </Box>
-                  </Stack>
-
-                  <Divider sx={{ borderColor: "#f5ebe7", mx: 2.5 }} />
-
-                  <Stack spacing={1.25} sx={{ px: 2.5, py: 1.75 }}>
-                    <Box>
-                      <Skeleton
-                        variant="rounded"
-                        width={60}
-                        height={20}
-                        sx={{ mb: 1, borderRadius: "10px" }}
-                      />
-                      <Stack direction="row" spacing={0.75}>
-                        <Skeleton
-                          variant="rounded"
-                          width={50}
-                          height={20}
-                          sx={{ borderRadius: "10px" }}
-                        />
-                        <Skeleton
-                          variant="rounded"
-                          width={70}
-                          height={20}
-                          sx={{ borderRadius: "10px" }}
-                        />
-                      </Stack>
-                    </Box>
-                    <Box>
-                      <Skeleton
-                        variant="rounded"
-                        width={60}
-                        height={20}
-                        sx={{ mb: 1, borderRadius: "10px" }}
-                      />
-                      <Stack direction="row" spacing={0.75}>
-                        <Skeleton
-                          variant="rounded"
-                          width={60}
-                          height={20}
-                          sx={{ borderRadius: "10px" }}
-                        />
-                        <Skeleton
-                          variant="rounded"
-                          width={50}
-                          height={20}
-                          sx={{ borderRadius: "10px" }}
-                        />
-                      </Stack>
-                    </Box>
-                  </Stack>
-
-                  <Divider sx={{ borderColor: "#f5ebe7", mx: 2.5 }} />
-
-                  <Stack direction="row" spacing={1} sx={{ p: 2.5, pt: 2 }}>
-                    <Skeleton variant="rounded" width="100%" height={36} />
-                    <Skeleton variant="rounded" width="100%" height={36} />
-                  </Stack>
-                </Paper>
+            <Box sx={{ display: "flex", justifyContent: "center", gap: 2, flexWrap: "wrap" }}>
+              {[1, 2, 3].map((i) => (
+                <Skeleton key={i} variant="rounded" width={220} height={140} sx={{ borderRadius: "24px" }} />
               ))}
             </Box>
           ) : fetchError ? (
-            <Paper
-              elevation={0}
-              sx={{
-                p: 5,
-                borderRadius: "22px",
-                textAlign: "center",
-                backgroundColor: "#fff5f5",
-                border: "1px solid #fed7d7"
-              }}
-            >
-              <Typography sx={{ color: "#c53030", fontWeight: 700, mb: 1 }}>
-                Failed to load categories
-              </Typography>
-              <Typography sx={{ color: "#9b2c2c", mb: 3, fontSize: 14 }}>{fetchError}</Typography>
-              <Button
-                variant="outlined"
-                startIcon={<RefreshCw size={15} />}
-                onClick={fetchCategories}
-                sx={{ borderColor: "#c53030", color: "#c53030" }}
-              >
+            <Paper elevation={0} sx={{ p: 5, borderRadius: "22px", textAlign: "center", bgcolor: "#fff5f5" }}>
+              <Typography sx={{ color: "#c53030", fontWeight: 700, mb: 2 }}>{fetchError}</Typography>
+              <Button variant="outlined" startIcon={<RefreshCw size={15} />} onClick={fetchCategories}>
                 Retry
               </Button>
             </Paper>
-          ) : categories.length === 0 ? (
-            <Paper
-              elevation={0}
-              sx={{ p: 5, borderRadius: "22px", textAlign: "center", color: "#978a86" }}
-            >
+          ) : categories.length === 0 && !editorOpen ? (
+            <Paper elevation={0} sx={{ p: 5, borderRadius: "22px", textAlign: "center", color: "#978a86" }}>
               {isOrgOverrideList
-                ? "No KRSA standard categories yet. Ask super admin to create them first."
-                : 'No event categories found. Click "Add Category" to create the first one.'}
+                ? "No KRSA standard categories yet."
+                : 'No categories yet. Click "Add type" to create one.'}
             </Paper>
-          ) : (
-            /* Category cards */
+          ) : !editorOpen ? (
             <Box
               sx={{
-                display: "grid",
-                gridTemplateColumns: {
-                  xs: "1fr",
-                  md: "repeat(2, minmax(0,1fr))",
-                  xl: "repeat(3, minmax(0,1fr))"
-                },
-                gap: 2
+                display: "flex",
+                flexWrap: "wrap",
+                gap: 2.5,
+                justifyContent: "center",
+                py: 2
               }}
             >
-              {categories.map((cat) => {
-                const catId = cat._id ?? cat.id;
-                const activeAgeGroups = (cat.ageGroups ?? []).filter(
-                  (ag) => ag.categories?.length > 0
-                );
-
-                return (
-                  <Paper
-                    key={catId}
-                    elevation={0}
-                    sx={{
-                      borderRadius: "24px",
-                      border: "1px solid #f0ddd5",
-                      overflow: "hidden",
-                      background: "linear-gradient(135deg, #fff9f7 0%, #fef0eb 100%)",
-                      boxShadow: "0 20px 50px rgba(56,36,29,0.08)",
-                      transition: "transform 0.25s ease, box-shadow 0.25s ease",
-                      "&:hover": {
-                        transform: "translateY(-4px)",
-                        boxShadow: "0 28px 65px rgba(56,36,29,0.12)"
-                      }
-                    }}
-                  >
-                    {/* Card header */}
-                    <Stack
-                      direction="row"
-                      alignItems="center"
-                      gap={1.5}
-                      sx={{ px: 2.5, pt: 2.5, pb: 1.5 }}
-                    >
-                      <Box
-                        sx={{
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "center",
-                          width: 42,
-                          height: 42,
-                          borderRadius: "14px",
-                          backgroundColor: "#fff1eb",
-                          color: "#f6765e",
-                          flexShrink: 0
-                        }}
-                      >
-                        <Layers size={20} />
-                      </Box>
-                      <Box sx={{ flex: 1, minWidth: 0 }}>
-                        <Typography
-                          sx={{
-                            fontSize: 17,
-                            fontWeight: 800,
-                            color: "#2f2829",
-                            lineHeight: 1.3,
-                            overflow: "hidden",
-                            textOverflow: "ellipsis",
-                            whiteSpace: "nowrap"
-                          }}
-                        >
-                          {cat.typeName}
-                        </Typography>
-                        <Stack direction="row" spacing={0.75} alignItems="center" sx={{ mt: 0.5 }}>
-                          <Chip
-                            size="small"
-                            label={
-                              isOrgOverrideList
-                                ? cat.hasOrgOverride
-                                  ? "Your version"
-                                  : "KRSA default"
-                                : cat.categoryStatus === "custom"
-                                  ? "Custom"
-                                  : "Standard"
-                            }
-                            sx={{
-                              height: 22,
-                              fontSize: 11,
-                              fontWeight: 700,
-                              bgcolor: isOrgOverrideList
-                                ? cat.hasOrgOverride
-                                  ? "#e0f7f5"
-                                  : "#fff1eb"
-                                : cat.categoryStatus === "custom"
-                                  ? "#e0f7f5"
-                                  : "#fff1eb",
-                              color: isOrgOverrideList
-                                ? cat.hasOrgOverride
-                                  ? "#00897b"
-                                  : "#f6765e"
-                                : cat.categoryStatus === "custom"
-                                  ? "#00897b"
-                                  : "#f6765e"
-                            }}
-                          />
-                          <Typography sx={{ fontSize: 12, color: "#8d7f7b" }}>
-                            {activeAgeGroups.length} age group
-                            {activeAgeGroups.length !== 1 ? "s" : ""}
-                          </Typography>
-                        </Stack>
-                      </Box>
-                    </Stack>
-
-                    <Divider sx={{ borderColor: "#f5ebe7", mx: 2.5 }} />
-
-                    {/* Age groups preview */}
-                    <Stack spacing={1.25} sx={{ px: 2.5, py: 1.75 }}>
-                      {activeAgeGroups.length === 0 ? (
-                        <Typography sx={{ fontSize: 13, color: "#b8a9a5", fontStyle: "italic" }}>
-                          No age groups configured.
-                        </Typography>
-                      ) : (
-                        activeAgeGroups.map((ag) => (
-                          <Box key={ag.label}>
-                            <Chip
-                              label={ag.label}
-                              size="small"
-                              sx={{
-                                mb: 0.75,
-                                backgroundColor: "#fff1eb",
-                                color: "#f6765e",
-                                fontWeight: 700,
-                                fontSize: 11
-                              }}
-                            />
-                            <Stack
-                              direction="row"
-                              spacing={0.75}
-                              useFlexGap
-                              sx={{ flexWrap: "wrap", pl: 0.25 }}
-                            >
-                              {ag.categories.map((c, idx) => (
-                                <Chip
-                                  key={idx}
-                                  label={c.name}
-                                  size="small"
-                                  sx={{
-                                    backgroundColor: "#f5ebe7",
-                                    color: "#5f5552",
-                                    fontSize: 11
-                                  }}
-                                />
-                              ))}
-                            </Stack>
-                          </Box>
-                        ))
-                      )}
-                    </Stack>
-
-                    <Divider sx={{ borderColor: "#f5ebe7", mx: 2.5 }} />
-
-                    {/* Action buttons */}
-                    <Stack direction="row" spacing={1} sx={{ p: 2.5, pt: 2 }}>
-                      {isOrgOverrideList ? (
-                        <Button
-                          variant="contained"
-                          startIcon={<PencilLine size={15} />}
-                          onClick={() =>
-                            navigate(portal.edit(catId), { state: { category: cat } })
-                          }
-                          fullWidth
-                          sx={{
-                            backgroundColor: "#f6765e",
-                            "&:hover": { backgroundColor: "#ea6b54" }
-                          }}
-                        >
-                          Edit names
-                        </Button>
-                      ) : null}
-                      {!isOrgOverrideList && (!portal || cat.categoryStatus === "custom") ? (
-                        <>
-                          <Button
-                            variant="outlined"
-                            startIcon={<PencilLine size={15} />}
-                            onClick={() =>
-                              navigate(
-                                portal
-                                  ? portal.edit(catId)
-                                  : `/events/category/${catId}/edit`,
-                                { state: { category: cat } }
-                              )
-                            }
-                            fullWidth
-                          >
-                            Edit
-                          </Button>
-                          <Button
-                            variant="contained"
-                            startIcon={<Trash2 size={15} />}
-                            onClick={() => setPendingDelete(cat)}
-                            fullWidth
-                            sx={{
-                              backgroundColor: "#f6765e",
-                              "&:hover": { backgroundColor: "#ea6b54" }
-                            }}
-                          >
-                            Delete
-                          </Button>
-                        </>
-                      ) : null}
-                      {portal && !isOrgOverrideList && cat.categoryStatus === "standard" ? (
-                        <Typography sx={{ fontSize: 13, color: "#8d7f7b", px: 1 }}>
-                          Standard KRSA category — read only for your {portal.label.toLowerCase()}.
-                        </Typography>
-                      ) : null}
-                    </Stack>
-                  </Paper>
-                );
-              })}
+              {categories.map((cat) => (
+                <CategoryPickerCard key={getCategoryId(cat)} cat={cat} onOpen={openEditor} />
+              ))}
             </Box>
+          ) : (
+            <Paper elevation={0} sx={{ ...CATEGORY_CARD_SX, maxWidth: 960, mx: "auto", width: "100%", cursor: "default" }}>
+              <CategoryTypeTabs
+                categories={categories}
+                activeId={activeCategoryId}
+                onSelect={handleTabSelect}
+                showNewTab={showCreateTab}
+              />
+              <CategoryInlineEditor
+                form={form}
+                errors={formErrors}
+                isOrgOverride={isOrgOverrideList}
+                isCreate={activeCategoryId === "new"}
+                readOnly={readOnlyEditor}
+                onTypeNameChange={setTypeName}
+                onCategoryNameChange={setCategoryName}
+                onAddCategoryRow={addCategoryRow}
+                onRemoveCategoryRow={removeCategoryRow}
+              />
+              <Divider sx={{ borderColor: "#f5ebe7", mx: 2.5 }} />
+              <Stack
+                direction={{ xs: "column", sm: "row" }}
+                spacing={1.5}
+                sx={{ p: 2.5, justifyContent: "flex-end" }}
+              >
+                {readOnlyEditor ? (
+                  <Typography sx={{ fontSize: 13, color: "#8d7f7b", flex: 1, alignSelf: "center" }}>
+                    Standard KRSA type — read only for your {portal?.label?.toLowerCase() ?? "organization"}.
+                  </Typography>
+                ) : null}
+                {!readOnlyEditor &&
+                activeCategoryId !== "new" &&
+                !isOrgOverrideList &&
+                (!portal || categories.find((c) => getCategoryId(c) === activeCategoryId)?.categoryStatus === "custom") ? (
+                  <Button
+                    variant="outlined"
+                    color="error"
+                    startIcon={<Trash2 size={15} />}
+                    onClick={() => {
+                      const cat = categories.find((c) => getCategoryId(c) === activeCategoryId);
+                      if (cat) setPendingDelete(cat);
+                    }}
+                    disabled={saving}
+                  >
+                    Delete
+                  </Button>
+                ) : null}
+                <Button variant="outlined" onClick={closeEditor} disabled={saving}>
+                  Cancel
+                </Button>
+                {!readOnlyEditor ? (
+                  <Button
+                    variant="contained"
+                    onClick={handleUpdate}
+                    disabled={saving}
+                    sx={{ backgroundColor: "#f6765e", "&:hover": { backgroundColor: "#ea6b54" }, minWidth: 140 }}
+                  >
+                    {saving
+                      ? "Saving…"
+                      : activeCategoryId === "new"
+                        ? "Create"
+                        : isOrgOverrideList
+                          ? "Update"
+                          : "Update"}
+                  </Button>
+                ) : null}
+              </Stack>
+            </Paper>
           )}
         </Box>
       </Paper>
 
-      {/* ── Confirm Delete ── */}
       <ConfirmDeleteModal
         open={Boolean(pendingDelete)}
         title="Delete Category"
         itemLabel={pendingDelete?.typeName}
-        description="This event category and all its age groups will be permanently removed. This action cannot be undone."
+        description="This event category and all its age groups will be permanently removed."
         confirmLabel={deleting ? "Deleting…" : "Delete"}
         onClose={() => setPendingDelete(null)}
         onConfirm={handleDelete}

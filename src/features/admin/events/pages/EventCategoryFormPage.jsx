@@ -19,51 +19,10 @@ import { eventCategoriesApi } from "@/api/event-categories-api";
 import eventsHero from "@/assets/Events_header.jpg";
 import toast from "react-hot-toast";
 
-/* ─────────────────────────────────────────────
-   Constants — mirrors backend AGE_GROUPS exactly
-───────────────────────────────────────────── */
-const AGE_GROUP_LABELS = ["6-8", "8-10", "10-12", "12-15", "15-18", "18+", "35+"];
+import { buildFormState, buildPayload } from "@/features/admin/events/utils/categoryFormUtils";
 
-/* ─────────────────────────────────────────────
-   Helpers
-───────────────────────────────────────────── */
 const extractError = (err) =>
   err?.response?.data?.message || err?.message || "An unexpected error occurred.";
-
-/** Initialise form state from an optional existing doc */
-const buildFormState = (doc) => ({
-  typeName: doc?.typeName ?? "",
-  ageGroups: AGE_GROUP_LABELS.map((label) => {
-    const existing = doc?.ageGroups?.find((ag) => ag.label === label);
-    return {
-      label,
-      // Keep one empty row if there are no existing categories
-      categories: existing?.categories?.length ? existing.categories.map((c) => c.name) : [""]
-    };
-  })
-});
-
-/** Build the API payload from form state */
-const buildPayload = (form, { namesOnly = false } = {}) => {
-  const ageGroups = form.ageGroups
-    .map((ag) => ({
-      label: ag.label,
-      categories: ag.categories
-        .map((c) => c.trim())
-        .filter(Boolean)
-        .map((name) => ({ name }))
-    }))
-    .filter((ag) => ag.categories.length > 0);
-
-  if (namesOnly) {
-    return { ageGroups };
-  }
-
-  return {
-    typeName: form.typeName.trim(),
-    ageGroups
-  };
-};
 
 /* ─────────────────────────────────────────────
    EventCategoryFormPage
