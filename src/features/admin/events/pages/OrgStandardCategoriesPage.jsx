@@ -13,6 +13,7 @@ import { useCallback, useEffect, useState } from "react";
 import { Link as RouterLink } from "react-router-dom";
 import { eventCategoriesApi } from "@/api/event-categories-api";
 import CategoryInlineEditor from "@/features/admin/events/components/CategoryInlineEditor";
+import { useFormulasList } from "@/features/admin/events/hooks/useFormulasList";
 import { buildFormState } from "@/features/admin/events/utils/categoryFormUtils";
 import eventsHero from "@/assets/Events_header.jpg";
 import toast from "react-hot-toast";
@@ -88,6 +89,7 @@ export default function OrgStandardCategoriesPage({ orgType }) {
   const [fetchError, setFetchError] = useState(null);
   const [activeCategoryId, setActiveCategoryId] = useState(null);
   const [form, setForm] = useState(() => buildFormState(null));
+  const { formulas, formulasLoading } = useFormulasList();
 
   const loadFormForId = useCallback(
     (id) => {
@@ -248,11 +250,15 @@ export default function OrgStandardCategoriesPage({ orgType }) {
               <CategoryInlineEditor
                 form={form}
                 errors={{}}
+                formulas={formulas}
+                formulasLoading={formulasLoading}
+                showFormula
                 isOrgOverride={false}
                 isCreate={false}
                 readOnly={true}
                 onTypeNameChange={() => {}}
                 onCategoryNameChange={() => {}}
+                onCategoryFormulaChange={() => {}}
                 onAddCategoryRow={() => {}}
                 onRemoveCategoryRow={() => {}}
               />

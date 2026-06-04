@@ -5,21 +5,27 @@ import {
   Chip,
   CircularProgress,
   Divider,
-  IconButton,
   Paper,
   Stack,
   TextField,
-  Tooltip,
   Typography
 } from "@mui/material";
-import { ChevronRight, Layers, Plus, Save, X } from "lucide-react";
+import { ChevronRight, Layers, Save } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Link as RouterLink, useLocation, useNavigate, useParams } from "react-router-dom";
 import { eventCategoriesApi } from "@/api/event-categories-api";
+import CategoryInlineEditor from "@/features/admin/events/components/CategoryInlineEditor";
+import { useFormulasList } from "@/features/admin/events/hooks/useFormulasList";
 import eventsHero from "@/assets/Events_header.jpg";
 import toast from "react-hot-toast";
 
-import { buildFormState, buildPayload } from "@/features/admin/events/utils/categoryFormUtils";
+import {
+  buildFormState,
+  buildPayload,
+  hasCategoryFormErrors,
+  useCategoryFormActions,
+  validateCategoryForm
+} from "@/features/admin/events/utils/categoryFormUtils";
 
 const extractError = (err) =>
   err?.response?.data?.message || err?.message || "An unexpected error occurred.";
@@ -59,6 +65,15 @@ export default function EventCategoryFormPage({
   const [saving, setSaving] = useState(false);
   const [errors, setErrors] = useState({});
 
+  const { formulas, formulasLoading } = useFormulasList();
+  const {
+    setTypeName,
+    setCategoryName,
+    setCategoryFormula,
+    addCategoryRow,
+    removeCategoryRow
+  } = useCategoryFormActions(setForm, setErrors);
+
   /* ── Load existing doc if navigated directly by URL ── */
   useEffect(() => {
     if (!isEditing || routeState?.category) return;
@@ -75,57 +90,22 @@ export default function EventCategoryFormPage({
       .finally(() => setLoadingDoc(false));
   }, [isEditing, categoryId, routeState?.category]);
 
-  /* ── Field setters ── */
-  const setTypeName = (value) => {
-    setForm((f) => ({ ...f, typeName: value }));
-    setErrors((e) => ({ ...e, typeName: "" }));
-  };
-
-  const setCategoryName = (ageIdx, catIdx, value) => {
-    setForm((f) => {
-      const ageGroups = f.ageGroups.map((ag, ai) => {
-        if (ai !== ageIdx) return ag;
-        return {
-          ...ag,
-          categories: ag.categories.map((c, ci) => (ci === catIdx ? value : c))
-        };
-      });
-      return { ...f, ageGroups };
-    });
-  };
-
-  const addCategory = (ageIdx) => {
-    setForm((f) => ({
-      ...f,
-      ageGroups: f.ageGroups.map((ag, ai) =>
-        ai === ageIdx ? { ...ag, categories: [...ag.categories, ""] } : ag
-      )
-    }));
-  };
-
-  const removeCategory = (ageIdx, catIdx) => {
-    setForm((f) => ({
-      ...f,
-      ageGroups: f.ageGroups.map((ag, ai) => {
-        if (ai !== ageIdx) return ag;
-        const filtered = ag.categories.filter((_, ci) => ci !== catIdx);
-        return { ...ag, categories: filtered.length ? filtered : [""] };
-      })
-    }));
-  };
-
   /* ── Submit ── */
   const handleSubmit = async () => {
-    const nextErrors = {};
-    if (!isOrgOverride && !form.typeName.trim()) {
-      nextErrors.typeName = "Type name is required.";
-    }
-    if (Object.keys(nextErrors).length) {
+    const requireFormula = !isOrgOverride;
+    const nextErrors = validateCategoryForm(form, {
+      requireFormula,
+      requireTypeName: !isOrgOverride
+    });
+    if (hasCategoryFormErrors(nextErrors)) {
       setErrors(nextErrors);
+      if (nextErrors.categoryRows) {
+        toast.error("Select a formula for each category name.");
+      }
       return;
     }
 
-    const payload = buildPayload(form, { namesOnly: isOrgOverride });
+    const payload = buildPayload(form, { namesOnly: isOrgOverride, requireFormula });
     setSaving(true);
     try {
       if (isEditing) {
@@ -321,100 +301,23 @@ export default function EventCategoryFormPage({
           )}
         </Box>
 
-        <Divider sx={{ borderColor: "#f5ebe7", mb: 3.5 }} />
+        <Divider sx={{ borderColor: "#f5ebe7", mb: 2 }} />
 
-        {/* Age Groups */}
-        <Typography sx={{ fontWeight: 700, color: "#2f2829", mb: 0.5 }}>
-          Age Groups & Categories
-        </Typography>
-        <Typography sx={{ fontSize: 13, color: "#8d7f7b", mb: 2.5 }}>
-          Add lap or round categories under each age group. Leave all rows empty to skip an age
-          group.
-        </Typography>
-
-        <Stack spacing={2.5}>
-          {form.ageGroups.map((ag, ageIdx) => {
-            const filledCount = ag.categories.filter((c) => c.trim()).length;
-            return (
-              <Paper
-                key={ag.label}
-                elevation={0}
-                sx={{
-                  borderRadius: "20px",
-                  border: "1px solid #f0e8e5",
-                  overflow: "hidden",
-                  background: "linear-gradient(135deg, #fff9f7 0%, #fff4f0 100%)"
-                }}
-              >
-                {/* Age group header */}
-                <Stack
-                  direction="row"
-                  alignItems="center"
-                  justifyContent="space-between"
-                  sx={{ px: 2.5, py: 1.5, borderBottom: "1px solid #f5ebe7" }}
-                >
-                  <Stack direction="row" alignItems="center" gap={1.5}>
-                    <Chip
-                      label={ag.label}
-                      size="small"
-                      sx={{
-                        backgroundColor: "#fff1eb",
-                        color: "#f6765e",
-                        fontWeight: 700,
-                        fontSize: 12
-                      }}
-                    />
-                    <Typography sx={{ fontSize: 13, color: "#8d7f7b" }}>
-                      {filledCount} categor{filledCount === 1 ? "y" : "ies"}
-                    </Typography>
-                  </Stack>
-
-                  <Tooltip title="Add row">
-                    <IconButton
-                      size="small"
-                      onClick={() => addCategory(ageIdx)}
-                      sx={{
-                        color: "#f6765e",
-                        border: "1px solid #f5d5c8",
-                        backgroundColor: "#fff1eb",
-                        "&:hover": { backgroundColor: "#ffe3d9" }
-                      }}
-                    >
-                      <Plus size={15} />
-                    </IconButton>
-                  </Tooltip>
-                </Stack>
-
-                {/* Category inputs */}
-                <Stack spacing={1} sx={{ p: 2 }}>
-                  {ag.categories.map((catName, catIdx) => (
-                    <Stack key={catIdx} direction="row" alignItems="center" gap={1}>
-                      <TextField
-                        size="small"
-                        placeholder={`Category ${catIdx + 1} e.g. "1 Lap"`}
-                        value={catName}
-                        onChange={(e) => setCategoryName(ageIdx, catIdx, e.target.value)}
-                        fullWidth
-                      />
-                      <Tooltip title="Remove row">
-                        <span>
-                          <IconButton
-                            size="small"
-                            onClick={() => removeCategory(ageIdx, catIdx)}
-                            disabled={ag.categories.length === 1}
-                            sx={{ color: "#f6765e", flexShrink: 0 }}
-                          >
-                            <X size={15} />
-                          </IconButton>
-                        </span>
-                      </Tooltip>
-                    </Stack>
-                  ))}
-                </Stack>
-              </Paper>
-            );
-          })}
-        </Stack>
+        <CategoryInlineEditor
+          form={form}
+          errors={errors}
+          formulas={formulas}
+          formulasLoading={formulasLoading}
+          showFormula={!isOrgOverride}
+          isOrgOverride={isOrgOverride}
+          isCreate={false}
+          readOnly={false}
+          onTypeNameChange={setTypeName}
+          onCategoryNameChange={setCategoryName}
+          onCategoryFormulaChange={setCategoryFormula}
+          onAddCategoryRow={addCategoryRow}
+          onRemoveCategoryRow={removeCategoryRow}
+        />
 
         {/* Action bar */}
         <Stack

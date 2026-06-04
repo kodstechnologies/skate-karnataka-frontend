@@ -26,6 +26,7 @@ import {
   Grid,
   Folder,
   Tags,
+  FunctionSquare,
   Smartphone
 } from "lucide-react";
 
@@ -63,6 +64,7 @@ export const navigationGroups = [
         icon: Folder,
         children: [
           { slug: "events-category", to: "/events/category", label: "Events-Category", icon: Tags },
+          { slug: "events-formula", to: "/events/formula", label: "Formula", icon: FunctionSquare },
           { slug: "events", to: "/events/detail", label: "Events", icon: Layers }
         ]
       },

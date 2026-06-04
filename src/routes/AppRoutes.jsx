@@ -69,6 +69,8 @@ import { OnboardingPage } from "../features/admin/onboarding/pages/OnboardingPag
 import { OnboardingFormPage } from "../features/admin/onboarding/pages/OnboardingFormPage";
 import EventCategoryPage from "../features/admin/events/pages/EventCategoryPage";
 import EventCategoryFormPage from "../features/admin/events/pages/EventCategoryFormPage";
+import FormulasPage from "../features/admin/events/pages/FormulasPage";
+import FormulaFormPage from "../features/admin/events/pages/FormulaFormPage";
 import ClubEventCategoriesPage from "../features/admin/events/pages/ClubEventCategoriesPage";
 import DistrictEventCategoriesPage from "../features/admin/events/pages/DistrictEventCategoriesPage";
 import OrgStandardCategoriesPage from "../features/admin/events/pages/OrgStandardCategoriesPage";
@@ -190,6 +192,9 @@ export const AppRoutes = () => {
         <Route path="/events/category" element={<EventCategoryPage />} />
         <Route path="/events/category/create" element={<EventCategoryFormPage />} />
         <Route path="/events/category/:categoryId/edit" element={<EventCategoryFormPage />} />
+        <Route path="/events/formula" element={<FormulasPage />} />
+        <Route path="/events/formula/create" element={<FormulaFormPage />} />
+        <Route path="/events/formula/:formulaId/edit" element={<FormulaFormPage />} />
         <Route path="/events/create" element={<EventFormPage />} />
         <Route path="/events/:eventId/edit" element={<EventFormPage />} />
         <Route path="/state/media" element={<StateMediaPage />} />

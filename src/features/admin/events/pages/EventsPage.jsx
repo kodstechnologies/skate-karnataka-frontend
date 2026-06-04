@@ -17,6 +17,8 @@ import { Link as RouterLink, useNavigate } from "react-router-dom";
 import eventsHero from "@/assets/Events_header.jpg";
 import { ConfirmDeleteModal } from "@/components/ui/ConfirmDeleteModal";
 import { eventsApi } from "@/api/events-api";
+import GenerateEventCertificatesButton from "@/features/admin/events/components/GenerateEventCertificatesButton";
+import { useAuthStore } from "@/features/auth/store/auth-store";
 import toast from "react-hot-toast";
 
 /** Format a date string like "2025-06-10" → "10 Jun 2025" */
@@ -108,6 +110,7 @@ const getStatusColor = (status) => {
 
 export const EventsPage = () => {
   const navigate = useNavigate();
+  const role = useAuthStore((s) => s.role);
 
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -120,7 +123,6 @@ export const EventsPage = () => {
 
   const [pendingDeleteEvent, setPendingDeleteEvent] = useState(null);
   const [deleting, setDeleting] = useState(false);
-
   const searchDebounceRef = useRef(null);
 
   const fetchEvents = useCallback(async (search = "", currentPage = 1, limit = 10) => {
@@ -178,6 +180,7 @@ export const EventsPage = () => {
       setPendingDeleteEvent(null);
     }
   };
+
   return (
     <Box className="space-y-5">
       <Paper
@@ -389,15 +392,16 @@ export const EventsPage = () => {
                   }}
                 >
                   <Stack
+                    direction="row"
+                    spacing={1}
                     sx={{
-                      display: "flex",
-                      flexDirection: "row",
-                      gap: 1.5,
                       px: 2,
                       py: 1.5,
                       alignItems: "center",
-                      justifyContent: "space-between", // ✅ correct property
-                      width: "100%"
+                      justifyContent: "space-between",
+                      width: "100%",
+                      flexWrap: "wrap",
+                      gap: 1
                     }}
                   >
                     <Chip
@@ -408,6 +412,11 @@ export const EventsPage = () => {
                         color: "white",
                         fontWeight: 700
                       }}
+                    />
+                    <GenerateEventCertificatesButton
+                      event={event}
+                      role={role}
+                      variant="corner"
                     />
                   </Stack>
 

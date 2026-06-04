@@ -15,7 +15,14 @@ import { useCallback, useEffect, useState } from "react";
 import { Link as RouterLink } from "react-router-dom";
 import { eventCategoriesApi } from "@/api/event-categories-api";
 import CategoryInlineEditor from "@/features/admin/events/components/CategoryInlineEditor";
-import { buildFormState, buildPayload } from "@/features/admin/events/utils/categoryFormUtils";
+import { useFormulasList } from "@/features/admin/events/hooks/useFormulasList";
+import {
+  buildFormState,
+  buildPayload,
+  hasCategoryFormErrors,
+  useCategoryFormActions,
+  validateCategoryForm
+} from "@/features/admin/events/utils/categoryFormUtils";
 import eventsHero from "@/assets/Events_header.jpg";
 import toast from "react-hot-toast";
 
@@ -93,6 +100,15 @@ export default function OrgCustomCategoryPage({ orgType }) {
   const [form, setForm] = useState(() => buildFormState(null));
   const [saving, setSaving] = useState(false);
 
+  const { formulas, formulasLoading } = useFormulasList();
+  const [formErrors, setFormErrors] = useState({});
+  const {
+    setCategoryName,
+    setCategoryFormula,
+    addCategoryRow,
+    removeCategoryRow
+  } = useCategoryFormActions(setForm, setFormErrors);
+
   const load = useCallback(async () => {
     setLoading(true);
     setFetchError(null);
@@ -130,42 +146,19 @@ export default function OrgCustomCategoryPage({ orgType }) {
     setActiveCategoryId(id);
     const cat = categories.find((c) => getCategoryId(c) === id);
     setForm(buildFormState(cat ?? null));
-  };
-
-  const setCategoryName = (ageIdx, catIdx, value) => {
-    setForm((f) => ({
-      ...f,
-      ageGroups: f.ageGroups.map((ag, ai) =>
-        ai === ageIdx
-          ? { ...ag, categories: ag.categories.map((c, ci) => (ci === catIdx ? value : c)) }
-          : ag
-      )
-    }));
-  };
-
-  const addCategoryRow = (ageIdx) => {
-    setForm((f) => ({
-      ...f,
-      ageGroups: f.ageGroups.map((ag, ai) =>
-        ai === ageIdx ? { ...ag, categories: [...ag.categories, ""] } : ag
-      )
-    }));
-  };
-
-  const removeCategoryRow = (ageIdx, catIdx) => {
-    setForm((f) => ({
-      ...f,
-      ageGroups: f.ageGroups.map((ag, ai) => {
-        if (ai !== ageIdx) return ag;
-        const filtered = ag.categories.filter((_, ci) => ci !== catIdx);
-        return { ...ag, categories: filtered.length ? filtered : [""] };
-      })
-    }));
+    setFormErrors({});
   };
 
   const handleUpdate = async () => {
     if (!activeCategoryId) return;
-    const payload = buildPayload(form, { namesOnly: false });
+    const nextErrors = validateCategoryForm(form, { requireFormula: true });
+    if (hasCategoryFormErrors(nextErrors)) {
+      setFormErrors(nextErrors);
+      toast.error("Select a formula for each category name.");
+      return;
+    }
+    setFormErrors({});
+    const payload = buildPayload(form, { requireFormula: true });
     setSaving(true);
     try {
       const res = await eventCategoriesApi.update(activeCategoryId, payload);
@@ -277,12 +270,16 @@ export default function OrgCustomCategoryPage({ orgType }) {
               />
               <CategoryInlineEditor
                 form={form}
-                errors={{}}
+                errors={formErrors}
+                formulas={formulas}
+                formulasLoading={formulasLoading}
+                showFormula
                 isOrgOverride={false}
                 isCreate={false}
                 readOnly={false}
                 onTypeNameChange={() => {}}
                 onCategoryNameChange={setCategoryName}
+                onCategoryFormulaChange={setCategoryFormula}
                 onAddCategoryRow={addCategoryRow}
                 onRemoveCategoryRow={removeCategoryRow}
               />

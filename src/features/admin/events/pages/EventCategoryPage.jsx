@@ -15,7 +15,14 @@ import { Link as RouterLink } from "react-router-dom";
 import { ConfirmDeleteModal } from "@/components/ui/ConfirmDeleteModal";
 import { eventCategoriesApi } from "@/api/event-categories-api";
 import CategoryInlineEditor from "@/features/admin/events/components/CategoryInlineEditor";
-import { buildFormState, buildPayload } from "@/features/admin/events/utils/categoryFormUtils";
+import { useFormulasList } from "@/features/admin/events/hooks/useFormulasList";
+import {
+  buildFormState,
+  buildPayload,
+  hasCategoryFormErrors,
+  useCategoryFormActions,
+  validateCategoryForm
+} from "@/features/admin/events/utils/categoryFormUtils";
 import { unwrapOrgCategoryContext } from "@/features/admin/events/utils/categoryDisplay";
 import eventsHero from "@/assets/Events_header.jpg";
 import toast from "react-hot-toast";
@@ -187,6 +194,15 @@ export default function EventCategoryPage({
   const [pendingDelete, setPendingDelete] = useState(null);
   const [deleting, setDeleting] = useState(false);
 
+  const { formulas, formulasLoading } = useFormulasList();
+  const {
+    setTypeName,
+    setCategoryName,
+    setCategoryFormula,
+    addCategoryRow,
+    removeCategoryRow
+  } = useCategoryFormActions(setForm, setFormErrors);
+
   const canEditActive = () => {
     if (isOrgOverrideList) return true;
     if (!portal) return true;
@@ -273,56 +289,24 @@ export default function EventCategoryPage({
     setFormErrors({});
   };
 
-  const setTypeName = (value) => {
-    setForm((f) => ({ ...f, typeName: value }));
-    setFormErrors((e) => ({ ...e, typeName: "" }));
-  };
-
-  const setCategoryName = (ageIdx, catIdx, value) => {
-    setForm((f) => ({
-      ...f,
-      ageGroups: f.ageGroups.map((ag, ai) =>
-        ai === ageIdx
-          ? {
-              ...ag,
-              categories: ag.categories.map((c, ci) => (ci === catIdx ? value : c))
-            }
-          : ag
-      )
-    }));
-  };
-
-  const addCategoryRow = (ageIdx) => {
-    setForm((f) => ({
-      ...f,
-      ageGroups: f.ageGroups.map((ag, ai) =>
-        ai === ageIdx ? { ...ag, categories: [...ag.categories, ""] } : ag
-      )
-    }));
-  };
-
-  const removeCategoryRow = (ageIdx, catIdx) => {
-    setForm((f) => ({
-      ...f,
-      ageGroups: f.ageGroups.map((ag, ai) => {
-        if (ai !== ageIdx) return ag;
-        const filtered = ag.categories.filter((_, ci) => ci !== catIdx);
-        return { ...ag, categories: filtered.length ? filtered : [""] };
-      })
-    }));
-  };
-
   const handleUpdate = async () => {
-    const nextErrors = {};
-    if (!isOrgOverrideList && activeCategoryId === "new" && !form.typeName.trim()) {
-      nextErrors.typeName = "Type name is required.";
-    }
-    if (Object.keys(nextErrors).length) {
+    const requireFormula = !isOrgOverrideList;
+    const nextErrors = validateCategoryForm(form, {
+      requireFormula,
+      requireTypeName: !isOrgOverrideList && activeCategoryId === "new"
+    });
+    if (hasCategoryFormErrors(nextErrors)) {
       setFormErrors(nextErrors);
+      if (nextErrors.categoryRows) {
+        toast.error("Select a formula for each category name.");
+      }
       return;
     }
 
-    const payload = buildPayload(form, { namesOnly: isOrgOverrideList });
+    const payload = buildPayload(form, {
+      namesOnly: isOrgOverrideList,
+      requireFormula
+    });
     setSaving(true);
     try {
       if (activeCategoryId === "new") {
@@ -545,11 +529,15 @@ export default function EventCategoryPage({
               <CategoryInlineEditor
                 form={form}
                 errors={formErrors}
+                formulas={formulas}
+                formulasLoading={formulasLoading}
+                showFormula={!isOrgOverrideList}
                 isOrgOverride={isOrgOverrideList}
                 isCreate={activeCategoryId === "new"}
                 readOnly={readOnlyEditor}
                 onTypeNameChange={setTypeName}
                 onCategoryNameChange={setCategoryName}
+                onCategoryFormulaChange={setCategoryFormula}
                 onAddCategoryRow={addCategoryRow}
                 onRemoveCategoryRow={removeCategoryRow}
               />

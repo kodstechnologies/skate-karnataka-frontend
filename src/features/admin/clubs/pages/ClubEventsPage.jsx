@@ -21,6 +21,7 @@ import { eventsApi } from "@/api/events-api";
 import { useAuthStore } from "@/features/auth/store/auth-store";
 import { useClubsStore } from "@/features/admin/clubs/store/clubs-store";
 import { canApproveEvents, getEventApprovalChipProps } from "@/utils/eventApprovalStatus";
+import GenerateEventCertificatesButton from "@/features/admin/events/components/GenerateEventCertificatesButton";
 import toast from "react-hot-toast";
 
 const fmtDate = (v) => {
@@ -429,17 +430,35 @@ export const ClubEventsPage = () => {
                     }
                   }}
                 >
-                  <Stack direction="row" spacing={1} sx={{ px: 2, py: 1.5, flexWrap: "wrap" }}>
-                    <Chip
-                      size="small"
-                      label={getStatusLabel(event.status)}
-                      sx={{
-                        backgroundColor: getStatusColor(event.status),
-                        color: "white",
-                        fontWeight: 700
-                      }}
+                  <Stack
+                    direction="row"
+                    spacing={1}
+                    sx={{
+                      px: 2,
+                      py: 1.5,
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                      flexWrap: "wrap",
+                      gap: 1
+                    }}
+                  >
+                    <Stack direction="row" spacing={1} sx={{ flexWrap: "wrap" }}>
+                      <Chip
+                        size="small"
+                        label={getStatusLabel(event.status)}
+                        sx={{
+                          backgroundColor: getStatusColor(event.status),
+                          color: "white",
+                          fontWeight: 700
+                        }}
+                      />
+                      <Chip size="small" {...getEventApprovalChipProps(event)} />
+                    </Stack>
+                    <GenerateEventCertificatesButton
+                      event={event}
+                      role={role}
+                      variant="corner"
                     />
-                    <Chip size="small" {...getEventApprovalChipProps(event)} />
                   </Stack>
 
                   <Stack spacing={1.35} sx={{ p: 2.25, pt: 0 }}>

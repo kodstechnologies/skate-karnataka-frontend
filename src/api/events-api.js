@@ -44,6 +44,20 @@ export const eventsApi = {
     return api.delete(`/event/v1/state/${id}`);
   },
 
+  /** Events past end date — certificate generation (Admin). */
+  listEndedCertificateEvents: async () => {
+    return api.get("/event/v1/ended-events-certificates");
+  },
+
+  getCertificateStatus: async (eventId) => {
+    return api.get(`/event/v1/${eventId}/certificate-status`);
+  },
+
+  /** Generate certificates for all eligible skaters (Admin, after event ends). */
+  generateCertificates: async (eventId) => {
+    return api.post(`/event/v1/${eventId}/generate-certificates`);
+  },
+
   /**
    * Skating categories for event create (club/district).
    * @param {{ source?: 'standard' | 'custom' }} opts
