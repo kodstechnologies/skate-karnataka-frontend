@@ -65,6 +65,8 @@ import SponsorshipPage from "../features/admin/support-hub/SponsorshipPage/Spons
 import SponsorshipFormPage from "../features/admin/support-hub/SponsorshipPage/SponsorshipFormPage";
 import DonationPage from "../features/admin/support-hub/DonationPage/DonationPage";
 import DonationFormPage from "../features/admin/support-hub/DonationPage/DonationFormPage";
+import { OnboardingPage } from "../features/admin/onboarding/pages/OnboardingPage";
+import { OnboardingFormPage } from "../features/admin/onboarding/pages/OnboardingFormPage";
 import EventCategoryPage from "../features/admin/events/pages/EventCategoryPage";
 import EventCategoryFormPage from "../features/admin/events/pages/EventCategoryFormPage";
 import ClubEventCategoriesPage from "../features/admin/events/pages/ClubEventCategoriesPage";
@@ -106,8 +108,14 @@ export const AppRoutes = () => {
         <Route path="/club/events/:eventId/edit" element={<ClubEventFormPage />} />
         <Route path="/club/media" element={<ClubPortalMediaPage />} />
         <Route path="/club/event-categories" element={<ClubEventCategoriesPage />} />
-        <Route path="/club/event-categories/standard" element={<OrgStandardCategoriesPage orgType="club" />} />
-        <Route path="/club/event-categories/custom" element={<OrgCustomCategoryPage orgType="club" />} />
+        <Route
+          path="/club/event-categories/standard"
+          element={<OrgStandardCategoriesPage orgType="club" />}
+        />
+        <Route
+          path="/club/event-categories/custom"
+          element={<OrgCustomCategoryPage orgType="club" />}
+        />
         <Route
           path="/club/event-categories/:categoryId/edit"
           element={<EventCategoryFormPage portalMode orgType="club" orgOverrideMode />}
@@ -118,8 +126,14 @@ export const AppRoutes = () => {
         <Route path="/club/members/:memberId/edit" element={<ClubMemberFormPage />} />
         <Route path="/district/media" element={<DistrictPortalMediaPage />} />
         <Route path="/district/event-categories" element={<DistrictEventCategoriesPage />} />
-        <Route path="/district/event-categories/standard" element={<OrgStandardCategoriesPage orgType="district" />} />
-        <Route path="/district/event-categories/custom" element={<OrgCustomCategoryPage orgType="district" />} />
+        <Route
+          path="/district/event-categories/standard"
+          element={<OrgStandardCategoriesPage orgType="district" />}
+        />
+        <Route
+          path="/district/event-categories/custom"
+          element={<OrgCustomCategoryPage orgType="district" />}
+        />
         <Route
           path="/district/event-categories/:categoryId/edit"
           element={<EventCategoryFormPage portalMode orgType="district" orgOverrideMode />}
@@ -129,7 +143,10 @@ export const AppRoutes = () => {
         <Route path="/district/events" element={<DistrictPortalEventsPage />} />
         <Route path="/district/events/create" element={<DistrictEventFormPage />} />
         <Route path="/district/members/create" element={<DistrictMemberFormPage />} />
-        <Route path="/district/members/bulk" element={<MemberBulkImportPage orgType="district" />} />
+        <Route
+          path="/district/members/bulk"
+          element={<MemberBulkImportPage orgType="district" />}
+        />
         <Route path="/district/members/:memberId/edit" element={<DistrictMemberFormPage />} />
         <Route path="/profile" element={<ProfilePage />} />
         <Route path="/contact-us" element={<ContactUsPage />} />
@@ -164,7 +181,10 @@ export const AppRoutes = () => {
         <Route path="/clubs/:clubId/media" element={<ClubMediaPage />} />
         <Route path="/clubs/:clubId/members" element={<ClubMembersPage />} />
         <Route path="/clubs/:clubId/members/create" element={<ClubMemberFormPage />} />
-        <Route path="/clubs/:clubId/members/bulk" element={<MemberBulkImportPage orgType="club" />} />
+        <Route
+          path="/clubs/:clubId/members/bulk"
+          element={<MemberBulkImportPage orgType="club" />}
+        />
         <Route path="/clubs/:clubId/members/:memberId/edit" element={<ClubMemberFormPage />} />
         <Route path="/events/detail" element={<EventsPage />} />
         <Route path="/events/category" element={<EventCategoryPage />} />
@@ -214,6 +234,8 @@ export const AppRoutes = () => {
         <Route path="/support-hub/donation" element={<DonationPage />} />
         <Route path="/support-hub/donation/create" element={<DonationFormPage />} />
         <Route path="/support-hub/donation/:id/edit" element={<DonationFormPage />} />
+        <Route path="/onboarding" element={<OnboardingPage />} />
+        <Route path="/onboarding/edit" element={<OnboardingFormPage />} />
       </Route>
       <Route path="*" element={<NotFoundPage />} />
     </Routes>

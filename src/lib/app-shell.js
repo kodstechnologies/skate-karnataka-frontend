@@ -25,7 +25,8 @@ import {
   HelpingHand,
   Grid,
   Folder,
-  Tags
+  Tags,
+  Smartphone
 } from "lucide-react";
 
 export const navigationGroups = [
@@ -51,6 +52,7 @@ export const navigationGroups = [
       { slug: "clubs", to: "/clubs", label: "Clubs", icon: Groups2Icon },
       { slug: "discipline", to: "/discipline", label: "Discipline", icon: Layers },
       { slug: "about", to: "/about", label: "About Us", icon: Info },
+      { slug: "onboarding", to: "/onboarding", label: "Onboarding", icon: Smartphone },
       { slug: "circulars", to: "/circulars", label: "Circulars & Guidelines", icon: FileText },
       { slug: "skaters", to: "/skaters", label: "Skaters", icon: RollerSkatingIcon },
       // { slug: "events", to: "/events", label: "Events", icon: EventIcon },
