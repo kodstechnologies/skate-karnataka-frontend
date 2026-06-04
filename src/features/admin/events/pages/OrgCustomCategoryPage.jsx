@@ -17,6 +17,10 @@ import { eventCategoriesApi } from "@/api/event-categories-api";
 import CategoryInlineEditor from "@/features/admin/events/components/CategoryInlineEditor";
 import { useFormulasList } from "@/features/admin/events/hooks/useFormulasList";
 import {
+  getOrgFormulaCreatePath,
+  getOrgFormulaPortalMode
+} from "@/features/admin/events/utils/portalFormulaConfig";
+import {
   buildFormState,
   buildPayload,
   hasCategoryFormErrors,
@@ -100,7 +104,10 @@ export default function OrgCustomCategoryPage({ orgType }) {
   const [form, setForm] = useState(() => buildFormState(null));
   const [saving, setSaving] = useState(false);
 
-  const { formulas, formulasLoading } = useFormulasList();
+  const { formulas, formulasLoading } = useFormulasList({
+    portalMode: getOrgFormulaPortalMode(orgType)
+  });
+  const formulaCreatePath = getOrgFormulaCreatePath(orgType);
   const [formErrors, setFormErrors] = useState({});
   const {
     setCategoryName,
@@ -273,6 +280,7 @@ export default function OrgCustomCategoryPage({ orgType }) {
                 errors={formErrors}
                 formulas={formulas}
                 formulasLoading={formulasLoading}
+                formulaCreatePath={formulaCreatePath}
                 showFormula
                 isOrgOverride={false}
                 isCreate={false}

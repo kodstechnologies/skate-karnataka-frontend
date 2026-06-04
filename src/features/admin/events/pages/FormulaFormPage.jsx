@@ -12,7 +12,7 @@ import {
 } from "@mui/material";
 import { ChevronRight, Save } from "lucide-react";
 import { Link as RouterLink, useNavigate, useParams } from "react-router-dom";
-import { formulaApi } from "@/api/formula-api";
+import { getPortalFormulaConfig, isOrgFormulaPortal } from "@/features/admin/events/utils/portalFormulaConfig";
 import eventsHero from "@/assets/Events_header.jpg";
 import FormulaRoundsEditor from "@/features/admin/events/components/FormulaRoundsEditor";
 import {
@@ -27,7 +27,12 @@ import toast from "react-hot-toast";
 const extractError = (err) =>
   err?.response?.data?.message || err?.message || "An unexpected error occurred.";
 
-export default function FormulaFormPage() {
+export default function FormulaFormPage({ portalMode = "admin" }) {
+  const isOrgPortal = isOrgFormulaPortal(portalMode);
+  const portal = getPortalFormulaConfig(portalMode);
+  const api = portal.api;
+  const basePath = portal.basePath;
+  const dashboardPath = portal.dashboardPath;
   const navigate = useNavigate();
   const { formulaId } = useParams();
   const isEditing = Boolean(formulaId);
@@ -40,12 +45,12 @@ export default function FormulaFormPage() {
   useEffect(() => {
     if (!isEditing) return;
     setLoadingDoc(true);
-    formulaApi
+    api
       .getById(formulaId)
       .then((res) => setForm(buildFormulaFormState(unwrapFormulaDoc(res))))
       .catch((err) => toast.error(extractError(err)))
       .finally(() => setLoadingDoc(false));
-  }, [isEditing, formulaId]);
+  }, [isEditing, formulaId, api]);
 
   const handleSubmit = async () => {
     const nextErrors = validateFormulaForm(form);
@@ -62,13 +67,13 @@ export default function FormulaFormPage() {
     setSaving(true);
     try {
       if (isEditing) {
-        const res = await formulaApi.update(formulaId, payload);
+        const res = await api.update(formulaId, payload);
         toast.success(res?.message || "Formula updated successfully");
       } else {
-        const res = await formulaApi.create(payload);
+        const res = await api.create(payload);
         toast.success(res?.message || "Formula created successfully");
       }
-      navigate("/events/formula");
+      navigate(basePath);
     } catch (err) {
       toast.error(extractError(err));
     } finally {
@@ -112,21 +117,23 @@ export default function FormulaFormPage() {
           >
             <Typography
               component={RouterLink}
-              to="/dashboard"
+              to={dashboardPath}
               sx={{ color: "inherit", textDecoration: "none", fontWeight: 600, "&:hover": { color: "white" } }}
             >
               Dashboard
             </Typography>
+            {!isOrgPortal && (
+              <Typography
+                component={RouterLink}
+                to="/events/detail"
+                sx={{ color: "inherit", textDecoration: "none", fontWeight: 600, "&:hover": { color: "white" } }}
+              >
+                Events
+              </Typography>
+            )}
             <Typography
               component={RouterLink}
-              to="/events/detail"
-              sx={{ color: "inherit", textDecoration: "none", fontWeight: 600, "&:hover": { color: "white" } }}
-            >
-              Events
-            </Typography>
-            <Typography
-              component={RouterLink}
-              to="/events/formula"
+              to={basePath}
               sx={{ color: "inherit", textDecoration: "none", fontWeight: 600, "&:hover": { color: "white" } }}
             >
               Formula
@@ -196,7 +203,7 @@ export default function FormulaFormPage() {
           spacing={1.5}
           sx={{ mt: 4, pt: 3, borderTop: "1px solid #f5ebe7", justifyContent: "flex-end" }}
         >
-          <Button variant="outlined" onClick={() => navigate("/events/formula")} disabled={saving}>
+          <Button variant="outlined" onClick={() => navigate(basePath)} disabled={saving}>
             Cancel
           </Button>
           <Button

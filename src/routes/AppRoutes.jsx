@@ -110,6 +110,9 @@ export const AppRoutes = () => {
         <Route path="/club/events/:eventId/edit" element={<ClubEventFormPage />} />
         <Route path="/club/media" element={<ClubPortalMediaPage />} />
         <Route path="/club/event-categories" element={<ClubEventCategoriesPage />} />
+        <Route path="/club/formula" element={<FormulasPage portalMode="club" />} />
+        <Route path="/club/formula/create" element={<FormulaFormPage portalMode="club" />} />
+        <Route path="/club/formula/:formulaId/edit" element={<FormulaFormPage portalMode="club" />} />
         <Route
           path="/club/event-categories/standard"
           element={<OrgStandardCategoriesPage orgType="club" />}
@@ -128,6 +131,12 @@ export const AppRoutes = () => {
         <Route path="/club/members/:memberId/edit" element={<ClubMemberFormPage />} />
         <Route path="/district/media" element={<DistrictPortalMediaPage />} />
         <Route path="/district/event-categories" element={<DistrictEventCategoriesPage />} />
+        <Route path="/district/formula" element={<FormulasPage portalMode="district" />} />
+        <Route path="/district/formula/create" element={<FormulaFormPage portalMode="district" />} />
+        <Route
+          path="/district/formula/:formulaId/edit"
+          element={<FormulaFormPage portalMode="district" />}
+        />
         <Route
           path="/district/event-categories/standard"
           element={<OrgStandardCategoriesPage orgType="district" />}

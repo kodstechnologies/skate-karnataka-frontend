@@ -17,6 +17,10 @@ import { eventCategoriesApi } from "@/api/event-categories-api";
 import CategoryInlineEditor from "@/features/admin/events/components/CategoryInlineEditor";
 import { useFormulasList } from "@/features/admin/events/hooks/useFormulasList";
 import {
+  getOrgFormulaCreatePath,
+  getOrgFormulaPortalMode
+} from "@/features/admin/events/utils/portalFormulaConfig";
+import {
   buildFormState,
   buildPayload,
   hasCategoryFormErrors,
@@ -194,7 +198,10 @@ export default function EventCategoryPage({
   const [pendingDelete, setPendingDelete] = useState(null);
   const [deleting, setDeleting] = useState(false);
 
-  const { formulas, formulasLoading } = useFormulasList();
+  const { formulas, formulasLoading } = useFormulasList({
+    portalMode: getOrgFormulaPortalMode(orgType)
+  });
+  const formulaCreatePath = getOrgFormulaCreatePath(orgType);
   const {
     setTypeName,
     setCategoryName,
@@ -531,6 +538,7 @@ export default function EventCategoryPage({
                 errors={formErrors}
                 formulas={formulas}
                 formulasLoading={formulasLoading}
+                formulaCreatePath={formulaCreatePath}
                 showFormula={!isOrgOverrideList}
                 isOrgOverride={isOrgOverrideList}
                 isCreate={activeCategoryId === "new"}

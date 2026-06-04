@@ -16,6 +16,10 @@ import { Link as RouterLink, useLocation, useNavigate, useParams } from "react-r
 import { eventCategoriesApi } from "@/api/event-categories-api";
 import CategoryInlineEditor from "@/features/admin/events/components/CategoryInlineEditor";
 import { useFormulasList } from "@/features/admin/events/hooks/useFormulasList";
+import {
+  getOrgFormulaCreatePath,
+  getOrgFormulaPortalMode
+} from "@/features/admin/events/utils/portalFormulaConfig";
 import eventsHero from "@/assets/Events_header.jpg";
 import toast from "react-hot-toast";
 
@@ -65,7 +69,10 @@ export default function EventCategoryFormPage({
   const [saving, setSaving] = useState(false);
   const [errors, setErrors] = useState({});
 
-  const { formulas, formulasLoading } = useFormulasList();
+  const { formulas, formulasLoading } = useFormulasList({
+    portalMode: getOrgFormulaPortalMode(orgType)
+  });
+  const formulaCreatePath = getOrgFormulaCreatePath(orgType);
   const {
     setTypeName,
     setCategoryName,
@@ -308,6 +315,7 @@ export default function EventCategoryFormPage({
           errors={errors}
           formulas={formulas}
           formulasLoading={formulasLoading}
+          formulaCreatePath={formulaCreatePath}
           showFormula={!isOrgOverride}
           isOrgOverride={isOrgOverride}
           isCreate={false}

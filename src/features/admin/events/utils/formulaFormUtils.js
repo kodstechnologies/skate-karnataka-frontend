@@ -12,9 +12,19 @@ export const FORMULA_QUALIFICATION_TYPES = ["TIME", "POSITION"];
 export const isFirstFormulaRound = (roundName) =>
   String(roundName || "").trim() === "1stRound";
 
+const FORMULA_SOURCE_LABELS = {
+  admin: "State",
+  club: "Club",
+  district: "District"
+};
+
 /** Label shown in lists and Events-Category dropdowns */
-export const getFormulaDisplayName = (doc) =>
-  String(doc?.formulaName || doc?.categoryName || "").trim() || "Unnamed formula";
+export const getFormulaDisplayName = (doc) => {
+  const base =
+    String(doc?.formulaName || doc?.categoryName || "").trim() || "Unnamed formula";
+  const source = doc?.source ? FORMULA_SOURCE_LABELS[doc.source] || doc.source : "";
+  return source ? `${base} (${source})` : base;
+};
 
 export const emptyRound = () => ({
   roundName: "1stRound",

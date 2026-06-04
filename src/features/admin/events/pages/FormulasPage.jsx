@@ -19,7 +19,11 @@ import {
 } from "@mui/material";
 import { ChevronRight, PencilLine, Plus, RefreshCw, Trash2, FunctionSquare } from "lucide-react";
 import { Link as RouterLink, useNavigate } from "react-router-dom";
-import { formulaApi } from "@/api/formula-api";
+import { OrgFormulaSourceSettings } from "@/features/admin/events/components/OrgFormulaSourceSettings";
+import {
+  getPortalFormulaConfig,
+  isOrgFormulaPortal
+} from "@/features/admin/events/utils/portalFormulaConfig";
 import eventsHero from "@/assets/Events_header.jpg";
 import { ConfirmDeleteModal } from "@/components/ui/ConfirmDeleteModal";
 import {
@@ -32,7 +36,12 @@ import toast from "react-hot-toast";
 const extractError = (err) =>
   err?.response?.data?.message || err?.message || "An unexpected error occurred.";
 
-export default function FormulasPage() {
+export default function FormulasPage({ portalMode = "admin" }) {
+  const isOrgPortal = isOrgFormulaPortal(portalMode);
+  const portal = getPortalFormulaConfig(portalMode);
+  const api = portal.api;
+  const basePath = portal.basePath;
+  const dashboardPath = portal.dashboardPath;
   const navigate = useNavigate();
   const [formulas, setFormulas] = useState([]);
   const [pagination, setPagination] = useState(null);
@@ -45,7 +54,7 @@ export default function FormulasPage() {
   const fetchFormulas = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await formulaApi.getAll({ page: page + 1, limit: rowsPerPage });
+      const res = await api.getAll({ page: page + 1, limit: rowsPerPage });
       const { formulas: list, pagination: meta } = unwrapFormulaListResponse(res);
       setFormulas(list);
       setPagination(meta);
@@ -55,7 +64,7 @@ export default function FormulasPage() {
     } finally {
       setLoading(false);
     }
-  }, [page, rowsPerPage]);
+  }, [page, rowsPerPage, api]);
 
   useEffect(() => {
     fetchFormulas();
@@ -65,7 +74,7 @@ export default function FormulasPage() {
     if (!pendingDelete) return;
     setDeleting(true);
     try {
-      const res = await formulaApi.delete(getFormulaId(pendingDelete));
+      const res = await api.delete(getFormulaId(pendingDelete));
       toast.success(res?.message || "Formula deleted successfully");
       setPendingDelete(null);
       await fetchFormulas();
@@ -106,26 +115,29 @@ export default function FormulasPage() {
           >
             <Typography
               component={RouterLink}
-              to="/dashboard"
+              to={dashboardPath}
               sx={{ color: "inherit", textDecoration: "none", fontWeight: 600, "&:hover": { color: "white" } }}
             >
               Dashboard
             </Typography>
-            <Typography
-              component={RouterLink}
-              to="/events/detail"
-              sx={{ color: "inherit", textDecoration: "none", fontWeight: 600, "&:hover": { color: "white" } }}
-            >
-              Events
-            </Typography>
+            {!isOrgPortal && (
+              <Typography
+                component={RouterLink}
+                to="/events/detail"
+                sx={{ color: "inherit", textDecoration: "none", fontWeight: 600, "&:hover": { color: "white" } }}
+              >
+                Events
+              </Typography>
+            )}
             <Typography sx={{ color: "white", fontWeight: 700 }}>Formula</Typography>
           </Breadcrumbs>
           <Typography variant="h3" sx={{ fontWeight: 700, letterSpacing: "-0.05em", mb: 1.5 }}>
             Competition Formulas
           </Typography>
           <Typography sx={{ color: "rgba(255,255,255,0.86)", maxWidth: 620, lineHeight: 1.7 }}>
-            Create and manage qualification formulas. These appear in Events-Category when you assign
-            a formula to each lap name.
+            {isOrgPortal
+              ? `Create your ${portalMode} qualification formulas, or use state admin formulas via the source setting below.`
+              : "Create and manage qualification formulas. These appear in Events-Category when you assign a formula to each lap name."}
           </Typography>
         </Stack>
       </Paper>
@@ -165,7 +177,9 @@ export default function FormulasPage() {
                 Formula list
               </Typography>
               <Typography sx={{ fontSize: 13, color: "#8d7f7b" }}>
-                {totalCount} formula{totalCount === 1 ? "" : "s"} total
+                {totalCount}{" "}
+                {isOrgPortal ? portal.listLabel : "formula"}
+                {totalCount === 1 ? "" : "s"} total
               </Typography>
             </Box>
           </Stack>
@@ -176,7 +190,7 @@ export default function FormulasPage() {
             <Button
               variant="contained"
               startIcon={<Plus size={16} />}
-              onClick={() => navigate("/events/formula/create")}
+              onClick={() => navigate(`${basePath}/create`)}
               sx={{ backgroundColor: "#f6765e", "&:hover": { backgroundColor: "#ea6b54" } }}
             >
               Add formula
@@ -207,7 +221,9 @@ export default function FormulasPage() {
               ) : formulas.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={3} sx={{ py: 6, textAlign: "center", color: "#8d7f7b" }}>
-                    No formulas yet. Click Add formula to create one.
+                    {isOrgPortal
+                      ? `No ${portalMode} formulas yet. Add one or switch source to use state formulas.`
+                      : "No formulas yet. Click Add formula to create one."}
                   </TableCell>
                 </TableRow>
               ) : (
@@ -219,7 +235,7 @@ export default function FormulasPage() {
                       <TableCell>{Array.isArray(row.rounds) ? row.rounds.length : 0}</TableCell>
                       <TableCell align="right">
                         <Tooltip title="Edit">
-                          <IconButton size="small" onClick={() => navigate(`/events/formula/${id}/edit`)}>
+                          <IconButton size="small" onClick={() => navigate(`${basePath}/${id}/edit`)}>
                             <PencilLine size={16} />
                           </IconButton>
                         </Tooltip>
@@ -250,6 +266,8 @@ export default function FormulasPage() {
           rowsPerPageOptions={[5, 10, 25]}
         />
       </Paper>
+
+      {isOrgPortal ? <OrgFormulaSourceSettings portalMode={portalMode} /> : null}
 
       <ConfirmDeleteModal
         open={Boolean(pendingDelete)}

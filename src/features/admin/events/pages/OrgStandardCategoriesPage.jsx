@@ -14,6 +14,10 @@ import { Link as RouterLink } from "react-router-dom";
 import { eventCategoriesApi } from "@/api/event-categories-api";
 import CategoryInlineEditor from "@/features/admin/events/components/CategoryInlineEditor";
 import { useFormulasList } from "@/features/admin/events/hooks/useFormulasList";
+import {
+  getOrgFormulaCreatePath,
+  getOrgFormulaPortalMode
+} from "@/features/admin/events/utils/portalFormulaConfig";
 import { buildFormState } from "@/features/admin/events/utils/categoryFormUtils";
 import eventsHero from "@/assets/Events_header.jpg";
 import toast from "react-hot-toast";
@@ -89,7 +93,10 @@ export default function OrgStandardCategoriesPage({ orgType }) {
   const [fetchError, setFetchError] = useState(null);
   const [activeCategoryId, setActiveCategoryId] = useState(null);
   const [form, setForm] = useState(() => buildFormState(null));
-  const { formulas, formulasLoading } = useFormulasList();
+  const { formulas, formulasLoading } = useFormulasList({
+    portalMode: getOrgFormulaPortalMode(orgType)
+  });
+  const formulaCreatePath = getOrgFormulaCreatePath(orgType);
 
   const loadFormForId = useCallback(
     (id) => {

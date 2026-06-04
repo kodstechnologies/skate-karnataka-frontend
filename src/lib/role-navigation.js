@@ -5,7 +5,9 @@ import {
   Users,
   FileSpreadsheet,
   Image,
-  Layers
+  Layers,
+  FunctionSquare,
+  Tags
 } from "lucide-react";
 
 export const CLUB_NAV_SLUGS = new Set([
@@ -13,6 +15,8 @@ export const CLUB_NAV_SLUGS = new Set([
   "club-events",
   "club-media",
   "club-event-categories",
+  "club-event-categories-home",
+  "club-formula",
   "club-members",
   "club-members-list",
   "club-members-create",
@@ -23,6 +27,8 @@ export const DISTRICT_NAV_SLUGS = new Set([
   "district-events",
   "district-media",
   "district-event-categories",
+  "district-event-categories-home",
+  "district-formula",
   "district-members",
   "district-members-list",
   "district-members-create",
@@ -55,7 +61,21 @@ export const clubNavigationGroups = [
         slug: "club-event-categories",
         to: "/club/event-categories",
         label: "Event Categories",
-        icon: Layers
+        icon: Layers,
+        children: [
+          {
+            slug: "club-event-categories-home",
+            to: "/club/event-categories",
+            label: "Categories",
+            icon: Tags
+          },
+          {
+            slug: "club-formula",
+            to: "/club/formula",
+            label: "Formula",
+            icon: FunctionSquare
+          }
+        ]
       },
       {
         slug: "club-members",
@@ -113,7 +133,21 @@ export const districtNavigationGroups = [
         slug: "district-event-categories",
         to: "/district/event-categories",
         label: "Event Categories",
-        icon: Layers
+        icon: Layers,
+        children: [
+          {
+            slug: "district-event-categories-home",
+            to: "/district/event-categories",
+            label: "Categories",
+            icon: Tags
+          },
+          {
+            slug: "district-formula",
+            to: "/district/formula",
+            label: "Formula",
+            icon: FunctionSquare
+          }
+        ]
       },
       {
         slug: "district-members",
@@ -150,6 +184,7 @@ const CLUB_PATH_PREFIXES = [
   ["/club/events", "club-events"],
   ["/club/media", "club-media"],
   ["/club/event-categories", "club-event-categories"],
+  ["/club/formula", "club-formula"],
   ["/club/members/create", "club-members-create"],
   ["/club/members/bulk", "club-members-bulk"],
   ["/club/members", "club-members-list"],
@@ -161,6 +196,7 @@ const DISTRICT_PATH_PREFIXES = [
   ["/district/events", "district-events"],
   ["/district/media", "district-media"],
   ["/district/event-categories", "district-event-categories"],
+  ["/district/formula", "district-formula"],
   ["/district/members/create", "district-members-create"],
   ["/district/members/bulk", "district-members-bulk"],
   ["/district/members", "district-members-list"],

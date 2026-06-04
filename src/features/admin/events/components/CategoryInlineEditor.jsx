@@ -20,6 +20,7 @@ export default function CategoryInlineEditor({
   errors = {},
   formulas = [],
   formulasLoading = false,
+  formulaCreatePath = "/events/formula/create",
   showFormula = true,
   isOrgOverride = false,
   isCreate = false,
@@ -71,7 +72,7 @@ export default function CategoryInlineEditor({
             {" "}
             <Box
               component={RouterLink}
-              to="/events/formula/create"
+              to={formulaCreatePath}
               sx={{
                 display: "inline",
                 color: "#f6765e",
