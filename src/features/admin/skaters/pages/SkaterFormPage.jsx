@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
   Box,
   Breadcrumbs,
@@ -11,13 +11,46 @@ import {
 import { ChevronRight, Save } from "lucide-react";
 import { Link as RouterLink, useNavigate, useParams } from "react-router-dom";
 import skatersHero from "@/assets/Skating_header.jpg";
+import { clubApi } from "@/api/club-api";
+import { districtApi } from "@/api/district-api";
+import { eventsApi } from "@/api/events-api";
 import { SkaterForm } from "@/features/admin/skaters/components/SkaterForm";
 import {
-  buildSkaterUpdatePayload,
+  buildSkaterUpdateFormData,
   createSkaterFormValues,
   skaterFieldLabels
 } from "@/features/admin/skaters/components/skaterFormConfig";
 import { useSkatersStore } from "@/features/admin/skaters/store/skaters-store";
+
+const mapDistrictOption = (district) => ({
+  id: district._id || district.id,
+  districtName: district.name || district.districtName || ""
+});
+
+const mapClubOption = (club) => ({
+  id: club._id || club.id,
+  name: club.name || "",
+  clubCode: club.clubId || "",
+  districtName: club.districtName || club.district?.name || "",
+  districtId: club.district?._id || club.districtId || club.district || ""
+});
+
+const mapSkaterClubOption = (skater) => {
+  const club = skater?.club;
+  if (!club?._id && !club) return null;
+  return mapClubOption({
+    _id: club._id || club,
+    name: club.name || skater.clubName || "",
+    clubId: club.clubId || "",
+    districtName: club.districtName || club.district?.name || "",
+    district: club.district
+  });
+};
+
+const mapCategoryOption = (category) => ({
+  id: category._id || category.id,
+  name: category.typeName || category.name || ""
+});
 
 const validateSkaterForm = (formData) => {
   const errors = {};
@@ -62,6 +95,10 @@ export const SkaterFormPage = () => {
 
   const [formData, setFormData] = useState(null);
   const [errors, setErrors] = useState({});
+  const [districts, setDistricts] = useState([]);
+  const [clubs, setClubs] = useState([]);
+  const [categories, setCategories] = useState([]);
+  const [optionsLoading, setOptionsLoading] = useState(true);
 
   useEffect(() => {
     if (skaterId) {
@@ -70,15 +107,127 @@ export const SkaterFormPage = () => {
   }, [skaterId, fetchSkaterById]);
 
   useEffect(() => {
-    if (selectedSkater?._id === skaterId) {
-      setFormData(createSkaterFormValues(selectedSkater));
-    }
+    let active = true;
+
+    const loadOptions = async () => {
+      setOptionsLoading(true);
+      try {
+        const [districtRes, clubRes, categoryRes] = await Promise.all([
+          districtApi.getAll({ page: 1, limit: 500 }),
+          clubApi.getAll({ page: 1, limit: 500 }),
+          eventsApi.getSkatingCategories({ source: "standard" })
+        ]);
+
+        if (!active) return;
+
+        const districtRows = districtRes?.data?.data ?? districtRes?.data ?? [];
+        const clubRows = clubRes?.data?.data ?? clubRes?.data ?? [];
+        const categoryRows = Array.isArray(categoryRes?.data)
+          ? categoryRes.data
+          : categoryRes?.data?.data ?? categoryRes?.data ?? [];
+
+        setDistricts(Array.isArray(districtRows) ? districtRows.map(mapDistrictOption) : []);
+        setClubs(Array.isArray(clubRows) ? clubRows.map(mapClubOption) : []);
+        setCategories(Array.isArray(categoryRows) ? categoryRows.map(mapCategoryOption) : []);
+      } catch (error) {
+        console.error("Failed to load skater form options:", error);
+      } finally {
+        if (active) setOptionsLoading(false);
+      }
+    };
+
+    loadOptions();
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (selectedSkater?._id !== skaterId) return;
+
+    setFormData(createSkaterFormValues(selectedSkater));
+
+    const currentClub = mapSkaterClubOption(selectedSkater);
+    if (!currentClub?.id) return;
+
+    setClubs((prev) => {
+      if (prev.some((club) => club.id === currentClub.id)) return prev;
+      return [currentClub, ...prev];
+    });
   }, [selectedSkater, skaterId]);
 
-  const handleFieldChange = (field) => (event) => {
-    setFormData((current) => ({ ...current, [field]: event.target.value }));
-    setErrors((current) => ({ ...current, [field]: "" }));
-  };
+  const handleFieldChange = useCallback(
+    (field) => (event) => {
+      const value = event.target.value;
+      setFormData((current) => {
+        const next = { ...current, [field]: value };
+
+        if (field === "clubId") {
+          const selectedClub = clubs.find((club) => club.id === value);
+          next.clubName = selectedClub?.name || "";
+          next.clubCode = selectedClub?.clubCode || "";
+          next.clubDistrictName = selectedClub?.districtName || "";
+          if (value && selectedClub?.districtId) {
+            next.districtId = String(selectedClub.districtId);
+          }
+          if (!value) {
+            next.clubName = "";
+            next.clubCode = "";
+            next.clubDistrictName = "";
+          }
+        }
+
+        if (field === "categoryId") {
+          const selectedCategory = categories.find((category) => category.id === value);
+          next.categoryName = selectedCategory?.name || "";
+        }
+
+        return next;
+      });
+      setErrors((current) => ({ ...current, [field]: "" }));
+    },
+    [clubs, categories]
+  );
+
+  const handlePhotoChange = useCallback((event) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    const previewUrl = URL.createObjectURL(file);
+    setFormData((current) => ({
+      ...current,
+      photoFile: file,
+      photoPreview: previewUrl
+    }));
+    event.target.value = "";
+  }, []);
+
+  const handleDocumentsChange = useCallback((event) => {
+    const files = Array.from(event.target.files || []);
+    if (!files.length) return;
+
+    setFormData((current) => ({
+      ...current,
+      newDocumentFiles: [...(current.newDocumentFiles || []), ...files]
+    }));
+    event.target.value = "";
+  }, []);
+
+  const handleRemoveExistingDocument = useCallback((url) => {
+    setFormData((current) => ({
+      ...current,
+      removedDocumentUrls: [...(current.removedDocumentUrls || []), url]
+    }));
+  }, []);
+
+  const handleRemoveNewDocument = useCallback((index) => {
+    setFormData((current) => ({
+      ...current,
+      newDocumentFiles: (current.newDocumentFiles || []).filter((_, i) => i !== index)
+    }));
+  }, []);
+
+  const isPageLoading = isLoadingDetail || !formData || optionsLoading;
 
   const handleSubmit = async () => {
     if (!formData || !skaterId) return;
@@ -89,13 +238,13 @@ export const SkaterFormPage = () => {
       return;
     }
 
-    const success = await updateSkater(skaterId, buildSkaterUpdatePayload(formData));
+    const success = await updateSkater(skaterId, buildSkaterUpdateFormData(formData));
     if (success) {
       navigate(`/skaters/${skaterId}`);
     }
   };
 
-  if (isLoadingDetail || !formData) {
+  if (isPageLoading) {
     return (
       <Box sx={{ display: "flex", justifyContent: "center", py: 8 }}>
         <CircularProgress sx={{ color: "#f6765e" }} />
@@ -162,8 +311,8 @@ export const SkaterFormPage = () => {
             Edit skater profile
           </Typography>
           <Typography sx={{ color: "rgba(255,255,255,0.86)", maxWidth: 660, lineHeight: 1.7 }}>
-            Update athlete contact and registration details. KRSA ID, district, and club are shown
-            for reference.
+            Update athlete details, change district or club affiliation, edit category, and manage
+            profile photo and documents.
           </Typography>
         </Stack>
       </Paper>
@@ -210,7 +359,13 @@ export const SkaterFormPage = () => {
             formData={formData}
             errors={errors}
             onFieldChange={handleFieldChange}
-            readOnlyMeta
+            districts={districts}
+            clubs={clubs}
+            categories={categories}
+            onPhotoChange={handlePhotoChange}
+            onDocumentsChange={handleDocumentsChange}
+            onRemoveExistingDocument={handleRemoveExistingDocument}
+            onRemoveNewDocument={handleRemoveNewDocument}
           />
         </Box>
       </Paper>

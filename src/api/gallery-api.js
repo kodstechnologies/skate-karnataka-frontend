@@ -3,7 +3,20 @@ import api from "@/lib/axios";
 const multipartHeaders = { "Content-Type": "multipart/form-data" };
 
 export const galleryApi = {
-  getAll: async (params = {}) => {
+  getAll: async (typeOrParams = {}, page = 1, limit = 10) => {
+    const params =
+      typeof typeOrParams === "object" && typeOrParams !== null && !Array.isArray(typeOrParams)
+        ? { ...typeOrParams }
+        : { page, limit };
+
+    if (typeof typeOrParams !== "object" || typeOrParams === null || Array.isArray(typeOrParams)) {
+      if (typeOrParams && typeOrParams !== "all") {
+        params.type = typeOrParams;
+      }
+    } else if (params.type === "all") {
+      delete params.type;
+    }
+
     return api.get("/gallery/v1/all", { params });
   },
   getPendingApprovals: async ({ page = 1, limit = 20 } = {}) =>

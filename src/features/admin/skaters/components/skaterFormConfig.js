@@ -1,3 +1,8 @@
+import {
+  getSkaterDocuments,
+  getSkaterProfileImage
+} from "@/features/admin/skaters/utils/skater-display";
+
 const formatDateInput = (value) => {
   if (!value) return "";
   const date = new Date(value);
@@ -20,8 +25,20 @@ export const initialSkaterFormValues = {
   grade: "",
   signature: "",
   krsaId: "",
+  districtId: "",
   districtName: "",
-  clubName: ""
+  clubId: "",
+  clubName: "",
+  clubCode: "",
+  clubDistrictName: "",
+  clubStatus: "",
+  categoryId: "",
+  categoryName: "",
+  photoPreview: "",
+  photoFile: null,
+  existingDocuments: [],
+  newDocumentFiles: [],
+  removedDocumentUrls: []
 };
 
 export const genderOptions = ["male", "female", "other"];
@@ -40,7 +57,10 @@ export const skaterFieldLabels = {
   bloodGroup: "Blood group",
   school: "School",
   grade: "Grade",
-  signature: "Signature"
+  signature: "Signature",
+  districtId: "District",
+  clubId: "Club",
+  categoryId: "Category"
 };
 
 export const createSkaterFormValues = (skater = {}) => ({
@@ -58,34 +78,79 @@ export const createSkaterFormValues = (skater = {}) => ({
   grade: skater.grade ?? "",
   signature: skater.signature ?? "",
   krsaId: skater.krsaId ?? "",
+  districtId: String(skater.district?._id ?? skater.district ?? ""),
   districtName:
     skater.districtDetails?.name ?? skater.districtName ?? skater.district?.name ?? "",
-  clubName: skater.club?.name ?? ""
+  clubId: String(skater.club?._id ?? skater.club ?? ""),
+  clubName: skater.club?.name ?? "",
+  clubCode: skater.club?.clubId ?? "",
+  clubDistrictName:
+    skater.club?.districtName ?? skater.club?.district?.name ?? "",
+  clubStatus: skater.clubStatus ?? "",
+  categoryId: String(skater.category?._id ?? skater.category ?? ""),
+  categoryName: skater.category?.typeName ?? skater.categoryName ?? "",
+  photoPreview: getSkaterProfileImage(skater),
+  photoFile: null,
+  existingDocuments: getSkaterDocuments(skater),
+  newDocumentFiles: [],
+  removedDocumentUrls: []
 });
 
-/** Payload for PATCH /admin/v1/skater/:id */
-export const buildSkaterUpdatePayload = (formData) => {
-  const payload = {
-    fullName: formData.fullName.trim(),
-    phone: formData.phone.trim(),
-    email: formData.email.trim(),
-    rsfiId: formData.rsfiId.trim(),
-    gender: formData.gender.trim(),
-    address: formData.address.trim(),
-    parent: formData.parent.trim(),
-    bloodGroup: formData.bloodGroup.trim(),
-    school: formData.school.trim(),
-    grade: formData.grade.trim(),
-    signature: formData.signature.trim()
-  };
+const appendIfPresent = (formData, key, value) => {
+  if (value !== undefined && value !== null && value !== "") {
+    formData.append(key, value);
+  }
+};
+
+/** Multipart payload for PATCH /admin/v1/skater/:id */
+export const buildSkaterUpdateFormData = (formData) => {
+  const fd = new FormData();
+
+  appendIfPresent(fd, "fullName", formData.fullName.trim());
+  appendIfPresent(fd, "phone", formData.phone.trim());
+  appendIfPresent(fd, "email", formData.email.trim());
+  appendIfPresent(fd, "rsfiId", formData.rsfiId.trim());
+  appendIfPresent(fd, "gender", formData.gender.trim());
+  appendIfPresent(fd, "address", formData.address.trim());
+  appendIfPresent(fd, "parent", formData.parent.trim());
+  appendIfPresent(fd, "bloodGroup", formData.bloodGroup.trim());
+  appendIfPresent(fd, "school", formData.school.trim());
+  appendIfPresent(fd, "grade", formData.grade.trim());
+  appendIfPresent(fd, "signature", formData.signature.trim());
 
   if (formData.dob) {
-    payload.dob = formData.dob;
+    fd.append("dob", formData.dob);
   }
 
   if (formData.aadharNumber.trim()) {
-    payload.aadharNumber = formData.aadharNumber.trim();
+    fd.append("aadharNumber", formData.aadharNumber.trim());
   }
 
-  return payload;
+  if (formData.districtId) {
+    fd.append("district", formData.districtId);
+  }
+
+  if (formData.clubId) {
+    fd.append("club", formData.clubId);
+  }
+
+  if (formData.categoryId) {
+    fd.append("category", formData.categoryId);
+  }
+
+  if (formData.photoFile instanceof File) {
+    fd.append("img", formData.photoFile);
+  }
+
+  (formData.newDocumentFiles || []).forEach((file) => {
+    if (file instanceof File) {
+      fd.append("document", file);
+    }
+  });
+
+  if (formData.removedDocumentUrls?.length) {
+    fd.append("removeDocumentUrls", JSON.stringify(formData.removedDocumentUrls));
+  }
+
+  return fd;
 };

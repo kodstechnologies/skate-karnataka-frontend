@@ -15,6 +15,16 @@ api.interceptors.request.use(
     if (accessToken) {
       config.headers.Authorization = accessToken;
     }
+
+    // Let axios/browser set multipart boundary; a bare "multipart/form-data" breaks parsing.
+    if (typeof FormData !== "undefined" && config.data instanceof FormData) {
+      if (typeof config.headers?.set === "function") {
+        config.headers.set("Content-Type", null);
+      } else if (config.headers) {
+        delete config.headers["Content-Type"];
+      }
+    }
+
     return config;
   },
   (error) => {

@@ -17,8 +17,11 @@ export const useGalleryStore = create((set, get) => ({
   fetchItems: async (type = "all", page = 1, limit = 10) => {
     set({ isLoading: true, error: null, currentType: type });
     try {
-      const response = await galleryApi.getAll(type, page, limit);
-      // axios interceptor already returns response.data — so response = { success, data: { data, pagination }, message }
+      const params = { page, limit };
+      if (type && type !== "all") {
+        params.type = type;
+      }
+      const response = await galleryApi.getAll(params);
       const payload = response?.data || response || {};
       const items = Array.isArray(payload) ? payload : payload?.data || [];
       const pagination = payload?.pagination || {

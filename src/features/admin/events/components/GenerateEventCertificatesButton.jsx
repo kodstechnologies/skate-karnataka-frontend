@@ -58,12 +58,29 @@ export default function GenerateEventCertificatesButton({
     setLoading(true);
     try {
       const response = await eventsApi.generateCertificates(eventId);
-      const payload = response?.data?.data ?? response?.data ?? response;
+      const payload = response?.data ?? response;
+      const message = response?.message || "";
+
+      if (
+        payload?.allGenerated ||
+        message.toLowerCase().includes("already generated")
+      ) {
+        toast.success(message || "Certificates already generated");
+        return;
+      }
+
       const generated = payload?.generated ?? 0;
       const skipped = payload?.skipped ?? 0;
       const failed = payload?.failed ?? 0;
+
+      if (generated === 0 && skipped > 0 && failed === 0) {
+        toast.success("Certificates already generated");
+        return;
+      }
+
       toast.success(
-        `Certificates: ${generated} generated, ${skipped} skipped, ${failed} failed`
+        message ||
+          `Certificates: ${generated} generated, ${skipped} skipped, ${failed} failed`
       );
     } catch (err) {
       toast.error(

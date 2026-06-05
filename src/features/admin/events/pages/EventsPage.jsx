@@ -19,6 +19,7 @@ import { ConfirmDeleteModal } from "@/components/ui/ConfirmDeleteModal";
 import { eventsApi } from "@/api/events-api";
 import GenerateEventCertificatesButton from "@/features/admin/events/components/GenerateEventCertificatesButton";
 import { useAuthStore } from "@/features/auth/store/auth-store";
+import { canApproveEvents, getEventApprovalChipProps } from "@/utils/eventApprovalStatus";
 import toast from "react-hot-toast";
 
 /** Format a date string like "2025-06-10" → "10 Jun 2025" */
@@ -111,6 +112,7 @@ const getStatusColor = (status) => {
 export const EventsPage = () => {
   const navigate = useNavigate();
   const role = useAuthStore((s) => s.role);
+  const canApprove = canApproveEvents(role);
 
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -178,6 +180,46 @@ export const EventsPage = () => {
     } finally {
       setDeleting(false);
       setPendingDeleteEvent(null);
+    }
+  };
+
+  const handleApprove = async (eventId) => {
+    try {
+      await eventsApi.approveEvent(eventId);
+      toast.success("Event approved");
+      fetchEvents(searchTerm, page + 1, rowsPerPage);
+    } catch (err) {
+      toast.error(err?.response?.data?.message || "Failed to approve event");
+    }
+  };
+
+  const handleReject = async (eventId) => {
+    try {
+      await eventsApi.rejectEvent(eventId);
+      toast.success("Event rejected");
+      fetchEvents(searchTerm, page + 1, rowsPerPage);
+    } catch (err) {
+      toast.error(err?.response?.data?.message || "Failed to reject event");
+    }
+  };
+
+  const handleApproveDelete = async (eventId) => {
+    try {
+      await eventsApi.approveEventDelete(eventId);
+      toast.success("Event deleted");
+      fetchEvents(searchTerm, page + 1, rowsPerPage);
+    } catch (err) {
+      toast.error(err?.response?.data?.message || "Failed to approve delete");
+    }
+  };
+
+  const handleRejectDelete = async (eventId) => {
+    try {
+      await eventsApi.rejectEventDelete(eventId);
+      toast.success("Delete request cancelled");
+      fetchEvents(searchTerm, page + 1, rowsPerPage);
+    } catch (err) {
+      toast.error(err?.response?.data?.message || "Failed to cancel delete request");
     }
   };
 
@@ -413,6 +455,7 @@ export const EventsPage = () => {
                         fontWeight: 700
                       }}
                     />
+                    <Chip size="small" {...getEventApprovalChipProps(event)} />
                     <GenerateEventCertificatesButton
                       event={event}
                       role={role}
@@ -509,7 +552,47 @@ export const EventsPage = () => {
                       )}
                     </Box>
 
-                    <Stack direction="row" spacing={1} sx={{ pt: 1 }}>
+                    <Stack direction="row" spacing={1} sx={{ pt: 1, flexWrap: "wrap" }}>
+                      {canApprove && event.adminApprovalStatus === "pending" && (
+                        <>
+                          <Button
+                            variant="contained"
+                            size="small"
+                            onClick={() => handleApprove(event._id || event.id)}
+                            sx={{ backgroundColor: "#2e7d32", flex: 1 }}
+                          >
+                            Approve
+                          </Button>
+                          <Button
+                            variant="outlined"
+                            size="small"
+                            onClick={() => handleReject(event._id || event.id)}
+                            sx={{ flex: 1 }}
+                          >
+                            Reject
+                          </Button>
+                        </>
+                      )}
+                      {canApprove && event.deleteApprovalStatus === "pending" && (
+                        <>
+                          <Button
+                            variant="contained"
+                            size="small"
+                            onClick={() => handleApproveDelete(event._id || event.id)}
+                            sx={{ backgroundColor: "#c62828", flex: 1 }}
+                          >
+                            Approve delete
+                          </Button>
+                          <Button
+                            variant="outlined"
+                            size="small"
+                            onClick={() => handleRejectDelete(event._id || event.id)}
+                            sx={{ flex: 1 }}
+                          >
+                            Cancel delete
+                          </Button>
+                        </>
+                      )}
                       <Button
                         variant="outlined"
                         startIcon={<PencilLine size={16} />}

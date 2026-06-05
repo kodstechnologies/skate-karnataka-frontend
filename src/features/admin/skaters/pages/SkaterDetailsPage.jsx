@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import {
+  Avatar,
   Box,
   Breadcrumbs,
   Button,
@@ -16,12 +17,19 @@ import LockOpenOutlinedIcon from "@mui/icons-material/LockOpenOutlined";
 import LocationOnOutlinedIcon from "@mui/icons-material/LocationOnOutlined";
 import EmailOutlinedIcon from "@mui/icons-material/EmailOutlined";
 import PhoneOutlinedIcon from "@mui/icons-material/PhoneOutlined";
-import { ChevronRight } from "lucide-react";
+import OpenInNewOutlinedIcon from "@mui/icons-material/OpenInNewOutlined";
+import { ChevronRight, FileText } from "lucide-react";
 import { Link as RouterLink, useNavigate, useParams } from "react-router-dom";
 import skatersHero from "@/assets/Skating_header.jpg";
 import { ConfirmDeleteModal } from "@/components/ui/ConfirmDeleteModal";
 import { useSkatersStore } from "@/features/admin/skaters/store/skaters-store";
-import { getSkaterDistrictName } from "@/features/admin/skaters/utils/skater-display";
+import {
+  formatSkaterDate,
+  getSkaterCategoryName,
+  getSkaterDistrictName,
+  getSkaterDocuments,
+  getSkaterProfileImage
+} from "@/features/admin/skaters/utils/skater-display";
 
 const formatGender = (gender) => {
   if (!gender) {
@@ -162,6 +170,10 @@ export const SkaterDetailsPage = () => {
       </Paper>
     );
   }
+
+  const profileImage = getSkaterProfileImage(skater);
+  const documents = getSkaterDocuments(skater);
+  const profileInitial = (skater.fullName || "S").charAt(0).toUpperCase();
 
   return (
     <Box className="space-y-5">
@@ -340,6 +352,76 @@ export const SkaterDetailsPage = () => {
 
         <Stack spacing={2.5}>
           <SectionCard
+            title="Profile Photo"
+            description="Registered athlete profile image."
+          >
+            <Stack
+              direction={{ xs: "column", sm: "row" }}
+              spacing={2.5}
+              sx={{ alignItems: { sm: "center" } }}
+            >
+              <Box
+                sx={{
+                  width: { xs: "100%", sm: 180 },
+                  maxWidth: 180,
+                  aspectRatio: "1",
+                  borderRadius: "24px",
+                  overflow: "hidden",
+                  border: "1px solid #f4e5de",
+                  backgroundColor: "#fffaf8",
+                  display: "grid",
+                  placeItems: "center"
+                }}
+              >
+                {profileImage ? (
+                  <Box
+                    component="img"
+                    src={profileImage}
+                    alt={`${skater.fullName} profile`}
+                    sx={{ width: "100%", height: "100%", objectFit: "cover" }}
+                  />
+                ) : (
+                  <Avatar
+                    sx={{
+                      width: 96,
+                      height: 96,
+                      fontSize: 36,
+                      fontWeight: 700,
+                      bgcolor: "#f6765e"
+                    }}
+                  >
+                    {profileInitial}
+                  </Avatar>
+                )}
+              </Box>
+              <Box sx={{ flex: 1 }}>
+                <Typography sx={{ fontWeight: 700, color: "#2f2829", fontSize: 18 }}>
+                  {skater.fullName}
+                </Typography>
+                <Typography sx={{ mt: 0.75, color: "#8d7f7b", lineHeight: 1.7 }}>
+                  {profileImage
+                    ? "Profile photo uploaded during registration."
+                    : "No profile photo uploaded yet."}
+                </Typography>
+                {profileImage && (
+                  <Button
+                    sx={{ mt: 2 }}
+                    variant="outlined"
+                    size="small"
+                    component="a"
+                    href={profileImage}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    startIcon={<OpenInNewOutlinedIcon sx={{ fontSize: 18 }} />}
+                  >
+                    Open full image
+                  </Button>
+                )}
+              </Box>
+            </Stack>
+          </SectionCard>
+
+          <SectionCard
             title="Identity and Registration"
             description="Core identity and contact details."
           >
@@ -357,6 +439,13 @@ export const SkaterDetailsPage = () => {
               <DetailItem label="Email" value={skater.email} />
               <DetailItem label="Gender" value={formatGender(skater.gender)} />
               <DetailItem label="Country Code" value={skater.countryCode} />
+              <DetailItem label="Date of birth" value={formatSkaterDate(skater.dob)} />
+              <DetailItem label="Aadhaar number" value={skater.aadharNumber} />
+              <DetailItem label="Blood group" value={skater.bloodGroup} />
+              <DetailItem label="Parent / guardian" value={skater.parent} />
+              <DetailItem label="School" value={skater.school} />
+              <DetailItem label="Grade" value={skater.grade} />
+              <DetailItem label="Signature" value={skater.signature} />
             </Box>
           </SectionCard>
 
@@ -373,8 +462,125 @@ export const SkaterDetailsPage = () => {
             >
               <DetailItem label="District" value={getSkaterDistrictName(skater)} />
               <DetailItem label="Club" value={skater.club?.name} />
+              <DetailItem label="Category" value={getSkaterCategoryName(skater)} />
               <DetailItem label="Address" value={skater.address} />
             </Box>
+          </SectionCard>
+
+          <SectionCard
+            title="Documents"
+            description="Uploaded certificates and supporting documents."
+          >
+            {documents.length > 0 ? (
+              <Box
+                sx={{
+                  display: "grid",
+                  gridTemplateColumns: {
+                    xs: "1fr",
+                    sm: "repeat(2, minmax(0, 1fr))",
+                    lg: "repeat(3, minmax(0, 1fr))"
+                  },
+                  gap: 2
+                }}
+              >
+                {documents.map((doc, index) => (
+                  <Paper
+                    key={`${doc.url}-${index}`}
+                    elevation={0}
+                    sx={{
+                      p: 2,
+                      borderRadius: "20px",
+                      border: "1px dashed #f2dfd7",
+                      background: "#fffefd",
+                      display: "flex",
+                      flexDirection: "column",
+                      gap: 1.5,
+                      height: "100%"
+                    }}
+                  >
+                    {doc.isImage && doc.url ? (
+                      <Box
+                        component="a"
+                        href={doc.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        sx={{
+                          display: "block",
+                          borderRadius: "16px",
+                          overflow: "hidden",
+                          border: "1px solid #f4e5de",
+                          aspectRatio: "4 / 3",
+                          backgroundColor: "#faf7f5"
+                        }}
+                      >
+                        <Box
+                          component="img"
+                          src={doc.url}
+                          alt={doc.name}
+                          sx={{ width: "100%", height: "100%", objectFit: "cover" }}
+                        />
+                      </Box>
+                    ) : (
+                      <Box
+                        sx={{
+                          p: 1.5,
+                          borderRadius: "16px",
+                          bgcolor: "#fff8f5",
+                          color: "#f6765e",
+                          display: "inline-flex",
+                          alignSelf: "flex-start"
+                        }}
+                      >
+                        <FileText size={20} />
+                      </Box>
+                    )}
+                    <Box sx={{ flex: 1 }}>
+                      <Typography sx={{ fontWeight: 700, color: "#2f2829", fontSize: 14 }}>
+                        {doc.name}
+                      </Typography>
+                      {doc.uploadedAt && (
+                        <Typography sx={{ mt: 0.5, fontSize: 12, color: "#9f8e89" }}>
+                          Uploaded {formatSkaterDate(doc.uploadedAt)}
+                        </Typography>
+                      )}
+                    </Box>
+                    {doc.url && (
+                      <Button
+                        size="small"
+                        component="a"
+                        href={doc.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        startIcon={<OpenInNewOutlinedIcon sx={{ fontSize: 16 }} />}
+                        sx={{
+                          alignSelf: "flex-start",
+                          fontWeight: 700,
+                          borderRadius: "10px",
+                          bgcolor: "#f6765e15",
+                          color: "#f6765e",
+                          "&:hover": { bgcolor: "#f6765e25" }
+                        }}
+                      >
+                        View document
+                      </Button>
+                    )}
+                  </Paper>
+                ))}
+              </Box>
+            ) : (
+              <Paper
+                elevation={0}
+                sx={{
+                  p: 4,
+                  borderRadius: "20px",
+                  border: "1px dashed #f2dfd7",
+                  textAlign: "center",
+                  bgcolor: "#fafafa"
+                }}
+              >
+                <Typography sx={{ color: "#a28f89" }}>No documents uploaded yet.</Typography>
+              </Paper>
+            )}
           </SectionCard>
         </Stack>
       </Paper>
