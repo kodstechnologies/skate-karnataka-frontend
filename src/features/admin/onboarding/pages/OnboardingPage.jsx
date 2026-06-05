@@ -1,13 +1,26 @@
 import { useEffect, useState } from "react";
-import { Box, Breadcrumbs, Button, Chip, Paper, Skeleton, Stack, Typography } from "@mui/material";
-import { ChevronRight, Image, PencilLine, Plus, Trash2 } from "lucide-react";
+import {
+  Box,
+  Breadcrumbs,
+  Button,
+  Chip,
+  Dialog,
+  DialogContent,
+  IconButton,
+  Paper,
+  Skeleton,
+  Stack,
+  Typography
+} from "@mui/material";
+import { ChevronRight, Image, PencilLine, Plus, Trash2, X, ZoomIn } from "lucide-react";
 import { Link as RouterLink, useNavigate } from "react-router-dom";
 import { useOnboardingStore } from "../store/onboarding-store";
 import { ConfirmDeleteModal } from "@/components/ui/ConfirmDeleteModal";
 
-const OnboardingImage = ({ src, index }) => {
+const OnboardingImage = ({ src, index, onPreview }) => {
   const [errored, setErrored] = useState(false);
   const showFallback = !src || errored;
+
   return (
     <Box>
       <Typography
@@ -39,25 +52,58 @@ const OnboardingImage = ({ src, index }) => {
         </Box>
       ) : (
         <Box
-          component="img"
-          src={src}
-          alt={`Onboarding ${index + 1}`}
-          onError={() => setErrored(true)}
+          onClick={() => onPreview(src, `Image ${index + 1}`)}
           sx={{
-            width: "100%",
-            height: { xs: 260, sm: 300, md: 340 },
-            objectFit: "cover",
+            position: "relative",
             borderRadius: "20px",
+            overflow: "hidden",
+            cursor: "pointer",
             border: "2px solid #f0e1da",
-            display: "block"
+            "&:hover .onboarding-zoom-hint": { opacity: 1 },
+            "&:hover img": { transform: "scale(1.03)" }
           }}
-        />
+        >
+          <Box
+            component="img"
+            src={src}
+            alt={`Onboarding ${index + 1}`}
+            onError={() => setErrored(true)}
+            sx={{
+              width: "100%",
+              height: { xs: 260, sm: 300, md: 340 },
+              objectFit: "cover",
+              display: "block",
+              transition: "transform 0.25s ease"
+            }}
+          />
+          <Stack
+            className="onboarding-zoom-hint"
+            direction="row"
+            spacing={0.5}
+            alignItems="center"
+            sx={{
+              position: "absolute",
+              right: 12,
+              bottom: 12,
+              px: 1.25,
+              py: 0.6,
+              borderRadius: "10px",
+              backgroundColor: "rgba(0,0,0,0.55)",
+              color: "white",
+              opacity: 0,
+              transition: "opacity 0.2s ease"
+            }}
+          >
+            <ZoomIn size={14} />
+            <Typography sx={{ fontSize: 11, fontWeight: 700 }}>View full</Typography>
+          </Stack>
+        </Box>
       )}
     </Box>
   );
 };
 
-const ImagesGrid = ({ onboarding }) => (
+const ImagesGrid = ({ onboarding, onPreview }) => (
   <Box
     sx={{
       display: { xs: "flex", sm: "grid" },
@@ -83,7 +129,7 @@ const ImagesGrid = ({ onboarding }) => (
           scrollSnapAlign: { xs: "start", sm: "unset" }
         }}
       >
-        <OnboardingImage src={onboarding[key]} index={i} />
+        <OnboardingImage src={onboarding[key]} index={i} onPreview={onPreview} />
       </Box>
     ))}
   </Box>
@@ -96,6 +142,7 @@ export const OnboardingPage = () => {
   const deleteOnboarding = useOnboardingStore((s) => s.deleteOnboarding);
   const isLoading = useOnboardingStore((s) => s.isLoading);
   const [confirmOpen, setConfirmOpen] = useState(false);
+  const [preview, setPreview] = useState(null);
 
   useEffect(() => {
     fetchOnboarding();
@@ -257,10 +304,69 @@ export const OnboardingPage = () => {
 
           {/* Images */}
           <Box sx={{ p: { xs: 2.5, md: 3.5 } }}>
-            <ImagesGrid onboarding={onboarding} />
+            <ImagesGrid
+              onboarding={onboarding}
+              onPreview={(src, title) => setPreview({ src, title })}
+            />
           </Box>
         </Paper>
       )}
+
+      <Dialog
+        open={Boolean(preview)}
+        onClose={() => setPreview(null)}
+        maxWidth={false}
+        PaperProps={{
+          sx: {
+            m: 2,
+            maxWidth: "min(96vw, 1100px)",
+            width: "100%",
+            borderRadius: "20px",
+            overflow: "hidden",
+            backgroundColor: "#111"
+          }
+        }}
+      >
+        <Stack
+          direction="row"
+          alignItems="center"
+          justifyContent="space-between"
+          sx={{ px: 2, py: 1.5, borderBottom: "1px solid rgba(255,255,255,0.1)" }}
+        >
+          <Typography sx={{ fontWeight: 700, color: "white" }}>
+            {preview?.title || "Full image"}
+          </Typography>
+          <IconButton onClick={() => setPreview(null)} sx={{ color: "white" }}>
+            <X size={20} />
+          </IconButton>
+        </Stack>
+        <DialogContent
+          sx={{
+            p: 0,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            backgroundColor: "#111",
+            minHeight: { xs: "60vh", md: "75vh" }
+          }}
+        >
+          {preview?.src && (
+            <Box
+              component="img"
+              src={preview.src}
+              alt={preview.title}
+              sx={{
+                maxWidth: "100%",
+                maxHeight: "85vh",
+                width: "auto",
+                height: "auto",
+                objectFit: "contain",
+                display: "block"
+              }}
+            />
+          )}
+        </DialogContent>
+      </Dialog>
 
       <ConfirmDeleteModal
         open={confirmOpen}

@@ -5,6 +5,8 @@ import {
   Breadcrumbs,
   Button,
   CircularProgress,
+  Dialog,
+  DialogContent,
   Divider,
   IconButton,
   Paper,
@@ -22,7 +24,7 @@ const inputSx = {
   "& .MuiOutlinedInput-root": { borderRadius: "18px", backgroundColor: "rgba(255,255,255,0.92)" }
 };
 
-const ImageField = ({ label, fileValue, existingUrl, error, onChange, onRemove }) => (
+const ImageField = ({ label, fileValue, existingUrl, error, onChange, onRemove, onPreview }) => (
   <Box sx={{ p: 2, borderRadius: "22px", border: "1px solid #f4e5de", backgroundColor: "#fffaf8" }}>
     <Typography
       sx={{
@@ -42,13 +44,17 @@ const ImageField = ({ label, fileValue, existingUrl, error, onChange, onRemove }
         component="img"
         src={existingUrl}
         alt={label}
+        onClick={() => onPreview(existingUrl, label)}
         sx={{
           width: "100%",
           height: 200,
           objectFit: "cover",
           borderRadius: "16px",
           mb: 1.5,
-          border: "2px solid #f0e1da"
+          border: "2px solid #f0e1da",
+          cursor: "pointer",
+          transition: "transform 0.2s ease",
+          "&:hover": { transform: "scale(1.02)" }
         }}
       />
     )}
@@ -79,7 +85,14 @@ const ImageField = ({ label, fileValue, existingUrl, error, onChange, onRemove }
         <Avatar
           src={fileValue ? URL.createObjectURL(fileValue) : ""}
           variant="rounded"
-          sx={{ width: 56, height: 56, borderRadius: "12px" }}
+          onClick={() => onPreview(URL.createObjectURL(fileValue), label)}
+          sx={{
+            width: 56,
+            height: 56,
+            borderRadius: "12px",
+            cursor: "pointer",
+            "&:hover": { opacity: 0.9 }
+          }}
         />
         <Box sx={{ flex: 1, minWidth: 0 }}>
           <Typography
@@ -124,6 +137,7 @@ export const OnboardingFormPage = () => {
   const [urlInputs, setUrlInputs] = useState({ imgOne: "", imgTwo: "", imgThree: "" });
   const [errors, setErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [preview, setPreview] = useState(null);
 
   useEffect(() => {
     fetchOnboarding();
@@ -292,6 +306,7 @@ export const OnboardingFormPage = () => {
                 error={errors[key]}
                 onChange={handleFile(key)}
                 onRemove={handleRemoveFile(key)}
+                onPreview={(src, title) => setPreview({ src, title })}
               />
               <TextField
                 label={`${label} URL`}
@@ -346,6 +361,62 @@ export const OnboardingFormPage = () => {
           </Button>
         </Stack>
       </Paper>
+
+      <Dialog
+        open={Boolean(preview)}
+        onClose={() => setPreview(null)}
+        maxWidth={false}
+        PaperProps={{
+          sx: {
+            m: 2,
+            maxWidth: "min(96vw, 1100px)",
+            width: "100%",
+            borderRadius: "20px",
+            overflow: "hidden",
+            backgroundColor: "#111"
+          }
+        }}
+      >
+        <Stack
+          direction="row"
+          alignItems="center"
+          justifyContent="space-between"
+          sx={{ px: 2, py: 1.5, borderBottom: "1px solid rgba(255,255,255,0.1)" }}
+        >
+          <Typography sx={{ fontWeight: 700, color: "white" }}>
+            {preview?.title || "Full image"}
+          </Typography>
+          <IconButton onClick={() => setPreview(null)} sx={{ color: "white" }}>
+            <X size={20} />
+          </IconButton>
+        </Stack>
+        <DialogContent
+          sx={{
+            p: 0,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            backgroundColor: "#111",
+            minHeight: { xs: "60vh", md: "75vh" }
+          }}
+        >
+          {preview?.src && (
+            <Box
+              component="img"
+              src={preview.src}
+              alt={preview.title}
+              sx={{
+                maxWidth: "100%",
+                maxHeight: "85vh",
+                width: "auto",
+                height: "auto",
+                objectFit: "contain",
+                display: "block"
+              }}
+            />
+          )}
+        </DialogContent>
+      </Dialog>
     </Box>
   );
 };
