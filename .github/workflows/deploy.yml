@@ -49,22 +49,23 @@ jobs:
           script: |
             rm -rf /home/ubuntu/skate-karnataka-frontend/*
 
-      # 8️⃣ Copy new build to EC2 (copy contents, not nested folder)
+      # 8️⃣ Copy new build + nginx SPA config to EC2
       - name: Copy new build to EC2
         uses: appleboy/scp-action@v0.1.4
         with:
           host: ${{ secrets.EC2_HOST }}
           username: ${{ secrets.EC2_USER }}
           key: ${{ secrets.EC2_KEY }}
-          source: "dist/*"
+          source: "dist/*,deploy/*"
           target: "/home/ubuntu/skate-karnataka-frontend"
 
-      # 9️⃣ Restart Nginx to serve new frontend
-      - name: Restart Nginx
+      # 9️⃣ Install nginx SPA config (fixes reload on /onboarding/, /gallery/, etc.)
+      - name: Install nginx SPA config and reload
         uses: appleboy/ssh-action@v1.0.0
         with:
           host: ${{ secrets.EC2_HOST }}
           username: ${{ secrets.EC2_USER }}
           key: ${{ secrets.EC2_KEY }}
           script: |
-            sudo systemctl restart nginx
+            chmod +x /home/ubuntu/skate-karnataka-frontend/deploy/install-nginx-admin.sh
+            sudo /home/ubuntu/skate-karnataka-frontend/deploy/install-nginx-admin.sh

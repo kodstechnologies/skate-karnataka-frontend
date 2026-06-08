@@ -44,7 +44,9 @@ const DetailItem = ({ label, value }) => (
       p: 2,
       borderRadius: "20px",
       border: "1px solid #f4e5de",
-      backgroundColor: "#fffaf8"
+      backgroundColor: "#fffaf8",
+      minWidth: 0,
+      overflow: "hidden"
     }}
   >
     <Typography
@@ -52,7 +54,17 @@ const DetailItem = ({ label, value }) => (
     >
       {label}
     </Typography>
-    <Typography sx={{ mt: 0.9, fontSize: 15, fontWeight: 600, color: "#2f2829", lineHeight: 1.7 }}>
+    <Typography
+      sx={{
+        mt: 0.9,
+        fontSize: 15,
+        fontWeight: 600,
+        color: "#2f2829",
+        lineHeight: 1.7,
+        wordBreak: "break-word",
+        overflowWrap: "anywhere"
+      }}
+    >
       {value || "-"}
     </Typography>
   </Box>
@@ -66,14 +78,17 @@ const SummaryCard = ({ icon, label, value, accent }) => (
       borderRadius: "24px",
       border: "1px solid rgba(243, 222, 215, 0.9)",
       background: "linear-gradient(180deg, rgba(255,255,255,0.96) 0%, rgba(255,247,243,0.98) 100%)",
-      boxShadow: "0 22px 60px rgba(55, 33, 26, 0.06)"
+      boxShadow: "0 22px 60px rgba(55, 33, 26, 0.06)",
+      minWidth: 0,
+      overflow: "hidden"
     }}
   >
-    <Stack direction="row" spacing={1.5} sx={{ alignItems: "center" }}>
+    <Stack direction="row" spacing={1.5} sx={{ alignItems: "flex-start", minWidth: 0 }}>
       <Box
         sx={{
           width: 48,
           height: 48,
+          flexShrink: 0,
           borderRadius: "16px",
           display: "grid",
           placeItems: "center",
@@ -83,7 +98,7 @@ const SummaryCard = ({ icon, label, value, accent }) => (
       >
         {icon}
       </Box>
-      <Box sx={{ minWidth: 0 }}>
+      <Box sx={{ minWidth: 0, flex: 1 }}>
         <Typography
           sx={{
             fontSize: 12,
@@ -94,7 +109,17 @@ const SummaryCard = ({ icon, label, value, accent }) => (
         >
           {label}
         </Typography>
-        <Typography sx={{ mt: 0.5, fontSize: 18, fontWeight: 700, color: "#2f2829" }}>
+        <Typography
+          sx={{
+            mt: 0.5,
+            fontSize: { xs: 15, sm: 16, xl: 18 },
+            fontWeight: 700,
+            color: "#2f2829",
+            lineHeight: 1.35,
+            wordBreak: "break-word",
+            overflowWrap: "anywhere"
+          }}
+        >
           {value || "-"}
         </Typography>
       </Box>
