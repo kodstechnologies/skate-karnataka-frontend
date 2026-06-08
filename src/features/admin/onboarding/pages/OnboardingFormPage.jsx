@@ -25,7 +25,15 @@ const inputSx = {
 };
 
 const ImageField = ({ label, fileValue, existingUrl, error, onChange, onRemove, onPreview }) => (
-  <Box sx={{ p: 2, borderRadius: "22px", border: "1px solid #f4e5de", backgroundColor: "#fffaf8" }}>
+  <Box
+    sx={{
+      p: { xs: 1.5, sm: 2 },
+      borderRadius: { xs: "18px", sm: "22px" },
+      border: "1px solid #f4e5de",
+      backgroundColor: "#fffaf8",
+      height: "100%"
+    }}
+  >
     <Typography
       sx={{
         mb: 1,
@@ -47,14 +55,14 @@ const ImageField = ({ label, fileValue, existingUrl, error, onChange, onRemove, 
         onClick={() => onPreview(existingUrl, label)}
         sx={{
           width: "100%",
-          height: 200,
+          height: { xs: 160, sm: 180, md: 200 },
           objectFit: "cover",
           borderRadius: "16px",
           mb: 1.5,
           border: "2px solid #f0e1da",
           cursor: "pointer",
           transition: "transform 0.2s ease",
-          "&:hover": { transform: "scale(1.02)" }
+          "&:hover": { transform: { xs: "none", sm: "scale(1.02)" } }
         }}
       />
     )}
@@ -62,8 +70,9 @@ const ImageField = ({ label, fileValue, existingUrl, error, onChange, onRemove, 
     <Button
       component="label"
       variant="outlined"
+      fullWidth
       startIcon={<UploadFileOutlinedIcon />}
-      sx={{ borderRadius: "14px", textTransform: "none" }}
+      sx={{ borderRadius: "14px", textTransform: "none", justifyContent: "center" }}
     >
       {existingUrl ? "Replace" : "Choose"} Image
       <input type="file" accept="image/*" hidden onChange={onChange} />
@@ -225,14 +234,14 @@ export const OnboardingFormPage = () => {
   ];
 
   return (
-    <Box className="space-y-5">
+    <Box sx={{ width: "100%", maxWidth: "100%", overflow: "hidden" }} className="space-y-5">
       {/* Hero */}
       <Paper
         elevation={0}
         sx={{
-          p: { xs: 3, md: 4 },
-          minHeight: { xs: 200, md: 230 },
-          borderRadius: "28px",
+          p: { xs: 2.5, sm: 3, md: 4 },
+          minHeight: { xs: "auto", md: 230 },
+          borderRadius: { xs: "22px", sm: "28px" },
           border: "1px solid rgba(255,255,255,0.8)",
           background: "linear-gradient(135deg, #2f2829 0%, #f6765e 100%)",
           color: "white"
@@ -242,8 +251,14 @@ export const OnboardingFormPage = () => {
           separator={<ChevronRight size={14} />}
           sx={{
             mb: 2,
+            flexWrap: "wrap",
+            rowGap: 0.5,
             "& .MuiBreadcrumbs-separator": { color: "rgba(255,255,255,0.6)" },
-            "& .MuiBreadcrumbs-li": { color: "rgba(255,255,255,0.86)" }
+            "& .MuiBreadcrumbs-li": {
+              color: "rgba(255,255,255,0.86)",
+              fontSize: { xs: "0.8rem", sm: "0.875rem" }
+            },
+            "& .MuiBreadcrumbs-ol": { flexWrap: "wrap" }
           }}
         >
           <Typography
@@ -264,10 +279,26 @@ export const OnboardingFormPage = () => {
             {isEditing ? "Edit" : "Create"}
           </Typography>
         </Breadcrumbs>
-        <Typography variant="h4" sx={{ fontWeight: 700, letterSpacing: "-0.04em", mb: 1 }}>
+        <Typography
+          variant="h4"
+          sx={{
+            fontWeight: 700,
+            letterSpacing: "-0.04em",
+            mb: 1,
+            fontSize: { xs: "1.45rem", sm: "1.75rem", md: "2.125rem" },
+            lineHeight: 1.2
+          }}
+        >
           {isEditing ? "Update Onboarding" : "Create Onboarding"}
         </Typography>
-        <Typography sx={{ color: "rgba(255,255,255,0.82)", maxWidth: 520 }}>
+        <Typography
+          sx={{
+            color: "rgba(255,255,255,0.82)",
+            maxWidth: 520,
+            fontSize: { xs: "0.9rem", sm: "1rem" },
+            lineHeight: 1.6
+          }}
+        >
           Upload or paste URLs for the three onboarding screen images.
         </Typography>
       </Paper>
@@ -276,25 +307,37 @@ export const OnboardingFormPage = () => {
       <Paper
         elevation={0}
         sx={{
-          p: { xs: 2.5, md: 3.5 },
-          borderRadius: "32px",
+          p: { xs: 2, sm: 2.5, md: 3.5 },
+          borderRadius: { xs: "22px", sm: "32px" },
           border: "1px solid rgba(246,228,221,0.95)",
           background: "linear-gradient(180deg, #fff 0%, #fff9f6 100%)",
           boxShadow: "0 26px 80px rgba(48,30,24,0.07)"
         }}
       >
-        <Typography variant="h6" sx={{ fontWeight: 700, color: "#2f2829", mb: 0.5 }}>
+        <Typography
+          variant="h6"
+          sx={{
+            fontWeight: 700,
+            color: "#2f2829",
+            mb: 0.5,
+            fontSize: { xs: "1.05rem", sm: "1.25rem" }
+          }}
+        >
           Onboarding Images
         </Typography>
-        <Typography sx={{ color: "#8d7f7b", mb: 3 }}>
+        <Typography sx={{ color: "#8d7f7b", mb: { xs: 2, sm: 3 }, fontSize: { xs: "0.875rem", sm: "1rem" } }}>
           Upload image files or provide URLs for each screen.
         </Typography>
 
         <Box
           sx={{
             display: "grid",
-            gridTemplateColumns: { xs: "1fr", sm: "repeat(3, 1fr)" },
-            gap: 2.5
+            gridTemplateColumns: {
+              xs: "1fr",
+              sm: "repeat(2, minmax(0, 1fr))",
+              lg: "repeat(3, minmax(0, 1fr))"
+            },
+            gap: { xs: 2, sm: 2.5 }
           }}
         >
           {imageFields.map(({ key, label }) => (
@@ -322,17 +365,23 @@ export const OnboardingFormPage = () => {
           ))}
         </Box>
 
-        <Divider sx={{ my: 3, borderColor: "rgba(240,219,210,0.9)" }} />
+        <Divider sx={{ my: { xs: 2, sm: 3 }, borderColor: "rgba(240,219,210,0.9)" }} />
         <Stack
-          direction={{ xs: "column", sm: "row" }}
+          direction={{ xs: "column-reverse", sm: "row" }}
           spacing={1.5}
-          sx={{ justifyContent: "flex-end" }}
+          sx={{ justifyContent: { xs: "stretch", sm: "flex-end" } }}
         >
           <Button
             variant="outlined"
             onClick={() => navigate("/onboarding")}
             disabled={isSubmitting}
-            sx={{ borderRadius: "14px", textTransform: "none" }}
+            fullWidth
+            sx={{
+              borderRadius: "14px",
+              textTransform: "none",
+              py: { xs: 1.1, sm: 0.9 },
+              width: { sm: "auto" }
+            }}
           >
             Cancel
           </Button>
@@ -347,10 +396,13 @@ export const OnboardingFormPage = () => {
             }
             onClick={handleSubmit}
             disabled={isSubmitting}
+            fullWidth
             sx={{
               borderRadius: "14px",
               textTransform: "none",
-              minWidth: 160,
+              minWidth: { sm: 160 },
+              py: { xs: 1.1, sm: 0.9 },
+              width: { sm: "auto" },
               backgroundColor: "#f6765e",
               boxShadow: "none",
               "&:hover": { backgroundColor: "#ea6b54", boxShadow: "none" },
