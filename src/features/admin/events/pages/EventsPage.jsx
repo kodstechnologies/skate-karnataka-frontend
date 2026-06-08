@@ -18,6 +18,7 @@ import eventsHero from "@/assets/Events_header.jpg";
 import { ConfirmDeleteModal } from "@/components/ui/ConfirmDeleteModal";
 import { eventsApi } from "@/api/events-api";
 import GenerateEventCertificatesButton from "@/features/admin/events/components/GenerateEventCertificatesButton";
+import EventChestNumbersButton from "@/features/admin/events/components/EventChestNumbersButton";
 import { useAuthStore } from "@/features/auth/store/auth-store";
 import { canApproveEvents, getEventApprovalChipProps } from "@/utils/eventApprovalStatus";
 import toast from "react-hot-toast";
@@ -456,6 +457,7 @@ export const EventsPage = () => {
                       }}
                     />
                     <Chip size="small" {...getEventApprovalChipProps(event)} />
+                    <EventChestNumbersButton event={event} />
                     <GenerateEventCertificatesButton
                       event={event}
                       role={role}

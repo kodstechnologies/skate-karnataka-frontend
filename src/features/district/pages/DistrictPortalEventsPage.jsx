@@ -16,6 +16,11 @@ import districtHero from "@/assets/District_header.jpg";
 import eventsHero from "@/assets/Events_header.jpg";
 import { ConfirmDeleteModal } from "@/components/ui/ConfirmDeleteModal";
 import { eventsApi } from "@/api/events-api";
+import EventChestNumbersButton from "@/features/admin/events/components/EventChestNumbersButton";
+import {
+  buildAttendeesNavigationState,
+  resolveAttendeesPath,
+} from "@/features/admin/events/utils/eventAttendeesNavigation";
 import { useAuthStore } from "@/features/auth/store/auth-store";
 import { getEventApprovalChipProps } from "@/utils/eventApprovalStatus";
 import toast from "react-hot-toast";
@@ -113,6 +118,20 @@ export const DistrictPortalEventsPage = () => {
   const [deleting, setDeleting] = useState(false);
 
   const displayName = user?.districtName || user?.name || "District";
+
+  const openEventAttendees = (event) => {
+    const id = event?._id || event?.id;
+    if (!id) return;
+
+    navigate(resolveAttendeesPath(id, "/district/events"), {
+      state: buildAttendeesNavigationState({
+        event,
+        returnTo: "/district/events",
+        returnLabel: "District events",
+        dashboardPath: "/district/dashboard",
+      }),
+    });
+  };
 
   const fetchEvents = useCallback(async (currentPage = 1, limit = 9) => {
     setLoading(true);
@@ -297,35 +316,62 @@ export const DistrictPortalEventsPage = () => {
                 <Paper
                   key={event._id || event.id}
                   elevation={0}
+                  onClick={() => openEventAttendees(event)}
                   sx={{
                     borderRadius: "24px",
                     border: "1px solid #d0eceb",
                     overflow: "hidden",
-                    background: `linear-gradient(135deg, ${event.colorOne || "#e8f8f7"} 0%, ${event.colorTwo || "#d4f1f0"} 100%)`
+                    cursor: "pointer",
+                    background: `linear-gradient(135deg, ${event.colorOne || "#e8f8f7"} 0%, ${event.colorTwo || "#d4f1f0"} 100%)`,
+                    transition: "transform 0.2s ease, box-shadow 0.2s ease",
+                    "&:hover": {
+                      transform: "translateY(-3px)",
+                      boxShadow: "0 16px 40px rgba(48, 30, 24, 0.1)"
+                    }
                   }}
                 >
                   <Stack
                     direction="row"
                     spacing={1}
-                    sx={{ px: 2, py: 1.5, alignItems: "center", flexWrap: "wrap" }}
+                    sx={{
+                      px: 2,
+                      py: 1.5,
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                      flexWrap: "wrap",
+                      gap: 1
+                    }}
                   >
-                    <Chip
-                      label={getStatusLabel(event.status)}
-                      size="small"
-                      sx={{ fontWeight: 700, bgcolor: "rgba(255,255,255,0.85)" }}
-                    />
-                    <Chip size="small" {...getEventApprovalChipProps(event)} />
-                    {event.deleteApprovalStatus !== "pending" && (
-                      <Button
+                    <Stack direction="row" spacing={1} sx={{ flexWrap: "wrap" }}>
+                      <Chip
+                        label={getStatusLabel(event.status)}
                         size="small"
-                        color="error"
-                        onClick={() => setPendingDeleteEvent(event)}
-                        sx={{ minWidth: 0, p: 1, ml: "auto" }}
-                        aria-label="Request delete"
-                      >
-                        <Trash2 size={16} />
-                      </Button>
-                    )}
+                        sx={{ fontWeight: 700, bgcolor: "rgba(255,255,255,0.85)" }}
+                      />
+                      <Chip size="small" {...getEventApprovalChipProps(event)} />
+                    </Stack>
+                    <Stack direction="row" spacing={0.75} sx={{ flexShrink: 0, alignItems: "center" }}>
+                      <EventChestNumbersButton
+                        event={event}
+                        returnTo="/district/events"
+                        returnLabel="District events"
+                        dashboardPath="/district/dashboard"
+                      />
+                      {event.deleteApprovalStatus !== "pending" && (
+                        <Button
+                          size="small"
+                          color="error"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setPendingDeleteEvent(event);
+                          }}
+                          sx={{ minWidth: 0, p: 1 }}
+                          aria-label="Request delete"
+                        >
+                          <Trash2 size={16} />
+                        </Button>
+                      )}
+                    </Stack>
                   </Stack>
 
                   <Stack spacing={1.25} sx={{ px: 2.25, pb: 2.5 }}>

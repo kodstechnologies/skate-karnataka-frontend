@@ -124,23 +124,23 @@ export const useAuthStore = create()(
       updateProfile: async (data) => {
         try {
           const role = get().role;
-          const response = await authApi.updateProfile(data, role);
+          const user = get().user || {};
+          const memberId =
+            user?.currentMember?.userId ||
+            user?.currentMember?._id ||
+            user?.memberId ||
+            user?._id;
+
+          const response = await authApi.updateProfile(data, role, memberId);
           if (response.success) {
-            const profile = response.data || {};
-            const profileRole = String(profile.role || role || "")
-              .trim()
-              .toLowerCase();
-            set({
-              user: profile,
-              role: profileRole || role
-            });
+            await get().getProfile();
             toast.success(response.message || "Profile updated successfully");
-            return profile;
+            return get().user;
           }
           throw new Error(response.message || "Failed to update profile");
         } catch (error) {
           const errorMessage =
-            error.response?.data?.message || error.message || "Failed to update profile";
+            error?.response?.data?.message || error.message || "Failed to update profile";
           toast.error(errorMessage);
           throw error;
         }

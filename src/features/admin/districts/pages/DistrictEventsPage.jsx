@@ -22,6 +22,7 @@ import { useAuthStore } from "@/features/auth/store/auth-store";
 import { useDistrictsStore } from "@/features/admin/districts/store/districts-store";
 import { canApproveEvents, getEventApprovalChipProps } from "@/utils/eventApprovalStatus";
 import GenerateEventCertificatesButton from "@/features/admin/events/components/GenerateEventCertificatesButton";
+import EventChestNumbersButton from "@/features/admin/events/components/EventChestNumbersButton";
 import toast from "react-hot-toast";
 
 const fmtDate = (v) => {
@@ -454,11 +455,18 @@ export const DistrictEventsPage = () => {
                       />
                       <Chip size="small" {...getEventApprovalChipProps(event)} />
                     </Stack>
-                    <GenerateEventCertificatesButton
-                      event={event}
-                      role={role}
-                      variant="corner"
-                    />
+                    <Stack direction="row" spacing={0.75} sx={{ flexShrink: 0 }}>
+                      <EventChestNumbersButton
+                        event={event}
+                        returnTo={`/districts/${districtId}/events`}
+                        returnLabel="District events"
+                      />
+                      <GenerateEventCertificatesButton
+                        event={event}
+                        role={role}
+                        variant="corner"
+                      />
+                    </Stack>
                   </Stack>
 
                   <Stack spacing={1.35} sx={{ p: 2.25, pt: 0 }}>

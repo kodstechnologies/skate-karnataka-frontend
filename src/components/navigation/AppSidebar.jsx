@@ -16,6 +16,11 @@ import {
   DialogActions,
   Button
 } from "@mui/material";
+import {
+  getUserAvatarSrc,
+  getUserDisplayName,
+  getUserInitials
+} from "@/features/admin/pages/profileMapper";
 
 export const AppSidebar = () => {
   const navigate = useNavigate();
@@ -66,15 +71,8 @@ export const AppSidebar = () => {
     navigate("/login");
   };
 
-  const getInitials = (name) => {
-    if (!name) return "A";
-    return name
-      .split(" ")
-      .map((n) => n[0])
-      .join("")
-      .toUpperCase()
-      .slice(0, 2);
-  };
+  const displayName = getUserDisplayName(user);
+  const avatarSrc = getUserAvatarSrc(user);
 
   return (
     <>
@@ -286,7 +284,7 @@ export const AppSidebar = () => {
               <Skeleton variant="circular" width={44} height={44} />
             ) : (
               <Avatar
-                src={user?.img}
+                src={avatarSrc || undefined}
                 sx={{
                   width: 44,
                   height: 44,
@@ -296,7 +294,7 @@ export const AppSidebar = () => {
                   fontWeight: 600
                 }}
               >
-                {getInitials(user?.fullName)}
+                {getUserInitials(user)}
               </Avatar>
             )}
 
@@ -312,7 +310,7 @@ export const AppSidebar = () => {
                 ) : (
                   <>
                     <p className="truncate text-sm font-semibold text-[#2f2829]">
-                      {user?.fullName || "Admin"}
+                      {displayName || "Admin"}
                     </p>
                     <p className="text-xs text-[#9b8d88]">
                       {role === "admin"

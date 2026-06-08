@@ -7,6 +7,11 @@ import { useAuthStore } from "@/features/auth/store/auth-store";
 import { useSubAdminNavigation } from "@/hooks/useSubAdminNavigation";
 import { Avatar, Skeleton, Menu as MuiMenu, MenuItem, ListItemIcon, Divider } from "@mui/material";
 import { Logout, Person } from "@mui/icons-material";
+import {
+  getUserAvatarSrc,
+  getUserDisplayName,
+  getUserInitials
+} from "@/features/admin/pages/profileMapper";
 
 export const AppHeader = () => {
   const sidebarOpen = useUiStore((state) => state.sidebarOpen);
@@ -79,15 +84,8 @@ export const AppHeader = () => {
     }
   };
 
-  const getInitials = (name) => {
-    if (!name) return "A";
-    return name
-      .split(" ")
-      .map((n) => n[0])
-      .join("")
-      .toUpperCase()
-      .slice(0, 2);
-  };
+  const displayName = getUserDisplayName(user);
+  const avatarSrc = getUserAvatarSrc(user);
 
   return (
     <header className="fixed top-0 left-0 right-0 z-20 flex h-[74px] items-center justify-between border-b border-[#efe2dc] bg-[#fbf6f4]/85 px-4 backdrop-blur-xl lg:px-6">
@@ -143,7 +141,7 @@ export const AppHeader = () => {
             className="flex items-center gap-2 rounded-2xl border border-[#eee1db] bg-white px-2 py-2 shadow-sm transition hover:bg-[#fffaf7]"
           >
             <Avatar
-              src={user?.img}
+              src={avatarSrc || undefined}
               sx={{
                 width: 32,
                 height: 32,
@@ -154,10 +152,10 @@ export const AppHeader = () => {
                 fontWeight: 600
               }}
             >
-              {getInitials(user?.fullName)}
+              {getUserInitials(user)}
             </Avatar>
             <span className="hidden text-sm font-medium text-[#2f2829] sm:block">
-              {user?.fullName?.split(" ")[0]}
+              {displayName.split(" ")[0] || "User"}
             </span>
             <ChevronDown size={16} className="hidden text-[#ab9b95] sm:block" />
           </button>

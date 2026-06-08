@@ -18,6 +18,7 @@ import { DistrictMembersPage } from "@/features/admin/districts/pages/DistrictMe
 import { DistrictsPage } from "@/features/admin/districts/pages/DistrictsPage";
 import { EventFormPage } from "@/features/admin/events/pages/EventFormPage";
 import { EventsPage } from "@/features/admin/events/pages/EventsPage";
+import { EventAttendeesPage } from "@/features/admin/events/pages/EventAttendeesPage";
 import { AdminDashboard } from "@/features/admin/pages/AdminDashboard";
 import { OfficialsPage } from "@/features/admin/officials/pages/OfficialsPage";
 import { OfficialEventsPage } from "@/features/admin/officials/pages/OfficialEventsPage";
@@ -107,6 +108,7 @@ export const AppRoutes = () => {
         <Route path="/club/dashboard" element={<ClubDashboard />} />
         <Route path="/club/events" element={<ClubPortalEventsPage />} />
         <Route path="/club/events/create" element={<ClubEventFormPage />} />
+        <Route path="/club/events/:eventId/attendees" element={<EventAttendeesPage />} />
         <Route path="/club/events/:eventId/edit" element={<ClubEventFormPage />} />
         <Route path="/club/media" element={<ClubPortalMediaPage />} />
         <Route path="/club/event-categories" element={<ClubEventCategoriesPage />} />
@@ -152,6 +154,7 @@ export const AppRoutes = () => {
         <Route path="/district/members" element={<DistrictMembersPage />} />
         <Route path="/district/dashboard" element={<DistrictDashboard />} />
         <Route path="/district/events" element={<DistrictPortalEventsPage />} />
+        <Route path="/district/events/:eventId/attendees" element={<EventAttendeesPage />} />
         <Route path="/district/events/create" element={<DistrictEventFormPage />} />
         <Route path="/district/members/create" element={<DistrictMemberFormPage />} />
         <Route
@@ -189,6 +192,7 @@ export const AppRoutes = () => {
         <Route path="/clubs/:clubId" element={<ClubDetailsPage />} />
         <Route path="/clubs/:clubId/edit" element={<ClubFormPage />} />
         <Route path="/clubs/:clubId/events" element={<ClubEventsPage />} />
+        <Route path="/clubs/:clubId/events/:eventId/attendees" element={<EventAttendeesPage />} />
         <Route path="/clubs/:clubId/media" element={<ClubMediaPage />} />
         <Route path="/clubs/:clubId/members" element={<ClubMembersPage />} />
         <Route path="/clubs/:clubId/members/create" element={<ClubMemberFormPage />} />
@@ -206,6 +210,7 @@ export const AppRoutes = () => {
         <Route path="/events/formula/:formulaId/edit" element={<FormulaFormPage />} />
         <Route path="/events/create" element={<EventFormPage />} />
         <Route path="/events/:eventId/edit" element={<EventFormPage />} />
+        <Route path="/events/:eventId/attendees" element={<EventAttendeesPage />} />
         <Route path="/state/media" element={<StateMediaPage />} />
         <Route path="/gallery" element={<GalleryPage />} />
         <Route path="/gallery/approvals" element={<GalleryApprovalsPage />} />
@@ -216,6 +221,10 @@ export const AppRoutes = () => {
         <Route path="/districts/create" element={<DistrictFormPage />} />
         <Route path="/districts/:districtId/edit" element={<DistrictFormPage />} />
         <Route path="/districts/:districtId/events" element={<DistrictEventsPage />} />
+        <Route
+          path="/districts/:districtId/events/:eventId/attendees"
+          element={<EventAttendeesPage />}
+        />
         <Route path="/districts/:districtId/media" element={<DistrictMediaPage />} />
         <Route path="/districts/:districtId/members" element={<DistrictMembersPage />} />
         <Route path="/districts/:districtId/members/create" element={<DistrictMemberFormPage />} />

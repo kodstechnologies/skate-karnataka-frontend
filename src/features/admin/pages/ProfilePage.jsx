@@ -10,7 +10,6 @@ import {
   Skeleton,
   IconButton,
   Stack,
-  Divider,
   InputAdornment,
   Tooltip,
   Alert
@@ -23,20 +22,365 @@ import {
   LocationOn,
   Email,
   Badge as BadgeIcon,
+  Business,
   Edit,
   Close,
   VerifiedUser
 } from "@mui/icons-material";
 import { useAuthStore } from "@/features/auth/store/auth-store";
+import {
+  buildProfileUpdateFormData,
+  getProfileOrgCard,
+  getProfileOrgDisplayName,
+  getProfileRoleLabel,
+  normalizeProfileResponse
+} from "@/features/admin/pages/profileMapper";
 
 const labelStyles = {
-  mb: 1.2,
-  ml: 1,
+  mb: 1,
+  ml: 0.5,
+  fontWeight: 700,
+  color: "#6f625e",
+  fontSize: "0.72rem",
+  textTransform: "uppercase",
+  letterSpacing: "0.1em"
+};
+
+const sectionTitleStyles = {
   fontWeight: 800,
   color: "#2f2829",
-  fontSize: "0.85rem",
+  fontSize: "1.05rem",
+  letterSpacing: "-0.02em",
+  mb: 0.5
+};
+
+const metaPillSx = {
+  color: "#5f5552",
+  fontWeight: 600,
+  display: "inline-flex",
+  alignItems: "center",
+  gap: 0.625,
+  fontSize: "0.8125rem",
+  bgcolor: "#f5f3f2",
+  border: "1px solid #ebe4e0",
+  px: 1.35,
+  py: 0.625,
+  borderRadius: "999px",
+  lineHeight: 1.2,
+  minHeight: 32
+};
+
+const rolePillSx = {
+  color: "#f6765e",
+  fontWeight: 700,
+  bgcolor: "#fff",
+  border: "1px solid rgba(246, 118, 94, 0.35)",
+  px: 1.35,
+  py: 0.625,
+  borderRadius: "999px",
+  fontSize: "0.72rem",
   textTransform: "uppercase",
-  letterSpacing: "0.5px"
+  letterSpacing: "0.08em",
+  lineHeight: 1.2,
+  minHeight: 32,
+  display: "inline-flex",
+  alignItems: "center"
+};
+
+const ProfileMetaPill = ({ icon: Icon, children }) => (
+  <Typography component="span" sx={metaPillSx}>
+    <Icon sx={{ fontSize: 16, color: "#f6765e" }} />
+    {children}
+  </Typography>
+);
+
+const orgPanelSx = {
+  height: "100%",
+  p: 2.5,
+  borderRadius: "24px",
+  border: "1px solid rgba(246, 118, 94, 0.18)",
+  background: "linear-gradient(180deg, #fff9f7 0%, #fff1eb 100%)"
+};
+
+const personalPanelSx = {
+  height: "100%",
+  p: { xs: 2.5, md: 3, lg: 3.5 },
+  borderRadius: "24px",
+  border: "1px solid #efe2dc",
+  bgcolor: "#fcfbfa"
+};
+
+/** Shared profile header — same layout for admin, sub-admin, state, club, and district. */
+const ProfilePageHeader = ({
+  isEditing,
+  onToggleEdit,
+  avatarSrc,
+  avatarInitials,
+  onAvatarClick,
+  fileInputRef,
+  onFileChange,
+  headline,
+  orgDisplayName,
+  roleLabel,
+  krsaId
+}) => {
+  const showOrgPill = Boolean(orgDisplayName) && orgDisplayName !== headline;
+
+  return (
+    <Box sx={{ borderBottom: "1px solid #efe2dc" }}>
+      <Box
+        sx={{
+          height: { xs: 96, md: 116 },
+          background: "linear-gradient(135deg, #f6765e 0%, #ff8c75 55%, #ffb09e 100%)",
+          position: "relative",
+          overflow: "hidden"
+        }}
+      >
+        <Box
+          sx={{
+            position: "absolute",
+            width: 220,
+            height: 220,
+            borderRadius: "50%",
+            bgcolor: "rgba(255,255,255,0.12)",
+            top: -80,
+            right: -40
+          }}
+        />
+        <Box
+          sx={{
+            position: "absolute",
+            width: 140,
+            height: 140,
+            borderRadius: "50%",
+            bgcolor: "rgba(255,255,255,0.08)",
+            bottom: -50,
+            left: "18%"
+          }}
+        />
+        <Box sx={{ position: "absolute", top: 16, right: { xs: 16, md: 24 }, zIndex: 2 }}>
+          <Button
+            variant={isEditing ? "outlined" : "contained"}
+            startIcon={isEditing ? <Close /> : <Edit />}
+            onClick={onToggleEdit}
+            sx={{
+              borderRadius: "14px",
+              textTransform: "none",
+              px: 2.5,
+              py: 1,
+              fontWeight: 700,
+              bgcolor: isEditing ? "rgba(255,255,255,0.16)" : "white",
+              borderColor: "white",
+              color: isEditing ? "white" : "#f6765e",
+              boxShadow: isEditing ? "none" : "0 8px 20px rgba(0,0,0,0.08)",
+              "&:hover": {
+                bgcolor: isEditing ? "rgba(255,255,255,0.24)" : "#f8f9fa",
+                borderColor: "white"
+              }
+            }}
+          >
+            {isEditing ? "Cancel" : "Edit Profile"}
+          </Button>
+        </Box>
+      </Box>
+
+      <Box
+        sx={{
+          bgcolor: "#fff",
+          px: { xs: 2.5, md: 4, lg: 5 },
+          pb: { xs: 2.5, md: 3 },
+          pt: { xs: 7, md: 0 }
+        }}
+      >
+        <Box
+          sx={{
+            display: "flex",
+            flexDirection: { xs: "column", md: "row" },
+            alignItems: { xs: "center", md: "center" },
+            gap: { xs: 1.5, md: 2.5 },
+            mt: { md: -7 },
+            position: "relative",
+            zIndex: 1
+          }}
+        >
+          <Box sx={{ position: "relative", flexShrink: 0 }}>
+            <Avatar
+              src={avatarSrc}
+              onClick={onAvatarClick}
+              sx={{
+                width: { xs: 108, md: 128 },
+                height: { xs: 108, md: 128 },
+                fontSize: "1.9rem",
+                fontWeight: 800,
+                bgcolor: "#f6765e",
+                border: "5px solid #fff",
+                boxShadow: "0 16px 36px rgba(246, 118, 94, 0.22)",
+                cursor: isEditing ? "pointer" : "default",
+                transition: "transform 0.2s ease",
+                "&:hover": isEditing ? { transform: "scale(1.02)" } : {}
+              }}
+            >
+              {avatarInitials}
+            </Avatar>
+            {isEditing && (
+              <IconButton
+                onClick={onAvatarClick}
+                sx={{
+                  position: "absolute",
+                  bottom: 6,
+                  right: 6,
+                  bgcolor: "white",
+                  color: "#f6765e",
+                  boxShadow: "0 8px 20px rgba(0,0,0,0.2)",
+                  "&:hover": { bgcolor: "#f8f9fa", transform: "scale(1.08)" },
+                  transition: "all 0.2s ease",
+                  width: 40,
+                  height: 40
+                }}
+              >
+                <CameraAlt fontSize="small" />
+              </IconButton>
+            )}
+            <input type="file" hidden ref={fileInputRef} accept="image/*" onChange={onFileChange} />
+          </Box>
+
+          <Box
+            sx={{
+              flex: 1,
+              minWidth: 0,
+              width: "100%",
+              textAlign: { xs: "center", md: "left" },
+              pt: { md: 1.5 }
+            }}
+          >
+            <Typography
+              variant="h4"
+              sx={{
+                fontWeight: 800,
+                color: "#2f2829",
+                fontSize: { xs: "1.5rem", md: "1.9rem" },
+                letterSpacing: "-0.03em",
+                lineHeight: 1.2,
+                mb: 1.25
+              }}
+            >
+              {headline}
+            </Typography>
+            <Stack
+              direction="row"
+              spacing={1}
+              useFlexGap
+              alignItems="center"
+              justifyContent={{ xs: "center", md: "flex-start" }}
+              sx={{ flexWrap: "wrap", rowGap: 1 }}
+            >
+              {showOrgPill ? (
+                <ProfileMetaPill icon={Business}>{orgDisplayName}</ProfileMetaPill>
+              ) : null}
+              <Typography component="span" sx={rolePillSx}>
+                {roleLabel}
+              </Typography>
+              {krsaId ? <ProfileMetaPill icon={BadgeIcon}>{krsaId}</ProfileMetaPill> : null}
+            </Stack>
+          </Box>
+        </Box>
+      </Box>
+    </Box>
+  );
+};
+
+const ProfileInfoField = ({
+  label,
+  value,
+  icon: Icon,
+  isEditing,
+  name,
+  onChange,
+  multiline = false,
+  rows = 1,
+  disabled = false,
+  endAdornment,
+  textFieldStyles
+}) => {
+  if (!isEditing) {
+    return (
+      <Box>
+        <Typography variant="subtitle2" sx={labelStyles}>
+          {label}
+        </Typography>
+        <Box
+          sx={{
+            display: "flex",
+            alignItems: multiline ? "flex-start" : "center",
+            gap: 1.5,
+            p: 2,
+            borderRadius: "18px",
+            border: "1px solid #efe2dc",
+            bgcolor: "#faf8f7",
+            minHeight: multiline ? 96 : 56
+          }}
+        >
+          <Box
+            sx={{
+              width: 40,
+              height: 40,
+              borderRadius: "12px",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              flexShrink: 0,
+              bgcolor: "#fff1eb",
+              color: "#f6765e"
+            }}
+          >
+            <Icon sx={{ fontSize: 20 }} />
+          </Box>
+          <Typography
+            sx={{
+              flex: 1,
+              color: value ? "#2f2829" : "#b19f99",
+              fontWeight: value ? 600 : 500,
+              fontSize: "0.95rem",
+              lineHeight: 1.5,
+              pt: multiline ? 0.5 : 0,
+              wordBreak: "break-word"
+            }}
+          >
+            {value || "—"}
+          </Typography>
+          {endAdornment}
+        </Box>
+      </Box>
+    );
+  }
+
+  return (
+    <Box>
+      <Typography variant="subtitle2" sx={labelStyles}>
+        {label}
+      </Typography>
+      <TextField
+        fullWidth
+        name={name}
+        value={value}
+        onChange={onChange}
+        disabled={disabled}
+        multiline={multiline}
+        rows={rows}
+        slotProps={{
+          input: {
+            startAdornment: (
+              <InputAdornment position="start" sx={multiline ? { alignSelf: "flex-start", mt: 1.8 } : undefined}>
+                <Icon sx={{ color: disabled ? "#b19f99" : "#f6765e" }} />
+              </InputAdornment>
+            ),
+            endAdornment
+          }
+        }}
+        sx={textFieldStyles}
+      />
+    </Box>
+  );
 };
 
 const emptyForm = {
@@ -45,20 +389,25 @@ const emptyForm = {
   address: "",
   email: "",
   krsaId: "",
-  img: ""
+  img: "",
+  gender: "",
+  memberId: "",
+  districtName: "",
+  districtKrsaId: "",
+  clubName: "",
+  clubId: "",
+  stateName: "",
+  allowedModules: [],
+  orgName: "",
+  orgSubtitle: "",
+  orgAddress: "",
+  orgAbout: ""
 };
 
-const mapProfileToForm = (data) => ({
-  fullName: data?.fullName || "",
-  phone: data?.phone || "",
-  address: data?.address || "",
-  email: data?.email || "",
-  krsaId: data?.krsaId || "",
-  img: data?.img || ""
-});
+const mapProfileToForm = (data, role) => normalizeProfileResponse(data, role);
 
 export const ProfilePage = () => {
-  const { user, getProfile, updateProfile } = useAuthStore();
+  const { user, role, getProfile, updateProfile } = useAuthStore();
   const [isEditing, setIsEditing] = useState(false);
   const [pageLoading, setPageLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
@@ -76,7 +425,7 @@ export const ProfilePage = () => {
       try {
         const data = await getProfile();
         if (!active) return;
-        setFormData(mapProfileToForm(data));
+        setFormData(mapProfileToForm(data, role));
       } catch (error) {
         if (!active) return;
         const message =
@@ -91,7 +440,7 @@ export const ProfilePage = () => {
     return () => {
       active = false;
     };
-  }, [getProfile]);
+  }, [getProfile, role]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -120,23 +469,15 @@ export const ProfilePage = () => {
     e.preventDefault();
     setIsSaving(true);
     try {
-      const data = new FormData();
-      data.append("fullName", formData.fullName);
-      data.append("phone", formData.phone);
-      data.append("address", formData.address);
-
-      if (selectedFile) {
-        data.append("img", selectedFile);
-      }
-
+      const data = buildProfileUpdateFormData(formData, selectedFile, role);
       const updated = await updateProfile(data);
       setIsEditing(false);
       setSelectedFile(null);
       if (updated) {
-        setFormData(mapProfileToForm(updated));
+        setFormData(mapProfileToForm(updated, role));
       } else {
         const refreshed = await getProfile();
-        setFormData(mapProfileToForm(refreshed));
+        setFormData(mapProfileToForm(refreshed, role));
       }
     } catch (error) {
       console.error("Error updating profile:", error);
@@ -145,18 +486,31 @@ export const ProfilePage = () => {
     }
   };
 
-  const displayName = formData.fullName || user?.fullName || "";
+  const normalizedRole = String(role || user?.role || "").toLowerCase();
+  const orgCard = getProfileOrgCard(normalizedRole, formData, user);
+  const orgDisplayName = getProfileOrgDisplayName(normalizedRole, formData, user);
 
-  const getRoleLabel = (role) => {
-    const normalized = String(role || "").toLowerCase();
-    if (normalized === "admin") return "Admin";
-    if (normalized === "state") return "State Official";
-    return role || "";
-  };
+  const displayName =
+    formData.fullName ||
+    user?.currentMember?.fullName ||
+    user?.memberDetails?.fullName ||
+    user?.fullName ||
+    "";
+  const headline = displayName || orgDisplayName || "Profile";
+  const krsaId =
+    formData.krsaId || user?.currentMember?.krsaId || user?.krsaId || "";
+  const avatarSrc =
+    formData.img ||
+    user?.currentMember?.photo ||
+    user?.memberDetails?.photo ||
+    user?.img ||
+    "";
+  const roleLabel = getProfileRoleLabel(role || user?.role, { ...user, ...formData });
 
   const getInitials = (name) => {
-    if (!name) return "A";
-    const parts = name.trim().split(/\s+/).filter(Boolean);
+    const source = name || headline;
+    if (!source) return "A";
+    const parts = source.trim().split(/\s+/).filter(Boolean);
     return parts
       .map((n) => n[0])
       .join("")
@@ -166,8 +520,8 @@ export const ProfilePage = () => {
 
   const textFieldStyles = {
     "& .MuiOutlinedInput-root": {
-      borderRadius: "18px",
-      backgroundColor: "#fbf6f4",
+      borderRadius: "16px",
+      backgroundColor: isEditing ? "#fff" : "#faf7f5",
       transition: "all 0.2s ease",
       border: "1px solid #efe2dc",
       "& fieldset": { border: "none" },
@@ -176,9 +530,15 @@ export const ProfilePage = () => {
         boxShadow: "0 0 0 2px #f6765e"
       },
       "&.Mui-disabled": {
-        backgroundColor: "#f5f5f5",
-        color: "#888",
-        opacity: 0.8
+        backgroundColor: "#faf7f5",
+        WebkitTextFillColor: "#2f2829",
+        color: "#2f2829",
+        opacity: 1
+      },
+      "&.Mui-disabled input, &.Mui-disabled textarea": {
+        WebkitTextFillColor: "#2f2829",
+        color: "#2f2829",
+        opacity: 1
       }
     },
     "& .MuiInputLabel-root": {
@@ -189,7 +549,7 @@ export const ProfilePage = () => {
 
   if (pageLoading) {
     return (
-      <Box sx={{ p: { xs: 2, md: 4 }, width: "100%" }}>
+      <Box sx={{ width: "100%" }}>
         <Paper
           elevation={0}
           sx={{
@@ -199,13 +559,13 @@ export const ProfilePage = () => {
             minHeight: "80vh"
           }}
         >
-          <Skeleton variant="rectangular" height={200} />
-          <Box sx={{ p: 4 }}>
+          <Skeleton variant="rectangular" height={116} />
+          <Box sx={{ px: 4, pb: 3, pt: 0 }}>
             <Stack
               direction={{ xs: "column", sm: "row" }}
-              spacing={4}
+              spacing={3}
               alignItems="center"
-              sx={{ mt: -10, mb: 6 }}
+              sx={{ mt: -7, mb: 3 }}
             >
               <Skeleton
                 variant="circular"
@@ -218,13 +578,13 @@ export const ProfilePage = () => {
                 <Skeleton variant="text" width="40%" height={30} />
               </Box>
             </Stack>
-            <Grid container spacing={4}>
-              {[1, 2, 3, 4, 5].map((i) => (
-                <Grid key={i} size={{ xs: 12, sm: i === 5 ? 12 : 6 }}>
-                  <Skeleton variant="text" width={100} sx={{ mb: 1 }} />
-                  <Skeleton variant="rectangular" height={60} sx={{ borderRadius: "18px" }} />
-                </Grid>
-              ))}
+            <Grid container spacing={3}>
+              <Grid size={{ xs: 12, lg: 4 }}>
+                <Skeleton variant="rounded" height={220} sx={{ borderRadius: "24px" }} />
+              </Grid>
+              <Grid size={{ xs: 12, lg: 8 }}>
+                <Skeleton variant="rounded" height={320} sx={{ borderRadius: "24px" }} />
+              </Grid>
             </Grid>
           </Box>
         </Paper>
@@ -234,7 +594,7 @@ export const ProfilePage = () => {
 
   if (loadError) {
     return (
-      <Box sx={{ p: { xs: 2, md: 4 }, width: "100%", maxWidth: 900, mx: "auto" }}>
+      <Box sx={{ width: "100%" }}>
         <Alert severity="error" sx={{ borderRadius: "16px" }}>
           {loadError}
         </Alert>
@@ -243,7 +603,7 @@ export const ProfilePage = () => {
   }
 
   return (
-    <Box sx={{ p: { xs: 1, md: 4 }, width: "100%", maxWidth: "1600px", mx: "auto" }}>
+    <Box sx={{ width: "100%", minHeight: "calc(100vh - 120px)" }}>
       <Paper
         elevation={0}
         sx={{
@@ -251,303 +611,178 @@ export const ProfilePage = () => {
           overflow: "hidden",
           border: "1px solid #efe2dc",
           backgroundColor: "white",
-          boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.08)",
+          boxShadow: "0 28px 80px rgba(48, 30, 24, 0.08)",
           width: "100%"
         }}
       >
-        <Box
-          sx={{
-            height: { xs: 140, md: 220 },
-            background: "linear-gradient(135deg, #f6765e 0%, #ff8c75 100%)",
-            position: "relative"
-          }}
-        >
-          <Box sx={{ position: "absolute", top: 24, right: 24, zIndex: 2 }}>
-            <Button
-              variant={isEditing ? "outlined" : "contained"}
-              startIcon={isEditing ? <Close /> : <Edit />}
-              onClick={() => setIsEditing(!isEditing)}
-              sx={{
-                borderRadius: "16px",
-                textTransform: "none",
-                px: 3,
-                py: 1.2,
-                fontWeight: 800,
-                backdropFilter: "blur(8px)",
-                bgcolor: isEditing ? "rgba(255,255,255,0.15)" : "white",
-                borderColor: "white",
-                color: isEditing ? "white" : "#f6765e",
-                boxShadow: isEditing ? "none" : "0 10px 25px rgba(0,0,0,0.1)",
-                "&:hover": {
-                  bgcolor: isEditing ? "rgba(255,255,255,0.25)" : "#f8f9fa",
-                  borderColor: "white",
-                  transform: "translateY(-2px)"
-                },
-                transition: "all 0.3s ease"
-              }}
-            >
-              {isEditing ? "Cancel" : "Edit Profile"}
-            </Button>
-          </Box>
-        </Box>
+        <ProfilePageHeader
+          isEditing={isEditing}
+          onToggleEdit={() => setIsEditing(!isEditing)}
+          avatarSrc={avatarSrc}
+          avatarInitials={getInitials(displayName)}
+          onAvatarClick={handleImageClick}
+          fileInputRef={fileInputRef}
+          onFileChange={handleFileChange}
+          headline={headline}
+          orgDisplayName={orgDisplayName}
+          roleLabel={roleLabel}
+          krsaId={krsaId}
+        />
 
-        <Box sx={{ px: { xs: 3, md: 6 }, pb: 6 }}>
-          <Stack
-            direction={{ xs: "column", md: "row" }}
-            spacing={{ xs: 2, md: 4 }}
-            alignItems={{ xs: "center", md: "flex-end" }}
-            sx={{ mt: { xs: -8, md: -10 }, mb: 6 }}
-          >
-            <Box sx={{ position: "relative" }}>
-              <Avatar
-                src={formData.img || user?.img || ""}
-                onClick={handleImageClick}
-                sx={{
-                  width: { xs: 150, md: 190 },
-                  height: { xs: 150, md: 190 },
-                  fontSize: "4rem",
-                  bgcolor: "#f6765e",
-                  border: "8px solid #fff",
-                  boxShadow: "0 20px 40px rgba(0,0,0,0.12)",
-                  cursor: isEditing ? "pointer" : "default",
-                  transition: "all 0.3s ease",
-                  "&:hover": isEditing ? { transform: "scale(1.03) rotate(2deg)" } : {}
-                }}
-              >
-                {getInitials(displayName)}
-              </Avatar>
-              {isEditing && (
-                <IconButton
-                  onClick={handleImageClick}
-                  sx={{
-                    position: "absolute",
-                    bottom: 12,
-                    right: 12,
-                    bgcolor: "white",
-                    color: "#f6765e",
-                    boxShadow: "0 8px 20px rgba(0,0,0,0.2)",
-                    "&:hover": { bgcolor: "#f8f9fa", transform: "scale(1.1)" },
-                    transition: "all 0.2s ease",
-                    width: 48,
-                    height: 48
-                  }}
-                >
-                  <CameraAlt />
-                </IconButton>
-              )}
-              <input
-                type="file"
-                hidden
-                ref={fileInputRef}
-                accept="image/*"
-                onChange={handleFileChange}
-              />
-            </Box>
-
-            <Box sx={{ textAlign: { xs: "center", md: "left" }, pb: { md: 1 }, flex: 1 }}>
-              <Typography
-                variant="h3"
-                sx={{
-                  fontWeight: 900,
-                  color: "#2f2829",
-                  fontSize: { xs: "1.75rem", md: "2.75rem" },
-                  letterSpacing: "-0.02em"
-                }}
-              >
-                {displayName}
-              </Typography>
-              <Stack
-                direction="row"
-                spacing={1.5}
-                alignItems="center"
-                justifyContent={{ xs: "center", md: "flex-start" }}
-                sx={{ mt: 1 }}
-              >
+        <Box sx={{ px: { xs: 2.5, md: 4, lg: 5 }, pb: 5, pt: 3, bgcolor: "#fff" }}>
+          <Grid container spacing={3} alignItems="stretch">
+            <Grid size={{ xs: 12, lg: 4, xl: 3 }}>
+              <Paper elevation={0} sx={orgPanelSx}>
                 <Typography
                   sx={{
+                    fontSize: "0.7rem",
+                    fontWeight: 700,
                     color: "#f6765e",
-                    fontWeight: 800,
-                    bgcolor: "#fff1eb",
-                    px: 2,
-                    py: 0.6,
-                    borderRadius: "12px",
-                    fontSize: "0.8rem",
                     textTransform: "uppercase",
-                    letterSpacing: "0.5px"
+                    letterSpacing: "0.1em"
                   }}
                 >
-                  {getRoleLabel(user?.role)}
+                  {orgCard.title}
                 </Typography>
-                <Divider orientation="vertical" flexItem sx={{ height: 20, my: "auto" }} />
-                <Typography
-                  sx={{
-                    color: "#8d7f7b",
-                    fontWeight: 600,
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 0.5
-                  }}
-                >
-                  <BadgeIcon sx={{ fontSize: 18, color: "#f6765e" }} />
-                  {formData.krsaId || user?.krsaId}
-                </Typography>
-              </Stack>
-            </Box>
-          </Stack>
-
-          <Divider sx={{ mb: 6, opacity: 0.6 }} />
-
-          <form onSubmit={handleSubmit}>
-            <Grid container spacing={{ xs: 3, md: 5 }}>
-              <Grid size={{ xs: 12, sm: 6 }}>
-                <Typography variant="subtitle2" sx={labelStyles}>
-                  Full Name
-                </Typography>
-                <TextField
-                  fullWidth
-                  name="fullName"
-                  value={formData.fullName}
-                  onChange={handleChange}
-                  disabled={!isEditing}
-                  slotProps={{
-                    input: {
-                      startAdornment: (
-                        <InputAdornment position="start">
-                          <Person sx={{ color: isEditing ? "#f6765e" : "#b19f99" }} />
-                        </InputAdornment>
-                      )
-                    }
-                  }}
-                  sx={textFieldStyles}
-                />
-              </Grid>
-              <Grid size={{ xs: 12, sm: 6 }}>
-                <Typography variant="subtitle2" sx={labelStyles}>
-                  Email Address
-                </Typography>
-                <TextField
-                  fullWidth
-                  value={formData.email}
-                  disabled
-                  slotProps={{
-                    input: {
-                      startAdornment: (
-                        <InputAdornment position="start">
-                          <Email sx={{ color: "#b19f99" }} />
-                        </InputAdornment>
-                      ),
-                      endAdornment: (
-                        <InputAdornment position="end">
-                          <Tooltip title="Verified Email">
-                            <span style={{ display: "flex" }}>
-                              <VerifiedUser sx={{ color: "#4caf50", fontSize: 20 }} />
-                            </span>
-                          </Tooltip>
-                        </InputAdornment>
-                      )
-                    }
-                  }}
-                  sx={textFieldStyles}
-                />
-              </Grid>
-              <Grid size={{ xs: 12, sm: 6 }}>
-                <Typography variant="subtitle2" sx={labelStyles}>
-                  Phone Number
-                </Typography>
-                <TextField
-                  fullWidth
-                  name="phone"
-                  value={formData.phone}
-                  onChange={handleChange}
-                  disabled={!isEditing}
-                  slotProps={{
-                    input: {
-                      startAdornment: (
-                        <InputAdornment position="start">
-                          <Phone sx={{ color: isEditing ? "#f6765e" : "#b19f99" }} />
-                        </InputAdornment>
-                      )
-                    }
-                  }}
-                  sx={textFieldStyles}
-                />
-              </Grid>
-              <Grid size={{ xs: 12, sm: 6 }}>
-                <Typography variant="subtitle2" sx={labelStyles}>
-                  KRSA ID
-                </Typography>
-                <TextField
-                  fullWidth
-                  value={formData.krsaId}
-                  disabled
-                  slotProps={{
-                    input: {
-                      startAdornment: (
-                        <InputAdornment position="start">
-                          <BadgeIcon sx={{ color: "#b19f99" }} />
-                        </InputAdornment>
-                      )
-                    }
-                  }}
-                  sx={textFieldStyles}
-                />
-              </Grid>
-              <Grid size={{ xs: 12 }}>
-                <Typography variant="subtitle2" sx={labelStyles}>
-                  Physical Address
-                </Typography>
-                <TextField
-                  fullWidth
-                  multiline
-                  rows={4}
-                  name="address"
-                  value={formData.address}
-                  onChange={handleChange}
-                  disabled={!isEditing}
-                  slotProps={{
-                    input: {
-                      startAdornment: (
-                        <InputAdornment position="start" sx={{ alignSelf: "flex-start", mt: 1.8 }}>
-                          <LocationOn sx={{ color: isEditing ? "#f6765e" : "#b19f99" }} />
-                        </InputAdornment>
-                      )
-                    }
-                  }}
-                  sx={textFieldStyles}
-                />
-              </Grid>
-
-              {isEditing && (
-                <Grid size={{ xs: 12 }} sx={{ mt: 2 }}>
-                  <Button
-                    fullWidth
-                    variant="contained"
-                    size="large"
-                    type="submit"
-                    disabled={isSaving}
-                    startIcon={<Save />}
-                    sx={{
-                      py: 2.5,
-                      borderRadius: "20px",
-                      background: "linear-gradient(135deg, #f6765e 0%, #ff8c75 100%)",
-                      fontWeight: 900,
-                      fontSize: "1.1rem",
-                      textTransform: "none",
-                      boxShadow: "0 20px 40px rgba(246, 118, 94, 0.35)",
-                      transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
-                      "&:hover": {
-                        transform: "translateY(-3px)",
-                        boxShadow: "0 25px 50px rgba(246, 118, 94, 0.45)",
-                        background: "linear-gradient(135deg, #ea6b54 0%, #f6765e 100%)"
-                      }
-                    }}
-                  >
-                    {isSaving ? "Saving Changes..." : "Save Profile Updates"}
-                  </Button>
-                </Grid>
-              )}
+                <Stack spacing={2.5} sx={{ mt: 2 }}>
+                  {orgCard.items.map((item) => (
+                    <Box key={`${item.label}-${item.value}`}>
+                      <Typography sx={{ fontSize: "0.72rem", color: "#8d7f7b", fontWeight: 600 }}>
+                        {item.label}
+                      </Typography>
+                      <Typography
+                        sx={{
+                          fontWeight: item.label === "Name" ? 800 : 600,
+                          color: "#2f2829",
+                          mt: 0.5,
+                          fontSize: item.label === "Name" ? "1.05rem" : "0.95rem",
+                          lineHeight: 1.5,
+                          wordBreak: "break-word"
+                        }}
+                      >
+                        {item.value}
+                      </Typography>
+                    </Box>
+                  ))}
+                </Stack>
+              </Paper>
             </Grid>
-          </form>
+
+            <Grid size={{ xs: 12, lg: 8, xl: 9 }}>
+              <Paper elevation={0} sx={personalPanelSx}>
+                <Box sx={{ mb: 3 }}>
+                  <Typography sx={sectionTitleStyles}>Personal information</Typography>
+                  <Typography sx={{ color: "#8d7f7b", fontSize: "0.9rem" }}>
+                    {isEditing
+                      ? "Update your contact details below."
+                      : "Your account details and contact information."}
+                  </Typography>
+                </Box>
+
+                <form onSubmit={handleSubmit}>
+                  <Grid container spacing={{ xs: 2.5, md: 3 }}>
+                    <Grid size={{ xs: 12, sm: 6 }}>
+                      <ProfileInfoField
+                        label="Full Name"
+                        value={formData.fullName}
+                        icon={Person}
+                        isEditing={isEditing}
+                        name="fullName"
+                        onChange={handleChange}
+                        textFieldStyles={textFieldStyles}
+                      />
+                    </Grid>
+                    <Grid size={{ xs: 12, sm: 6 }}>
+                      <ProfileInfoField
+                        label="Email Address"
+                        value={formData.email}
+                        icon={Email}
+                        isEditing={isEditing}
+                        disabled
+                        endAdornment={
+                          isEditing ? (
+                            <InputAdornment position="end">
+                              <Tooltip title="Verified email">
+                                <span style={{ display: "flex" }}>
+                                  <VerifiedUser sx={{ color: "#4caf50", fontSize: 20 }} />
+                                </span>
+                              </Tooltip>
+                            </InputAdornment>
+                          ) : (
+                            <Tooltip title="Verified email">
+                              <VerifiedUser sx={{ color: "#4caf50", fontSize: 22, flexShrink: 0 }} />
+                            </Tooltip>
+                          )
+                        }
+                        textFieldStyles={textFieldStyles}
+                      />
+                    </Grid>
+                    <Grid size={{ xs: 12, sm: 6 }}>
+                      <ProfileInfoField
+                        label="Phone Number"
+                        value={formData.phone}
+                        icon={Phone}
+                        isEditing={isEditing}
+                        name="phone"
+                        onChange={handleChange}
+                        textFieldStyles={textFieldStyles}
+                      />
+                    </Grid>
+                    <Grid size={{ xs: 12, sm: 6 }}>
+                      <ProfileInfoField
+                        label="KRSA ID"
+                        value={formData.krsaId}
+                        icon={BadgeIcon}
+                        isEditing={isEditing}
+                        disabled
+                        textFieldStyles={textFieldStyles}
+                      />
+                    </Grid>
+                    <Grid size={{ xs: 12 }}>
+                      <ProfileInfoField
+                        label="Physical Address"
+                        value={formData.address}
+                        icon={LocationOn}
+                        isEditing={isEditing}
+                        name="address"
+                        onChange={handleChange}
+                        multiline
+                        rows={3}
+                        textFieldStyles={textFieldStyles}
+                      />
+                    </Grid>
+
+                    {isEditing && (
+                      <Grid size={{ xs: 12, lg: 6, xl: 4 }} sx={{ mt: 1 }}>
+                        <Button
+                          fullWidth
+                          variant="contained"
+                          size="large"
+                          type="submit"
+                          disabled={isSaving}
+                          startIcon={<Save />}
+                          sx={{
+                            py: 1.75,
+                            borderRadius: "16px",
+                            background: "linear-gradient(135deg, #f6765e 0%, #ff8c75 100%)",
+                            fontWeight: 800,
+                            fontSize: "0.95rem",
+                            textTransform: "none",
+                            boxShadow: "0 12px 28px rgba(246, 118, 94, 0.32)",
+                            "&:hover": {
+                              background: "linear-gradient(135deg, #ea6b54 0%, #f6765e 100%)"
+                            }
+                          }}
+                        >
+                          {isSaving ? "Saving changes..." : "Save profile updates"}
+                        </Button>
+                      </Grid>
+                    )}
+                  </Grid>
+                </form>
+              </Paper>
+            </Grid>
+          </Grid>
         </Box>
       </Paper>
     </Box>

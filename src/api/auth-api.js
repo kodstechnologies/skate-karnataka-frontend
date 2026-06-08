@@ -23,13 +23,27 @@ export const authApi = {
     }
     return api.get("/admin/v1/profile");
   },
-  updateProfile: async (data, role) => {
+  updateProfile: async (data, role, memberId) => {
     const normalizedRole = String(role || "").toLowerCase();
-    const path = normalizedRole === "state" ? "/state/v1/edit-profile" : "/admin/v1/edit-profile";
-    return api.patch(path, data, {
-      headers: {
-        "Content-Type": "multipart/form-data"
-      }
+    const multipartHeaders = { "Content-Type": "multipart/form-data" };
+
+    if (normalizedRole === "district") {
+      return api.patch(`/admin/v1/district-member/${memberId}`, data, {
+        headers: multipartHeaders,
+      });
+    }
+    if (normalizedRole === "club") {
+      return api.patch(`/admin/v1/club-member/${memberId}`, data, {
+        headers: multipartHeaders,
+      });
+    }
+    if (normalizedRole === "state") {
+      return api.patch("/state/v1/edit-profile", data, {
+        headers: multipartHeaders,
+      });
+    }
+    return api.patch("/admin/v1/edit-profile", data, {
+      headers: multipartHeaders,
     });
-  }
+  },
 };

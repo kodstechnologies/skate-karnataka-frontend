@@ -22,6 +22,7 @@ import { useAuthStore } from "@/features/auth/store/auth-store";
 import { useClubsStore } from "@/features/admin/clubs/store/clubs-store";
 import { canApproveEvents, getEventApprovalChipProps } from "@/utils/eventApprovalStatus";
 import GenerateEventCertificatesButton from "@/features/admin/events/components/GenerateEventCertificatesButton";
+import EventChestNumbersButton from "@/features/admin/events/components/EventChestNumbersButton";
 import toast from "react-hot-toast";
 
 const fmtDate = (v) => {
@@ -454,11 +455,18 @@ export const ClubEventsPage = () => {
                       />
                       <Chip size="small" {...getEventApprovalChipProps(event)} />
                     </Stack>
-                    <GenerateEventCertificatesButton
-                      event={event}
-                      role={role}
-                      variant="corner"
-                    />
+                    <Stack direction="row" spacing={0.75} sx={{ flexShrink: 0 }}>
+                      <EventChestNumbersButton
+                        event={event}
+                        returnTo={`/clubs/${clubId}/events`}
+                        returnLabel="Club events"
+                      />
+                      <GenerateEventCertificatesButton
+                        event={event}
+                        role={role}
+                        variant="corner"
+                      />
+                    </Stack>
                   </Stack>
 
                   <Stack spacing={1.35} sx={{ p: 2.25, pt: 0 }}>
