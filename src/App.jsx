@@ -1,7 +1,7 @@
 import { AppRoutes } from "./routes/AppRoutes";
 import { Toaster } from "react-hot-toast";
 const App = () => {
-  console.log("hello : 11");
+  console.log("hello : 11 ===");
   return (
     <>
       <AppRoutes />
