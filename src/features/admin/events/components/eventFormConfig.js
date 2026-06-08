@@ -91,6 +91,15 @@ const formatTimeForInput = (v) => {
   return `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
 };
 
+/** Compare calendar dates only (YYYY-MM-DD), ignoring time/timezone drift. */
+const startOfDayMs = (dateStr) => {
+  if (!dateStr) return null;
+  const d = new Date(dateStr);
+  if (Number.isNaN(d.getTime())) return null;
+  d.setHours(0, 0, 0, 0);
+  return d.getTime();
+};
+
 export const validateEventForm = (formData) => {
   const errors = {};
   const requiredFields = [
@@ -120,34 +129,32 @@ export const validateEventForm = (formData) => {
     errors.skatingEventCategories = "Select at least one category";
   }
 
-  const regStart = formData.registerStartDate ? new Date(formData.registerStartDate) : null;
-  const regEnd = formData.registerEndDate ? new Date(formData.registerEndDate) : null;
-  const eventStart = formData.eventStartDate ? new Date(formData.eventStartDate) : null;
-  const eventEnd = formData.eventEndDate ? new Date(formData.eventEndDate) : null;
+  const regStartMs = startOfDayMs(formData.registerStartDate);
+  const regEndMs = startOfDayMs(formData.registerEndDate);
+  const eventStartMs = startOfDayMs(formData.eventStartDate);
+  const eventEndMs = startOfDayMs(formData.eventEndDate);
 
-  if (regStart && regEnd && regStart > regEnd) {
+  if (regStartMs != null && regEndMs != null && regStartMs > regEndMs) {
     errors.registerEndDate = "Registration end date cannot be before start date";
   }
 
-  if (eventStart && eventEnd && eventStart > eventEnd) {
+  if (eventStartMs != null && eventEndMs != null && eventStartMs > eventEndMs) {
     errors.eventEndDate = "Event end date cannot be before start date";
   }
 
-  if (regEnd && eventStart && regEnd > eventStart) {
-    errors.registerEndDate = "Registration must end before or on the event start date";
+  if (regEndMs != null && eventStartMs != null && regEndMs > eventStartMs) {
+    errors.eventStartDate = "Event start date must be on or after registration end date";
   }
 
   if (
-    formData.eventStartDate &&
-    formData.eventEndDate &&
-    new Date(formData.eventStartDate).toDateString() ===
-      new Date(formData.eventEndDate).toDateString()
+    eventStartMs != null &&
+    eventEndMs != null &&
+    eventStartMs === eventEndMs &&
+    formData.eventStartTime &&
+    formData.eventEndTime &&
+    formData.eventStartTime > formData.eventEndTime
   ) {
-    if (formData.eventStartTime && formData.eventEndTime) {
-      if (formData.eventStartTime >= formData.eventEndTime) {
-        errors.eventEndTime = "End time must be strictly after start time for same-day events";
-      }
-    }
+    errors.eventEndTime = "End time must be on or after start time for same-day events";
   }
 
   return errors;
