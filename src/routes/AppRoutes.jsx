@@ -183,6 +183,10 @@ export const AppRoutes = () => {
         <Route path="/officials" element={<OfficialsPage />} />
         <Route path="/officials/create" element={<OfficialFormPage />} />
         <Route path="/officials/:officialId/events" element={<OfficialEventsPage />} />
+        <Route
+          path="/officials/:officialId/events/:eventId/attendees"
+          element={<EventAttendeesPage />}
+        />
         <Route path="/officials/:officialId/edit" element={<OfficialFormPage />} />
         <Route path="/skaters" element={<SkatersPage />} />
         <Route path="/skaters/:skaterId/edit" element={<SkaterFormPage />} />

@@ -14,15 +14,13 @@ import { CalendarDays, CheckCircle2, ChevronRight, PencilLine, Search, Trash2, X
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link as RouterLink, useNavigate, useParams } from "react-router-dom";
 import districtHero from "@/assets/District_header.jpg";
-import eventsHero from "@/assets/Events_header.jpg";
 import { ConfirmDeleteModal } from "@/components/ui/ConfirmDeleteModal";
 import { districtApi } from "@/api/district-api";
 import { eventsApi } from "@/api/events-api";
 import { useAuthStore } from "@/features/auth/store/auth-store";
 import { useDistrictsStore } from "@/features/admin/districts/store/districts-store";
 import { canApproveEvents, getEventApprovalChipProps } from "@/utils/eventApprovalStatus";
-import GenerateEventCertificatesButton from "@/features/admin/events/components/GenerateEventCertificatesButton";
-import EventChestNumbersButton from "@/features/admin/events/components/EventChestNumbersButton";
+import EventCardActionsMenu from "@/features/admin/events/components/EventCardActionsMenu";
 import toast from "react-hot-toast";
 
 const fmtDate = (v) => {
@@ -140,7 +138,9 @@ export const DistrictEventsPage = () => {
   );
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchEvents(searchTerm, page + 1, rowsPerPage);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [districtId, page, rowsPerPage, fetchEvents]);
 
   const handleSearchChange = (event) => {
@@ -356,9 +356,7 @@ export const DistrictEventsPage = () => {
             px: { xs: 2.5, md: 3 },
             pt: { xs: 0.5, md: 1 },
             pb: { xs: 3.5, md: 4 },
-            background: `linear-gradient(180deg, transparent 0%, rgba(246,118,94,0.04) 100%), url("${eventsHero}")`,
-            backgroundSize: "cover",
-            backgroundPosition: "center"
+            backgroundColor: "#ffffff"
           }}
         >
           {loading ? (
@@ -455,18 +453,12 @@ export const DistrictEventsPage = () => {
                       />
                       <Chip size="small" {...getEventApprovalChipProps(event)} />
                     </Stack>
-                    <Stack direction="row" spacing={0.75} sx={{ flexShrink: 0 }}>
-                      <EventChestNumbersButton
-                        event={event}
-                        returnTo={`/districts/${districtId}/events`}
-                        returnLabel="District events"
-                      />
-                      <GenerateEventCertificatesButton
-                        event={event}
-                        role={role}
-                        variant="corner"
-                      />
-                    </Stack>
+                    <EventCardActionsMenu
+                      event={event}
+                      role={role}
+                      returnTo={`/districts/${districtId}/events`}
+                      returnLabel="District events"
+                    />
                   </Stack>
 
                   <Stack spacing={1.35} sx={{ p: 2.25, pt: 0 }}>

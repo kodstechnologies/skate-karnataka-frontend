@@ -16,7 +16,6 @@ import {
 import { UploadProgressBanner } from "@/components/ui/UploadProgressBanner";
 import { ChevronRight, Mail, Phone, Save, Clock, Headphones, ShieldCheck } from "lucide-react";
 import { Link as RouterLink } from "react-router-dom";
-import contactHero from "@/assets/contect.png";
 import { useContactUsStore } from "@/features/admin/contact-us/store/contact-us-store";
 
 const inputStyles = {
@@ -112,10 +111,8 @@ export const ContactUsPage = () => {
           overflow: "hidden",
           position: "relative",
           border: "1px solid rgba(255,255,255,0.7)",
-          background: `linear-gradient(110deg, rgba(18,14,16,0.9) 0%, rgba(35,23,23,0.72) 38%, rgba(246,118,94,0.3) 100%), url("${contactHero}")`,
-          backgroundPosition: "center 30%",
-          backgroundRepeat: "no-repeat",
-          backgroundSize: "cover",
+          background:
+            "linear-gradient(110deg, rgba(18,14,16,0.95) 0%, rgba(35,23,23,0.82) 42%, rgba(246,118,94,0.45) 100%)",
           color: "white"
         }}
       >

@@ -14,10 +14,11 @@ import { CalendarDays, ChevronRight, PencilLine, Search, Trash2 } from "lucide-r
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link as RouterLink, useNavigate, useParams } from "react-router-dom";
 import officialHero from "@/assets/State_official_header.jpg";
-import eventsHero from "@/assets/Events_header.jpg";
 import { ConfirmDeleteModal } from "@/components/ui/ConfirmDeleteModal";
 import { stateApi } from "@/api/state-api";
 import { eventsApi } from "@/api/events-api";
+import { useAuthStore } from "@/features/auth/store/auth-store";
+import EventCardActionsMenu from "@/features/admin/events/components/EventCardActionsMenu";
 import { useOfficialsStore } from "@/features/admin/officials/store/officials-store";
 import toast from "react-hot-toast";
 
@@ -85,6 +86,7 @@ const getStatusColor = (status) => {
 export const OfficialEventsPage = () => {
   const navigate = useNavigate();
   const { officialId } = useParams();
+  const role = useAuthStore((s) => s.role);
 
   const officials = useOfficialsStore((s) => s.officials);
   const officialFromStore = useMemo(
@@ -298,9 +300,7 @@ export const OfficialEventsPage = () => {
             px: { xs: 2.5, md: 3 },
             pt: { xs: 0.5, md: 1 },
             pb: { xs: 3.5, md: 4 },
-            background: `linear-gradient(180deg, transparent 0%, rgba(246,118,94,0.04) 100%), url("${eventsHero}")`,
-            backgroundSize: "cover",
-            backgroundPosition: "center"
+            backgroundColor: "#ffffff"
           }}
         >
           {loading ? (
@@ -373,16 +373,32 @@ export const OfficialEventsPage = () => {
                     }
                   }}
                 >
-                  <Stack sx={{ px: 2, py: 1.5 }}>
+                  <Stack
+                    direction="row"
+                    spacing={1}
+                    sx={{
+                      px: 2,
+                      py: 1.5,
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                      flexWrap: "wrap",
+                      gap: 1
+                    }}
+                  >
                     <Chip
                       size="small"
                       label={getStatusLabel(event.status)}
                       sx={{
-                        alignSelf: "flex-start",
                         backgroundColor: getStatusColor(event.status),
                         color: "white",
                         fontWeight: 700
                       }}
+                    />
+                    <EventCardActionsMenu
+                      event={event}
+                      role={role}
+                      returnTo={`/officials/${officialId}/events`}
+                      returnLabel="Official events"
                     />
                   </Stack>
 
@@ -446,14 +462,24 @@ export const OfficialEventsPage = () => {
                       )}
                     </Box>
 
-                    <Stack direction="row" spacing={1} sx={{ pt: 1 }}>
+                    <Box
+                      sx={{
+                        display: "flex",
+                        gap: 1,
+                        width: "100%",
+                        pt: 1,
+                        flexWrap: "wrap"
+                      }}
+                    >
                       <Button
                         variant="outlined"
                         startIcon={<PencilLine size={16} />}
                         onClick={() =>
-                          navigate(`/events/${event._id || event.id}/edit`, { state: { event } })
+                          navigate(`/events/${event._id || event.id}/edit`, {
+                            state: { event, fromOfficialId: officialId }
+                          })
                         }
-                        fullWidth
+                        sx={{ flex: 1, minWidth: 120 }}
                       >
                         Edit
                       </Button>
@@ -461,15 +487,16 @@ export const OfficialEventsPage = () => {
                         variant="contained"
                         startIcon={<Trash2 size={16} />}
                         onClick={() => setPendingDeleteEvent(event)}
-                        fullWidth
                         sx={{
+                          flex: 1,
+                          minWidth: 120,
                           backgroundColor: "#f6765e",
                           "&:hover": { backgroundColor: "#ea6b54" }
                         }}
                       >
                         Delete
                       </Button>
-                    </Stack>
+                    </Box>
                   </Stack>
                 </Paper>
               ))}

@@ -6,7 +6,7 @@ export const resolveAttendeesPath = (eventId, returnTo = "/events/detail") => {
     return `/club/events/${eventId}/attendees`;
   }
 
-  const orgEventsMatch = returnTo.match(/^(\/(?:clubs|districts)\/[^/]+\/events)$/);
+  const orgEventsMatch = returnTo.match(/^(\/(?:clubs|districts|officials)\/[^/]+\/events)$/);
   if (orgEventsMatch) {
     return `${orgEventsMatch[1]}/${eventId}/attendees`;
   }
@@ -42,12 +42,17 @@ export const resolveAttendeesPortalContext = (pathname, state = {}) => {
     };
   }
 
-  const orgMatch = pathname.match(/^\/(clubs|districts)\/([^/]+)\/events\/[^/]+\/attendees/);
+  const orgMatch = pathname.match(/^\/(clubs|districts|officials)\/([^/]+)\/events\/[^/]+\/attendees/);
   if (orgMatch) {
     const [, orgType, orgId] = orgMatch;
+    const labelByOrg = {
+      clubs: "Club events",
+      districts: "District events",
+      officials: "Official events",
+    };
     return {
       returnTo: `/${orgType}/${orgId}/events`,
-      returnLabel: orgType === "clubs" ? "Club events" : "District events",
+      returnLabel: labelByOrg[orgType] || "Events",
       dashboardPath: "/dashboard",
       dashboardLabel: "Dashboard",
     };

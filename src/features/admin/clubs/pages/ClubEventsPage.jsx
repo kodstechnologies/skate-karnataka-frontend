@@ -14,7 +14,6 @@ import { CalendarDays, CheckCircle2, ChevronRight, PencilLine, Search, Trash2, X
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link as RouterLink, useNavigate, useParams } from "react-router-dom";
 import clubHero from "@/assets/Club_header.jpg";
-import eventsHero from "@/assets/Events_header.jpg";
 import { ConfirmDeleteModal } from "@/components/ui/ConfirmDeleteModal";
 import { clubApi } from "@/api/club-api";
 import { eventsApi } from "@/api/events-api";
@@ -139,7 +138,9 @@ export const ClubEventsPage = () => {
   );
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchEvents(searchTerm, page + 1, rowsPerPage);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [clubId, page, rowsPerPage, fetchEvents]);
 
   const handleSearchChange = (event) => {
@@ -355,9 +356,7 @@ export const ClubEventsPage = () => {
             px: { xs: 2.5, md: 3 },
             pt: { xs: 0.5, md: 1 },
             pb: { xs: 3.5, md: 4 },
-            background: `linear-gradient(180deg, transparent 0%, rgba(246,118,94,0.04) 100%), url("${eventsHero}")`,
-            backgroundSize: "cover",
-            backgroundPosition: "center"
+            backgroundColor: "#ffffff"
           }}
         >
           {loading ? (
