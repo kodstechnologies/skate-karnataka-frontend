@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
   Box,
   Breadcrumbs,
@@ -9,12 +9,12 @@ import {
   Table,
   TableBody,
   TableCell,
+  TableContainer,
   TableHead,
   TablePagination,
   TableRow,
   TextField,
   Typography,
-  CircularProgress,
   Button
 } from "@mui/material";
 import { ChevronRight, Search } from "lucide-react";
@@ -23,40 +23,30 @@ import toast from "react-hot-toast";
 import { competitionApi } from "@/api/competition-api";
 import { resolveAttendeesPortalContext } from "@/features/admin/events/utils/eventAttendeesNavigation";
 
-const norm = (value) => String(value || "").trim();
+function useDebounce(value, delay) {
+  const [debouncedValue, setDebouncedValue] = useState(value);
+  useEffect(() => {
+    const handler = setTimeout(() => setDebouncedValue(value), delay);
+    return () => clearTimeout(handler);
+  }, [value, delay]);
+  return debouncedValue;
+}
 
-const flattenRows = (summary) => {
-  const rows = [];
-  for (const skatingCategory of summary?.skatingCategories || []) {
-    for (const ageGroup of skatingCategory?.ageGroups || []) {
-      for (const lap of ageGroup?.categories || []) {
-        for (const skater of lap?.skaters || []) {
-          rows.push({
-            id: `${skatingCategory.id}-${ageGroup.label}-${lap.name}-${skater.chestNo}-${skater.krsaId}-${skater.fullName}`,
-            skatingCategory: norm(skatingCategory.typeName),
-            ageGroup: norm(ageGroup.label),
-            lap: norm(lap.name),
-            fullName: norm(skater.fullName),
-            chestNo: norm(skater.chestNo),
-            krsaId: norm(skater.krsaId),
-            rsfiId: norm(skater.rsfiId),
-            gender: norm(skater.gender),
-            paymentStatus: norm(skater.paymentStatus),
-          });
-        }
-      }
-    }
-  }
-  return rows;
+const emptySummary = {
+  eventName: "",
+  totalRegistered: 0,
+  totalWithChestNo: 0,
+  filters: { ageGroups: [], laps: [], disciplines: [] },
+  attendees: [],
+  pagination: { total: 0, page: 1, limit: 10, totalPages: 1 }
 };
 
 export const EventAttendeesPage = () => {
   const { eventId } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
+  const [summary, setSummary] = useState(emptySummary);
   const [loading, setLoading] = useState(true);
-  const [summary, setSummary] = useState(null);
-  const [rows, setRows] = useState([]);
   const [search, setSearch] = useState("");
   const [ageGroup, setAgeGroup] = useState("");
   const [lap, setLap] = useState("");
@@ -64,66 +54,55 @@ export const EventAttendeesPage = () => {
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
 
+  const debouncedSearch = useDebounce(search, 400);
+
+  const loadAttendees = useCallback(async () => {
+    if (!eventId) {
+      setLoading(false);
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const response = await competitionApi.getChestNumberSummary(eventId, {
+        page: page + 1,
+        limit: rowsPerPage,
+        search: debouncedSearch,
+        ageGroup,
+        lap,
+        discipline
+      });
+      const payload = response?.data ?? response;
+      const data = payload?.data ?? payload;
+      setSummary({
+        ...emptySummary,
+        ...data,
+        filters: {
+          ageGroups: data?.filters?.ageGroups || [],
+          laps: data?.filters?.laps || [],
+          disciplines: data?.filters?.disciplines || []
+        },
+        attendees: Array.isArray(data?.attendees) ? data.attendees : [],
+        pagination: data?.pagination || emptySummary.pagination
+      });
+    } catch (err) {
+      toast.error(err?.response?.data?.message || "Failed to load attendees");
+    } finally {
+      setLoading(false);
+    }
+  }, [eventId, page, rowsPerPage, debouncedSearch, ageGroup, lap, discipline]);
+
   useEffect(() => {
-    const loadData = async () => {
-      if (!eventId) {
-        setLoading(false);
-        return;
-      }
-      setLoading(true);
-      try {
-        const response = await competitionApi.getChestNumberSummary(eventId);
-        const payload = response?.data ?? response;
-        const data = payload?.data ?? payload;
-        setSummary(data || null);
-        setRows(flattenRows(data || {}));
-      } catch (err) {
-        toast.error(err?.response?.data?.message || "Failed to load attendees");
-      } finally {
-        setLoading(false);
-      }
-    };
-    loadData();
-  }, [eventId]);
-
-  const ageGroupOptions = useMemo(
-    () => [...new Set(rows.map((row) => row.ageGroup).filter(Boolean))],
-    [rows]
-  );
-  const lapOptions = useMemo(
-    () => [...new Set(rows.map((row) => row.lap).filter(Boolean))],
-    [rows]
-  );
-  const disciplineOptions = useMemo(
-    () => [...new Set(rows.map((row) => row.skatingCategory).filter(Boolean))],
-    [rows]
-  );
-
-  const filteredRows = useMemo(() => {
-    const term = norm(search).toLowerCase();
-    return rows.filter((row) => {
-      const matchesSearch =
-        !term ||
-        row.fullName.toLowerCase().includes(term) ||
-        row.chestNo.toLowerCase().includes(term) ||
-        row.krsaId.toLowerCase().includes(term) ||
-        row.rsfiId.toLowerCase().includes(term);
-      const matchesAgeGroup = !ageGroup || row.ageGroup === ageGroup;
-      const matchesLap = !lap || row.lap === lap;
-      const matchesDiscipline = !discipline || row.skatingCategory === discipline;
-      return matchesSearch && matchesAgeGroup && matchesLap && matchesDiscipline;
-    });
-  }, [rows, search, ageGroup, lap, discipline]);
-
-  const paginatedRows = useMemo(() => {
-    const start = page * rowsPerPage;
-    return filteredRows.slice(start, start + rowsPerPage);
-  }, [filteredRows, page, rowsPerPage]);
+    loadAttendees();
+  }, [loadAttendees]);
 
   const eventNameFromState = location.state?.eventName ? String(location.state.eventName) : "";
   const eventName = summary?.eventName || eventNameFromState || "Event";
   const portalContext = resolveAttendeesPortalContext(location.pathname, location.state);
   const { returnTo, returnLabel, dashboardPath, dashboardLabel } = portalContext;
+  const attendees = summary.attendees || [];
+  const pagination = summary.pagination || emptySummary.pagination;
+  const filterOptions = summary.filters || emptySummary.filters;
 
   return (
     <Box className="space-y-5">
@@ -167,13 +146,13 @@ export const EventAttendeesPage = () => {
         </Stack>
 
         <Stack direction="row" spacing={1} useFlexGap sx={{ mt: 2, flexWrap: "wrap" }}>
-          <Chip label={`${summary?.totalRegistered ?? 0} total registered`} sx={{ fontWeight: 700 }} />
+          <Chip label={`${summary.totalRegistered ?? 0} total registered`} sx={{ fontWeight: 700 }} />
           <Chip
-            label={`${summary?.totalWithChestNo ?? 0} with chest no`}
+            label={`${summary.totalWithChestNo ?? 0} with chest no`}
             sx={{ fontWeight: 700, bgcolor: "#dbeafe", color: "#1d4ed8" }}
           />
           <Chip
-            label={`${filteredRows.length} showing`}
+            label={`${pagination.total ?? 0} matching`}
             sx={{ fontWeight: 700, bgcolor: "#f3f4f6" }}
           />
         </Stack>
@@ -215,7 +194,7 @@ export const EventAttendeesPage = () => {
             sx={{ minWidth: { xs: "100%", md: 180 } }}
           >
             <MenuItem value="">All</MenuItem>
-            {disciplineOptions.map((option) => (
+            {filterOptions.disciplines.map((option) => (
               <MenuItem key={option} value={option}>
                 {option}
               </MenuItem>
@@ -232,7 +211,7 @@ export const EventAttendeesPage = () => {
             sx={{ minWidth: { xs: "100%", md: 140 } }}
           >
             <MenuItem value="">All</MenuItem>
-            {ageGroupOptions.map((option) => (
+            {filterOptions.ageGroups.map((option) => (
               <MenuItem key={option} value={option}>
                 {option}
               </MenuItem>
@@ -249,7 +228,7 @@ export const EventAttendeesPage = () => {
             sx={{ minWidth: { xs: "100%", md: 160 } }}
           >
             <MenuItem value="">All</MenuItem>
-            {lapOptions.map((option) => (
+            {filterOptions.laps.map((option) => (
               <MenuItem key={option} value={option}>
                 {option}
               </MenuItem>
@@ -257,66 +236,66 @@ export const EventAttendeesPage = () => {
           </TextField>
         </Stack>
 
-        {loading ? (
-          <Stack alignItems="center" sx={{ py: 8 }}>
-            <CircularProgress />
-          </Stack>
-        ) : (
-          <>
-            <Table size="small">
-              <TableHead>
+        <TableContainer sx={{ opacity: loading ? 0.55 : 1, transition: "opacity 0.2s ease" }}>
+          <Table size="small">
+            <TableHead>
+              <TableRow>
+                <TableCell sx={{ fontWeight: 700 }}>Skater name</TableCell>
+                <TableCell sx={{ fontWeight: 700 }}>Chest no</TableCell>
+                <TableCell sx={{ fontWeight: 700 }}>Age group</TableCell>
+                <TableCell sx={{ fontWeight: 700 }}>Lap / round</TableCell>
+                <TableCell sx={{ fontWeight: 700 }}>KRSA ID</TableCell>
+                <TableCell sx={{ fontWeight: 700 }}>RSFI ID</TableCell>
+                <TableCell sx={{ fontWeight: 700 }}>Gender</TableCell>
+                <TableCell sx={{ fontWeight: 700 }}>Discipline</TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {loading && attendees.length === 0 ? (
                 <TableRow>
-                  <TableCell sx={{ fontWeight: 700 }}>Skater name</TableCell>
-                  <TableCell sx={{ fontWeight: 700 }}>Chest no</TableCell>
-                  <TableCell sx={{ fontWeight: 700 }}>Age group</TableCell>
-                  <TableCell sx={{ fontWeight: 700 }}>Lap / round</TableCell>
-                  <TableCell sx={{ fontWeight: 700 }}>KRSA ID</TableCell>
-                  <TableCell sx={{ fontWeight: 700 }}>RSFI ID</TableCell>
-                  <TableCell sx={{ fontWeight: 700 }}>Gender</TableCell>
-                  <TableCell sx={{ fontWeight: 700 }}>Discipline</TableCell>
+                  <TableCell colSpan={8} align="center" sx={{ color: "#8d7f7b", py: 5 }}>
+                    Loading attendees...
+                  </TableCell>
                 </TableRow>
-              </TableHead>
-              <TableBody>
-                {paginatedRows.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={8} align="center" sx={{ color: "#8d7f7b", py: 5 }}>
-                      No attendees found for selected filters.
+              ) : attendees.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={8} align="center" sx={{ color: "#8d7f7b", py: 5 }}>
+                    No attendees found for selected filters.
+                  </TableCell>
+                </TableRow>
+              ) : (
+                attendees.map((row) => (
+                  <TableRow key={row.id || `${row.krsaId}-${row.lap}-${row.ageGroup}`}>
+                    <TableCell>{row.fullName || "-"}</TableCell>
+                    <TableCell sx={{ fontWeight: 700, color: "#1d4ed8" }}>
+                      {row.chestNo || "-"}
                     </TableCell>
+                    <TableCell>{row.ageGroup || "-"}</TableCell>
+                    <TableCell>{row.lap || "-"}</TableCell>
+                    <TableCell>{row.krsaId || "-"}</TableCell>
+                    <TableCell>{row.rsfiId || "-"}</TableCell>
+                    <TableCell>{row.gender || "-"}</TableCell>
+                    <TableCell>{row.discipline || "-"}</TableCell>
                   </TableRow>
-                ) : (
-                  paginatedRows.map((row) => (
-                    <TableRow key={row.id}>
-                      <TableCell>{row.fullName || "-"}</TableCell>
-                      <TableCell sx={{ fontWeight: 700, color: "#1d4ed8" }}>
-                        {row.chestNo || "-"}
-                      </TableCell>
-                      <TableCell>{row.ageGroup || "-"}</TableCell>
-                      <TableCell>{row.lap || "-"}</TableCell>
-                      <TableCell>{row.krsaId || "-"}</TableCell>
-                      <TableCell>{row.rsfiId || "-"}</TableCell>
-                      <TableCell>{row.gender || "-"}</TableCell>
-                      <TableCell>{row.skatingCategory || "-"}</TableCell>
-                    </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
+                ))
+              )}
+            </TableBody>
+          </Table>
+        </TableContainer>
 
-            <TablePagination
-              component="div"
-              count={filteredRows.length}
-              page={page}
-              onPageChange={(_, nextPage) => setPage(nextPage)}
-              rowsPerPage={rowsPerPage}
-              onRowsPerPageChange={(e) => {
-                setRowsPerPage(parseInt(e.target.value, 10));
-                setPage(0);
-              }}
-              rowsPerPageOptions={[10, 25, 50]}
-              labelRowsPerPage="Rows:"
-            />
-          </>
-        )}
+        <TablePagination
+          component="div"
+          count={pagination.total ?? 0}
+          page={page}
+          onPageChange={(_, nextPage) => setPage(nextPage)}
+          rowsPerPage={rowsPerPage}
+          onRowsPerPageChange={(e) => {
+            setRowsPerPage(parseInt(e.target.value, 10));
+            setPage(0);
+          }}
+          rowsPerPageOptions={[10, 25, 50]}
+          labelRowsPerPage="Rows:"
+        />
       </Paper>
     </Box>
   );
