@@ -117,7 +117,7 @@ export const DistrictForm = ({ formData, errors, onFieldChange, onFileChange }) 
       >
         <Stack spacing={2}>
           {formData.imgPreview ? (
-            <Stack direction="row" spacing={2} alignItems="center">
+            <Stack sx={{ alignItems: "center" }} direction="row" spacing={2}>
               <Avatar
                 src={formData.imgPreview}
                 variant="rounded"

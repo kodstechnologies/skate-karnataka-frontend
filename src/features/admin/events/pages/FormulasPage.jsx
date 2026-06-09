@@ -157,7 +157,7 @@ export default function FormulasPage({ portalMode = "admin" }) {
           spacing={1.5}
           sx={{ p: 3, alignItems: { sm: "center" }, justifyContent: "space-between" }}
         >
-          <Stack direction="row" spacing={1.5} alignItems="center">
+          <Stack sx={{ alignItems: "center" }} direction="row" spacing={1.5}>
             <Box
               sx={{
                 width: 44,

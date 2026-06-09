@@ -222,7 +222,7 @@ export const DistrictPortalEventsPage = () => {
             District events for your organization. New events need super admin approval before
             skaters can register.
           </Typography>
-          <Stack direction="row" spacing={1.5} alignItems="center" flexWrap="wrap">
+          <Stack sx={{ alignItems: "center", flexWrap: "wrap" }} direction="row" spacing={1.5}>
             <Chip
               icon={<CalendarDays size={14} />}
               label={`${totalCount} Events`}

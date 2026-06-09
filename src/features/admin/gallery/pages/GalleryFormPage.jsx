@@ -327,7 +327,7 @@ export const GalleryFormPage = () => {
                   backgroundColor: "#fffaf8"
                 }}
               >
-                <Stack direction="row" spacing={1.25} alignItems="center" sx={{ mb: 2 }}>
+                <Stack direction="row" spacing={1.25} sx={{ mb: 2, alignItems: "center" }}>
                   <Box
                     sx={{
                       width: 40,
@@ -403,7 +403,7 @@ export const GalleryFormPage = () => {
                       color: "#c5b3ac"
                     }}
                   >
-                    <Stack alignItems="center" spacing={0.75}>
+                    <Stack sx={{ alignItems: "center" }} spacing={0.75}>
                       <Image size={30} />
                       <Typography sx={{ fontSize: 13 }}>No image selected</Typography>
                     </Stack>
@@ -421,7 +421,7 @@ export const GalleryFormPage = () => {
                   backgroundColor: "#f4fbff"
                 }}
               >
-                <Stack direction="row" spacing={1.25} alignItems="center" sx={{ mb: 2 }}>
+                <Stack direction="row" spacing={1.25} sx={{ mb: 2, alignItems: "center" }}>
                   <Box
                     sx={{
                       width: 40,
@@ -505,7 +505,7 @@ export const GalleryFormPage = () => {
                       border: "1px solid #b8e8f7"
                     }}
                   >
-                    <Stack direction="row" alignItems="center" spacing={1}>
+                    <Stack sx={{ alignItems: "center" }} direction="row" spacing={1}>
                       <Video size={18} color="#0ea5d5" />
                       <Typography sx={{ fontSize: 13, color: "#2a6a82", fontWeight: 600 }}>
                         {videoPreview}
@@ -527,7 +527,7 @@ export const GalleryFormPage = () => {
                       color: "#8ac8d8"
                     }}
                   >
-                    <Stack alignItems="center" spacing={0.75}>
+                    <Stack sx={{ alignItems: "center" }} spacing={0.75}>
                       <Video size={30} />
                       <Typography sx={{ fontSize: 13 }}>No video selected</Typography>
                     </Stack>

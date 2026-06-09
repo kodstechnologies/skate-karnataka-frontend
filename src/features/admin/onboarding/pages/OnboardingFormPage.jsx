@@ -431,9 +431,7 @@ export const OnboardingFormPage = () => {
       >
         <Stack
           direction="row"
-          alignItems="center"
-          justifyContent="space-between"
-          sx={{ px: 2, py: 1.5, borderBottom: "1px solid rgba(255,255,255,0.1)" }}
+          sx={{ px: 2, py: 1.5, borderBottom: "1px solid rgba(255,255,255,0.1)", alignItems: "center", justifyContent: "space-between" }}
         >
           <Typography sx={{ fontWeight: 700, color: "white" }}>
             {preview?.title || "Full image"}

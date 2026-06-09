@@ -280,7 +280,7 @@ export const ClubMemberFormPage = () => {
       >
         {isLoading && isEditing ? (
           <Stack spacing={3}>
-            <Stack direction="row" spacing={2} alignItems="center">
+            <Stack sx={{ alignItems: "center" }} direction="row" spacing={2}>
               <Skeleton variant="rounded" width={100} height={100} sx={{ borderRadius: "20px" }} />
               <Skeleton variant="rectangular" height={56} sx={{ flex: 1, borderRadius: 2 }} />
             </Stack>
@@ -298,10 +298,9 @@ export const ClubMemberFormPage = () => {
             </Typography>
 
             {/* Profile Photo + Full Name */}
-            <Stack
+            <Stack sx={{ alignItems: { md: "center" } }}
               direction={{ xs: "column", md: "row" }}
               spacing={2}
-              alignItems={{ md: "center" }}
             >
               <Box sx={{ textAlign: "center" }}>
                 <Box
@@ -422,10 +421,9 @@ export const ClubMemberFormPage = () => {
             />
 
             {/* Gender + Status */}
-            <Stack
+            <Stack sx={{ alignItems: { md: "center" } }}
               direction={{ xs: "column", md: "row" }}
               spacing={2}
-              alignItems={{ md: "center" }}
             >
               <TextField
                 select
@@ -454,7 +452,7 @@ export const ClubMemberFormPage = () => {
 
             <Divider sx={{ my: 1 }} />
 
-            <Stack direction={{ xs: "column", sm: "row" }} spacing={1.5} justifyContent="flex-end">
+            <Stack sx={{ justifyContent: "flex-end" }} direction={{ xs: "column", sm: "row" }} spacing={1.5}>
               <Button variant="outlined" onClick={() => navigate(returnTo)}>
                 Cancel
               </Button>

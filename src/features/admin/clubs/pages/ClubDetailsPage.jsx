@@ -205,7 +205,7 @@ export const ClubDetailsPage = () => {
               <Typography sx={{ color: "white", fontWeight: 700 }}>Details</Typography>
             </Breadcrumbs>
 
-            <Stack direction="row" spacing={2} alignItems="center" sx={{ mb: 1.5 }}>
+            <Stack direction="row" spacing={2} sx={{ mb: 1.5, alignItems: "center" }}>
               <Avatar src={club.img} sx={{ width: 64, height: 64, border: "2px solid white" }} />
               <Box>
                 <Typography

@@ -122,7 +122,7 @@ export const NotificationBell = () => {
         }}
       >
         <Box sx={{ px: 2.5, py: 2, bgcolor: "#fbf6f4", borderBottom: "1px solid #f0e3dd" }}>
-          <Stack direction="row" alignItems="center" justifyContent="space-between">
+          <Stack sx={{ alignItems: "center", justifyContent: "space-between" }} direction="row">
             <Stack spacing={0.25}>
               <Typography sx={{ fontWeight: 700, color: "#2f2829", fontSize: "0.95rem" }}>
                 Notifications
@@ -151,7 +151,7 @@ export const NotificationBell = () => {
 
         <Box sx={{ maxHeight: 400, overflowY: "auto" }}>
           {isLoading && notifications.length === 0 ? (
-            <Stack alignItems="center" sx={{ py: 4 }}>
+            <Stack sx={{ py: 4, alignItems: "center" }}>
               <CircularProgress size={28} sx={{ color: "#f6765e" }} />
             </Stack>
           ) : error ? (
@@ -173,10 +173,8 @@ export const NotificationBell = () => {
                     bgcolor: item.isRead ? "transparent" : "#fffaf7"
                   }}
                 >
-                  <Stack
+                  <Stack sx={{ alignItems: "flex-start", justifyContent: "space-between" }}
                     direction="row"
-                    alignItems="flex-start"
-                    justifyContent="space-between"
                     gap={1}
                   >
                     <Typography
@@ -207,7 +205,7 @@ export const NotificationBell = () => {
                   </Typography>
 
                   {item.senderRole && (
-                    <Stack direction="row" flexWrap="wrap" gap={0.75} sx={{ mt: 1 }}>
+                    <Stack direction="row" gap={0.75} sx={{ mt: 1, flexWrap: "wrap" }}>
                       <RoleBadge role={item.senderRole} prefix="From" />
                     </Stack>
                   )}

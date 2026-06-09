@@ -207,10 +207,8 @@ export const OrgMediaPage = ({ orgType, portalMode = false }) => {
           <Typography sx={{ fontWeight: 700, color: "#2f2829" }}>Media</Typography>
         </Breadcrumbs>
 
-        <Stack
+        <Stack sx={{ alignItems: { md: "center" }, justifyContent: "space-between" }}
           direction={{ xs: "column", md: "row" }}
-          justifyContent="space-between"
-          alignItems={{ md: "center" }}
           spacing={2}
         >
           <Box>
@@ -308,7 +306,7 @@ export const OrgMediaPage = ({ orgType, portalMode = false }) => {
                 </Box>
 
                 <Box sx={{ p: 2 }}>
-                  <Stack direction="row" spacing={0.75} flexWrap="wrap" useFlexGap sx={{ mb: 1 }}>
+                  <Stack direction="row" spacing={0.75} useFlexGap sx={{ mb: 1, flexWrap: "wrap" }}>
                     <Chip
                       size="small"
                       label={getMediaApprovalLabel(status)}
@@ -332,7 +330,7 @@ export const OrgMediaPage = ({ orgType, portalMode = false }) => {
                     </Typography>
                   )}
 
-                  <Stack direction="row" flexWrap="wrap" gap={0.75} sx={{ mt: 1.5 }}>
+                  <Stack direction="row" gap={0.75} sx={{ mt: 1.5, flexWrap: "wrap" }}>
                     {canApprove && status === MEDIA_APPROVAL.PENDING && !deletePending && (
                       <>
                         <Button

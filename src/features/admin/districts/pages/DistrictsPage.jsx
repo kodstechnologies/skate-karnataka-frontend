@@ -244,7 +244,7 @@ export const DistrictsPage = () => {
                 }}
               >
                 <Stack spacing={1.5}>
-                  <Stack direction="row" spacing={1.5} alignItems="center">
+                  <Stack sx={{ alignItems: "center" }} direction="row" spacing={1.5}>
                     <Avatar
                       src={district.img}
                       alt={district.districtName}
@@ -267,7 +267,7 @@ export const DistrictsPage = () => {
                   <Typography sx={{ fontSize: 13, color: "#8d7f7b" }}>
                     <strong>Address:</strong> {district.officeAddress || "-"}
                   </Typography>
-                  <Stack direction="row" alignItems="center" spacing={0.5}>
+                  <Stack sx={{ alignItems: "center" }} direction="row" spacing={0.5}>
                     <Users size={14} color="#f6765e" />
                     <Typography sx={{ fontSize: 13, color: "#2f2829", fontWeight: 600 }}>
                       {district.members} Members
@@ -323,7 +323,7 @@ export const DistrictsPage = () => {
                       }}
                     >
                       {col === "Members" ? (
-                        <Stack direction="row" spacing={0.5} alignItems="center">
+                        <Stack sx={{ alignItems: "center" }} direction="row" spacing={0.5}>
                           <Users size={14} />
                           <span>Members</span>
                         </Stack>
@@ -431,10 +431,9 @@ export const DistrictsPage = () => {
 
                     {/* Members */}
                     <TableCell>
-                      <Stack
+                      <Stack sx={{ alignItems: "center" }}
                         direction="row"
                         spacing={0.75}
-                        alignItems="center"
                         onClick={() => navigate(`/districts/${district.id}/members`)}
                         sx={{
                           cursor: "pointer",

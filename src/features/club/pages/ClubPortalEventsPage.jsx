@@ -238,7 +238,7 @@ export const ClubPortalEventsPage = () => {
             State, your district, and club events visible to your club members (from your login
             token).
           </Typography>
-          <Stack direction="row" spacing={1.5} alignItems="center" flexWrap="wrap">
+          <Stack sx={{ alignItems: "center", flexWrap: "wrap" }} direction="row" spacing={1.5}>
             <Chip
               icon={<CalendarDays size={14} />}
               label={`${totalCount} Events`}

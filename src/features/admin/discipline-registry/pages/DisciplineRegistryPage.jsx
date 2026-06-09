@@ -359,7 +359,7 @@ export const DisciplineRegistryPage = () => {
                         }}
                       >
                         <TableCell>
-                          <Stack direction="row" spacing={1.5} alignItems="center">
+                          <Stack sx={{ alignItems: "center" }} direction="row" spacing={1.5}>
                             <Box
                               sx={{
                                 width: 40,
@@ -427,7 +427,7 @@ export const DisciplineRegistryPage = () => {
                 backgroundColor: "rgba(255, 251, 249, 0.92)"
               }}
             >
-              <Stack spacing={2} alignItems="center" sx={{ maxWidth: 420, mx: "auto" }}>
+              <Stack spacing={2} sx={{ maxWidth: 420, mx: "auto", alignItems: "center" }}>
                 <Box
                   sx={{
                     width: 56,

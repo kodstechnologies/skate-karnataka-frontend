@@ -270,7 +270,7 @@ export const EventFormPage = () => {
             </Typography>
           </Breadcrumbs>
 
-          <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap" sx={{ mb: 1 }}>
+          <Stack direction="row" spacing={1} sx={{ mb: 1, alignItems: "center", flexWrap: "wrap" }}>
             <Chip
               size="small"
               label={eventTypeLabel}

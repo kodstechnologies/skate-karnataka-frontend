@@ -321,9 +321,7 @@ export const GalleryDetailPage = () => {
               {/* Preview header + toggle */}
               <Stack
                 direction="row"
-                alignItems="center"
-                justifyContent="space-between"
-                sx={{ mb: 2 }}
+                sx={{ mb: 2, alignItems: "center", justifyContent: "space-between" }}
               >
                 <Typography
                   sx={{
@@ -434,7 +432,7 @@ export const GalleryDetailPage = () => {
                     />
                   )
                 ) : (
-                  <Stack alignItems="center" spacing={1} sx={{ color: "rgba(255,255,255,0.3)" }}>
+                  <Stack spacing={1} sx={{ color: "rgba(255,255,255,0.3)", alignItems: "center" }}>
                     <ImageIcon size={48} />
                     <Typography sx={{ fontSize: 13 }}>No media available</Typography>
                   </Stack>

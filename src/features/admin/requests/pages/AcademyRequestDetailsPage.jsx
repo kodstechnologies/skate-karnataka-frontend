@@ -51,7 +51,7 @@ const InfoCard = ({ icon: Icon, label, value, color = "primary.main" }) => (
       }
     }}
   >
-    <Stack direction="row" spacing={2} alignItems="center">
+    <Stack sx={{ alignItems: "center" }} direction="row" spacing={2}>
       <Box
         sx={{
           p: 1.5,
@@ -96,7 +96,7 @@ const InfoCard = ({ icon: Icon, label, value, color = "primary.main" }) => (
 );
 
 const SectionTitle = ({ title, icon: Icon }) => (
-  <Stack direction="row" spacing={1.5} alignItems="center" sx={{ mb: 3, mt: 1 }}>
+  <Stack direction="row" spacing={1.5} sx={{ mb: 3, mt: 1, alignItems: "center" }}>
     <Box
       sx={{
         width: 32,

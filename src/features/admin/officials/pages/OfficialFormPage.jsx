@@ -229,7 +229,7 @@ export const OfficialFormPage = () => {
       >
         {isLoading ? (
           <Stack spacing={3}>
-            <Stack direction="row" spacing={2} alignItems="center">
+            <Stack sx={{ alignItems: "center" }} direction="row" spacing={2}>
               <Skeleton variant="circular" width={120} height={120} />
               <Skeleton variant="rectangular" height={56} sx={{ flex: 1, borderRadius: 2 }} />
             </Stack>

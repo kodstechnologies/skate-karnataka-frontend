@@ -194,7 +194,7 @@ export default function OrgCustomCategoryEditorPage({ orgType }) {
           bgcolor: "#fafefe"
         }}
       >
-        <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 2 }}>
+        <Stack direction="row" spacing={1} sx={{ mb: 2, alignItems: "center" }}>
           <Shield size={20} color="#00897b" />
           <Typography sx={{ fontWeight: 700, color: "#2f2829" }}>
             KRSA standard categories (read-only)
@@ -228,7 +228,7 @@ export default function OrgCustomCategoryEditorPage({ orgType }) {
                     {cat.typeName || "Category"}
                   </Typography>
                   {labels.length ? (
-                    <Stack direction="row" flexWrap="wrap" gap={0.75} sx={{ mt: 1 }}>
+                    <Stack direction="row" gap={0.75} sx={{ mt: 1, flexWrap: "wrap" }}>
                       {labels.map((label) => (
                         <Chip key={label} label={label} size="small" variant="outlined" />
                       ))}
@@ -254,7 +254,7 @@ export default function OrgCustomCategoryEditorPage({ orgType }) {
           bgcolor: "#fff"
         }}
       >
-        <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 1 }}>
+        <Stack direction="row" spacing={1} sx={{ mb: 1, alignItems: "center" }}>
           <Layers size={20} color="#f6765e" />
           <Typography sx={{ fontWeight: 700, color: "#2f2829" }}>
             Your custom list (editable)
@@ -300,7 +300,7 @@ export default function OrgCustomCategoryEditorPage({ orgType }) {
 
         <Stack spacing={1.25}>
           {names.map((name, index) => (
-            <Stack key={index} direction="row" spacing={1} alignItems="center">
+            <Stack sx={{ alignItems: "center" }} key={index} direction="row" spacing={1}>
               <TextField
                 fullWidth
                 size="small"
@@ -330,8 +330,7 @@ export default function OrgCustomCategoryEditorPage({ orgType }) {
 
         <Stack
           direction="row"
-          justifyContent="flex-end"
-          sx={{ mt: 4, pt: 2, borderTop: "1px solid #f0e3dd" }}
+          sx={{ mt: 4, pt: 2, borderTop: "1px solid #f0e3dd", justifyContent: "flex-end" }}
         >
           <Button
             variant="contained"

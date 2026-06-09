@@ -445,10 +445,9 @@ export const ClubsPage = () => {
                       />
                     </TableCell>
                     <TableCell>
-                      <Stack
+                      <Stack sx={{ alignItems: "center" }}
                         direction="row"
                         spacing={0.75}
-                        alignItems="center"
                         onClick={() => navigate(`/clubs/${club.id}/members`)}
                         sx={{
                           cursor: "pointer",

@@ -270,9 +270,7 @@ const ProfilePageHeader = ({
               direction="row"
               spacing={1}
               useFlexGap
-              alignItems="center"
-              justifyContent={{ xs: "center", md: "flex-start" }}
-              sx={{ flexWrap: "wrap", rowGap: 1 }}
+              sx={{ flexWrap: "wrap", rowGap: 1, alignItems: "center", justifyContent: { xs: "center", md: "flex-start" } }}
             >
               {showOrgPill ? (
                 <ProfileMetaPill icon={Business}>{orgDisplayName}</ProfileMetaPill>
@@ -564,8 +562,7 @@ export const ProfilePage = () => {
             <Stack
               direction={{ xs: "column", sm: "row" }}
               spacing={3}
-              alignItems="center"
-              sx={{ mt: -7, mb: 3 }}
+              sx={{ mt: -7, mb: 3, alignItems: "center" }}
             >
               <Skeleton
                 variant="circular"
@@ -630,7 +627,7 @@ export const ProfilePage = () => {
         />
 
         <Box sx={{ px: { xs: 2.5, md: 4, lg: 5 }, pb: 5, pt: 3, bgcolor: "#fff" }}>
-          <Grid container spacing={3} alignItems="stretch">
+          <Grid container spacing={3}>
             <Grid size={{ xs: 12, lg: 4, xl: 3 }}>
               <Paper elevation={0} sx={orgPanelSx}>
                 <Typography

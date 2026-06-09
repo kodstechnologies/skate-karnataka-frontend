@@ -414,9 +414,8 @@ export const GalleryPage = () => {
                     {/* No media placeholder */}
                     {!item.imageUrl && !item.videoUrl && (
                       <Stack
-                        alignItems="center"
                         spacing={0.75}
-                        sx={{ color: "rgba(255,255,255,0.4)" }}
+                        sx={{ color: "rgba(255,255,255,0.4)", alignItems: "center" }}
                       >
                         <Image size={36} />
                         <Typography sx={{ fontSize: 12, color: "rgba(255,255,255,0.4)" }}>
@@ -573,7 +572,7 @@ export const GalleryPage = () => {
                 border: "1px dashed #f0ddd5"
               }}
             >
-              <Stack alignItems="center" spacing={1}>
+              <Stack sx={{ alignItems: "center" }} spacing={1}>
                 <Image size={40} style={{ opacity: 0.35 }} />
                 <Typography>No gallery items found.</Typography>
               </Stack>

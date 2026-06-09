@@ -91,7 +91,7 @@ export default function FormulaRoundsEditor({
 
   return (
     <Stack spacing={2}>
-      <Stack direction="row" alignItems="center" justifyContent="space-between">
+      <Stack sx={{ alignItems: "center", justifyContent: "space-between" }} direction="row">
         <Typography sx={{ fontWeight: 700, color: "#2f2829" }}>Rounds</Typography>
         {!disabled ? (
           <Tooltip title="Add round">
@@ -129,9 +129,7 @@ export default function FormulaRoundsEditor({
           >
             <Stack
               direction="row"
-              justifyContent="space-between"
-              alignItems="center"
-              sx={{ mb: 1.5 }}
+              sx={{ mb: 1.5, alignItems: "center", justifyContent: "space-between" }}
             >
               <Typography sx={{ fontWeight: 700, fontSize: 14, color: "#5f5552" }}>
                 {round.roundName || `Round ${index + 1}`}

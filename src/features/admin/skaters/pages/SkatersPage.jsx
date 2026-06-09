@@ -304,7 +304,7 @@ export const SkatersPage = () => {
                     sx={getStatusChipSx(skater.isBlocked)}
                   />
 
-                  <Stack direction="row" spacing={1} flexWrap="wrap">
+                  <Stack sx={{ flexWrap: "wrap" }} direction="row" spacing={1}>
                     <Button
                       variant="outlined"
                       startIcon={<VisibilityOutlinedIcon sx={{ fontSize: 18 }} />}

@@ -238,7 +238,7 @@ export const ClubEventFormPage = () => {
               bgcolor: "#fff8e1"
             }}
           >
-            <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap">
+            <Stack sx={{ alignItems: "center", flexWrap: "wrap" }} direction="row" spacing={1}>
               <Typography sx={{ fontWeight: 600, color: "#5d4037" }}>
                 This event was rejected by the admin. Update the details and save to resubmit for
                 approval.

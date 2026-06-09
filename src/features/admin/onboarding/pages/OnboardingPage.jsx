@@ -80,9 +80,7 @@ const OnboardingImage = ({ src, index, onPreview }) => {
             className="onboarding-zoom-hint"
             direction="row"
             spacing={0.5}
-            alignItems="center"
-            sx={{
-              position: "absolute",
+            sx={{ position: "absolute",
               right: 12,
               bottom: 12,
               px: 1.25,
@@ -91,8 +89,7 @@ const OnboardingImage = ({ src, index, onPreview }) => {
               backgroundColor: "rgba(0,0,0,0.55)",
               color: "white",
               opacity: 0,
-              transition: "opacity 0.2s ease"
-            }}
+              transition: "opacity 0.2s ease", alignItems: "center" }}
           >
             <ZoomIn size={14} />
             <Typography sx={{ fontSize: 11, fontWeight: 700 }}>View full</Typography>
@@ -329,9 +326,7 @@ export const OnboardingPage = () => {
       >
         <Stack
           direction="row"
-          alignItems="center"
-          justifyContent="space-between"
-          sx={{ px: 2, py: 1.5, borderBottom: "1px solid rgba(255,255,255,0.1)" }}
+          sx={{ px: 2, py: 1.5, borderBottom: "1px solid rgba(255,255,255,0.1)", alignItems: "center", justifyContent: "space-between" }}
         >
           <Typography sx={{ fontWeight: 700, color: "white" }}>
             {preview?.title || "Full image"}

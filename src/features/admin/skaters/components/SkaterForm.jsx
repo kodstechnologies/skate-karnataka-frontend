@@ -300,7 +300,7 @@ export const SkaterForm = ({
         }}
       >
         <Typography sx={{ fontWeight: 700, color: "#2f2829", mb: 2 }}>Profile photo</Typography>
-        <Stack direction={{ xs: "column", sm: "row" }} spacing={2} alignItems={{ sm: "center" }}>
+        <Stack sx={{ alignItems: { sm: "center" } }} direction={{ xs: "column", sm: "row" }} spacing={2}>
           <Box
             sx={{
               width: 120,

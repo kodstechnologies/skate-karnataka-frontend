@@ -191,7 +191,7 @@ function CertificateManagement() {
                   }}
                 >
                   <Stack spacing={2} sx={{ p: 2.5 }}>
-                    <Stack direction="row" spacing={1.5} alignItems="center">
+                    <Stack sx={{ alignItems: "center" }} direction="row" spacing={1.5}>
                       <Skeleton
                         variant="rounded"
                         width={42}
@@ -204,7 +204,7 @@ function CertificateManagement() {
                       </Box>
                     </Stack>
                     <Divider sx={{ borderColor: "rgba(0,0,0,0.05)" }} />
-                    <Stack direction="row" justifyContent="space-between" alignItems="center">
+                    <Stack sx={{ alignItems: "center", justifyContent: "space-between" }} direction="row">
                       <Skeleton
                         variant="rounded"
                         width={60}
@@ -286,7 +286,7 @@ function CertificateManagement() {
                   }}
                 >
                   <Stack spacing={2} sx={{ p: 2.5 }}>
-                    <Stack direction="row" spacing={1.5} alignItems="center">
+                    <Stack sx={{ alignItems: "center" }} direction="row" spacing={1.5}>
                       <Box
                         sx={{
                           display: "flex",
@@ -320,8 +320,7 @@ function CertificateManagement() {
                         <Stack
                           direction="row"
                           spacing={1}
-                          alignItems="center"
-                          sx={{ flexWrap: "wrap", gap: 0.5 }}
+                          sx={{ flexWrap: "wrap", gap: 0.5, alignItems: "center" }}
                         >
                           <Chip
                             label={tpl.applyTo || "STATE"}
@@ -353,7 +352,7 @@ function CertificateManagement() {
 
                     <Divider sx={{ borderColor: "rgba(0,0,0,0.05)" }} />
 
-                    <Stack direction="row" justifyContent="space-between" alignItems="center">
+                    <Stack sx={{ alignItems: "center", justifyContent: "space-between" }} direction="row">
                       <Box>
                         {tpl.isActive && (
                           <Chip

@@ -190,7 +190,7 @@ export const MemberBulkImportPage = ({ orgType = "club" }) => {
           {isClub ? "club" : "district"} permissions.
         </Typography>
 
-        <Stack direction={{ xs: "column", sm: "row" }} spacing={1.5} flexWrap="wrap">
+        <Stack sx={{ flexWrap: "wrap" }} direction={{ xs: "column", sm: "row" }} spacing={1.5}>
           <Button
             component="label"
             variant="contained"
@@ -218,7 +218,7 @@ export const MemberBulkImportPage = ({ orgType = "club" }) => {
         </Stack>
 
         {rows.length > 0 && (
-          <Stack direction="row" spacing={1} sx={{ mt: 2 }} flexWrap="wrap">
+          <Stack direction="row" spacing={1} sx={{ mt: 2, flexWrap: "wrap" }}>
             <Chip label={`${rows.length} rows`} size="small" />
             <Chip label={`${validRows.length} ready`} color="success" size="small" variant="outlined" />
             {invalidCount > 0 ? (
@@ -299,8 +299,7 @@ export const MemberBulkImportPage = ({ orgType = "club" }) => {
           <Stack
             direction={{ xs: "column", sm: "row" }}
             spacing={1.5}
-            justifyContent="flex-end"
-            sx={{ p: 2.5, borderTop: "1px solid #f2dfd7" }}
+            sx={{ p: 2.5, borderTop: "1px solid #f2dfd7", justifyContent: "flex-end" }}
           >
             <Button variant="outlined" disabled={importing} onClick={() => setRows([])}>
               Clear

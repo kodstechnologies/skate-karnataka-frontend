@@ -690,7 +690,7 @@ function CertificateFormSkeleton() {
           </Box>
 
           {/* Actions */}
-          <Stack direction="row" justifyContent="flex-end" spacing={2} sx={{ pt: 2 }}>
+          <Stack direction="row" spacing={2} sx={{ pt: 2, justifyContent: "flex-end" }}>
             <Skeleton variant="rounded" width={140} height={42} sx={{ borderRadius: "12px" }} />
           </Stack>
         </Stack>

@@ -218,7 +218,7 @@ export const FeedbackPage = () => {
                 }}
               >
                 <Stack spacing={1.5}>
-                  <Stack direction="row" spacing={1.5} alignItems="center">
+                  <Stack sx={{ alignItems: "center" }} direction="row" spacing={1.5}>
                     <Box
                       sx={{
                         width: 40,
@@ -341,7 +341,7 @@ export const FeedbackPage = () => {
                   >
                     {/* Name */}
                     <TableCell>
-                      <Stack direction="row" spacing={1.5} alignItems="center">
+                      <Stack sx={{ alignItems: "center" }} direction="row" spacing={1.5}>
                         <Box
                           sx={{
                             width: 36,

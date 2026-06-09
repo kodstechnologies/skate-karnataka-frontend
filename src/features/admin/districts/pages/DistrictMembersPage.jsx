@@ -302,13 +302,11 @@ export const DistrictMembersPage = () => {
                 }}
               >
                 <Stack spacing={1.5}>
-                  <Stack
+                  <Stack sx={{ alignItems: "center", justifyContent: "space-between" }}
                     direction="row"
                     spacing={1.5}
-                    alignItems="center"
-                    justifyContent="space-between"
                   >
-                    <Stack direction="row" spacing={1.5} alignItems="center">
+                    <Stack sx={{ alignItems: "center" }} direction="row" spacing={1.5}>
                       <Avatar
                         src={member.profile}
                         alt={member.fullName}
@@ -476,7 +474,7 @@ export const DistrictMembersPage = () => {
                     }}
                   >
                     <TableCell>
-                      <Stack direction="row" spacing={1.5} alignItems="center">
+                      <Stack sx={{ alignItems: "center" }} direction="row" spacing={1.5}>
                         <Avatar
                           src={member.profile}
                           alt={member.fullName}

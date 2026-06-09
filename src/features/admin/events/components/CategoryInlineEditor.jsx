@@ -49,7 +49,7 @@ export default function CategoryInlineEditor({
           />
         </Box>
       ) : (
-        <Stack direction="row" alignItems="center" gap={1} sx={{ mb: 2 }}>
+        <Stack direction="row" gap={1} sx={{ mb: 2, alignItems: "center" }}>
           <Typography sx={{ fontWeight: 800, color: "#2f2829", fontSize: 18 }}>
             {form.typeName || "—"}
           </Typography>
@@ -103,11 +103,9 @@ export default function CategoryInlineEditor({
             >
               <Stack
                 direction="row"
-                alignItems="center"
-                justifyContent="space-between"
-                sx={{ px: 2, py: 1.25, borderBottom: "1px solid #f5ebe7" }}
+                sx={{ px: 2, py: 1.25, borderBottom: "1px solid #f5ebe7", alignItems: "center", justifyContent: "space-between" }}
               >
-                <Stack direction="row" alignItems="center" gap={1}>
+                <Stack sx={{ alignItems: "center" }} direction="row" gap={1}>
                   <Chip
                     label={ag.label}
                     size="small"
@@ -146,10 +144,9 @@ export default function CategoryInlineEditor({
                   const rowKey = `${ageIdx}-${catIdx}`;
                   const formulaError = errors?.categoryRows?.[rowKey]?.formula;
                   return (
-                    <Stack
+                    <Stack sx={{ alignItems: { sm: "center" } }}
                       key={catIdx}
                       direction={{ xs: "column", sm: "row" }}
-                      alignItems={{ sm: "center" }}
                       gap={1}
                     >
                       <TextField

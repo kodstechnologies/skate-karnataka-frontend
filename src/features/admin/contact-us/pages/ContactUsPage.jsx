@@ -269,7 +269,7 @@ export const ContactUsPage = () => {
 
                 <Divider sx={{ my: 0.5 }} />
 
-                <Stack direction="row" justifyContent="flex-end">
+                <Stack sx={{ justifyContent: "flex-end" }} direction="row">
                   <Button
                     variant="contained"
                     startIcon={

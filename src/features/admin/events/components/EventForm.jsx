@@ -55,7 +55,7 @@ const ColorPickerField = ({ label, value, onChange, disabled }) => {
       >
         {label}
       </Typography>
-      <Stack direction="row" spacing={1} alignItems="center">
+      <Stack sx={{ alignItems: "center" }} direction="row" spacing={1}>
         <Box
           onClick={!disabled ? (e) => setAnchorEl(e.currentTarget) : undefined}
           sx={{
