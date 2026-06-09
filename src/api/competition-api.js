@@ -7,4 +7,7 @@ export const competitionApi = {
   getChestNumbersByEvent: async (eventId, params = {}) => {
     return api.get(`/competition/v1/chest-numbers/${eventId}`, { params });
   },
+  generateChestNumbers: async (eventId) => {
+    return api.post("/competition/v1/chest-numbers/generate", { eventId });
+  },
 };

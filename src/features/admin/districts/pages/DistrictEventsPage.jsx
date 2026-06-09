@@ -573,32 +573,42 @@ export const DistrictEventsPage = () => {
                           </Button>
                         </>
                       )}
-                      <Button
-                        variant="outlined"
-                        startIcon={<PencilLine size={16} />}
-                        onClick={() =>
-                          navigate(`/events/${event._id || event.id}/edit`, {
-                            state: { event, fromDistrictId: districtId }
-                          })
-                        }
-                        fullWidth
+                      <Box
+                        sx={{
+                          display: "flex",
+                          gap: 1,
+                          width: "100%",
+                          flexWrap: "wrap"
+                        }}
                       >
-                        Edit
-                      </Button>
-                      {event.deleteApprovalStatus !== "pending" && (
                         <Button
-                          variant="contained"
-                          startIcon={<Trash2 size={16} />}
-                          onClick={() => setPendingDeleteEvent(event)}
-                          fullWidth
-                          sx={{
-                            backgroundColor: "#f6765e",
-                            "&:hover": { backgroundColor: "#ea6b54" }
-                          }}
+                          variant="outlined"
+                          startIcon={<PencilLine size={16} />}
+                          onClick={() =>
+                            navigate(`/events/${event._id || event.id}/edit`, {
+                              state: { event, fromDistrictId: districtId }
+                            })
+                          }
+                          sx={{ flex: 1, minWidth: 120 }}
                         >
-                          Delete
+                          Edit
                         </Button>
-                      )}
+                        {event.deleteApprovalStatus !== "pending" && (
+                          <Button
+                            variant="contained"
+                            startIcon={<Trash2 size={16} />}
+                            onClick={() => setPendingDeleteEvent(event)}
+                            sx={{
+                              flex: 1,
+                              minWidth: 120,
+                              backgroundColor: "#f6765e",
+                              "&:hover": { backgroundColor: "#ea6b54" }
+                            }}
+                          >
+                            Delete
+                          </Button>
+                        )}
+                      </Box>
                     </Stack>
                   </Stack>
                 </Paper>

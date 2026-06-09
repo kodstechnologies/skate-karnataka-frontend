@@ -21,8 +21,7 @@ import { eventsApi } from "@/api/events-api";
 import { useAuthStore } from "@/features/auth/store/auth-store";
 import { useClubsStore } from "@/features/admin/clubs/store/clubs-store";
 import { canApproveEvents, getEventApprovalChipProps } from "@/utils/eventApprovalStatus";
-import GenerateEventCertificatesButton from "@/features/admin/events/components/GenerateEventCertificatesButton";
-import EventChestNumbersButton from "@/features/admin/events/components/EventChestNumbersButton";
+import EventCardActionsMenu from "@/features/admin/events/components/EventCardActionsMenu";
 import toast from "react-hot-toast";
 
 const fmtDate = (v) => {
@@ -455,18 +454,12 @@ export const ClubEventsPage = () => {
                       />
                       <Chip size="small" {...getEventApprovalChipProps(event)} />
                     </Stack>
-                    <Stack direction="row" spacing={0.75} sx={{ flexShrink: 0 }}>
-                      <EventChestNumbersButton
-                        event={event}
-                        returnTo={`/clubs/${clubId}/events`}
-                        returnLabel="Club events"
-                      />
-                      <GenerateEventCertificatesButton
-                        event={event}
-                        role={role}
-                        variant="corner"
-                      />
-                    </Stack>
+                    <EventCardActionsMenu
+                      event={event}
+                      role={role}
+                      returnTo={`/clubs/${clubId}/events`}
+                      returnLabel="Club events"
+                    />
                   </Stack>
 
                   <Stack spacing={1.35} sx={{ p: 2.25, pt: 0 }}>
@@ -573,32 +566,42 @@ export const ClubEventsPage = () => {
                           </Button>
                         </>
                       )}
-                      <Button
-                        variant="outlined"
-                        startIcon={<PencilLine size={16} />}
-                        onClick={() =>
-                          navigate(`/events/${event._id || event.id}/edit`, {
-                            state: { event, fromClubId: clubId }
-                          })
-                        }
-                        fullWidth
+                      <Box
+                        sx={{
+                          display: "flex",
+                          gap: 1,
+                          width: "100%",
+                          flexWrap: "wrap"
+                        }}
                       >
-                        Edit
-                      </Button>
-                      {event.deleteApprovalStatus !== "pending" && (
                         <Button
-                          variant="contained"
-                          startIcon={<Trash2 size={16} />}
-                          onClick={() => setPendingDeleteEvent(event)}
-                          fullWidth
-                          sx={{
-                            backgroundColor: "#f6765e",
-                            "&:hover": { backgroundColor: "#ea6b54" }
-                          }}
+                          variant="outlined"
+                          startIcon={<PencilLine size={16} />}
+                          onClick={() =>
+                            navigate(`/events/${event._id || event.id}/edit`, {
+                              state: { event, fromClubId: clubId }
+                            })
+                          }
+                          sx={{ flex: 1, minWidth: 120 }}
                         >
-                          Delete
+                          Edit
                         </Button>
-                      )}
+                        {event.deleteApprovalStatus !== "pending" && (
+                          <Button
+                            variant="contained"
+                            startIcon={<Trash2 size={16} />}
+                            onClick={() => setPendingDeleteEvent(event)}
+                            sx={{
+                              flex: 1,
+                              minWidth: 120,
+                              backgroundColor: "#f6765e",
+                              "&:hover": { backgroundColor: "#ea6b54" }
+                            }}
+                          >
+                            Delete
+                          </Button>
+                        )}
+                      </Box>
                     </Stack>
                   </Stack>
                 </Paper>

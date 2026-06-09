@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   Avatar,
   Box,
@@ -14,7 +14,6 @@ import {
   Typography
 } from "@mui/material";
 import { UploadProgressBanner } from "@/components/ui/UploadProgressBanner";
-import ImageOutlinedIcon from "@mui/icons-material/ImageOutlined";
 import UploadFileOutlinedIcon from "@mui/icons-material/UploadFileOutlined";
 import { ChevronRight, FileText, Save, X } from "lucide-react";
 import { Link as RouterLink, useNavigate, useParams } from "react-router-dom";
@@ -26,6 +25,84 @@ const inputSx = {
     borderRadius: "18px",
     backgroundColor: "rgba(255,255,255,0.92)"
   }
+};
+
+const IMAGE_EXTENSIONS = /\.(jpe?g|png|gif|webp|bmp|svg)$/i;
+
+const isImageFile = (file) =>
+  Boolean(file) &&
+  (String(file.type || "").startsWith("image/") || IMAGE_EXTENSIONS.test(file.name || ""));
+
+const useObjectUrl = (file) => {
+  const url = useMemo(() => (file instanceof File ? URL.createObjectURL(file) : ""), [file]);
+
+  useEffect(() => {
+    if (!url) return undefined;
+    return () => URL.revokeObjectURL(url);
+  }, [url]);
+
+  return url;
+};
+
+const RelatedImagePreview = ({ file, onRemove }) => {
+  const previewUrl = useObjectUrl(file);
+
+  return (
+    <Box
+      sx={{
+        position: "relative",
+        borderRadius: "14px",
+        border: "1px solid #efe2dc",
+        backgroundColor: "white",
+        overflow: "hidden"
+      }}
+    >
+      <Box
+        component="img"
+        src={previewUrl}
+        alt={file.name}
+        sx={{
+          width: "100%",
+          height: 120,
+          objectFit: "cover",
+          display: "block",
+          backgroundColor: "#faf6f4"
+        }}
+      />
+      <Box sx={{ p: 1 }}>
+        <Typography
+          sx={{
+            fontSize: 11,
+            fontWeight: 600,
+            color: "#2f2829",
+            overflow: "hidden",
+            textOverflow: "ellipsis",
+            whiteSpace: "nowrap"
+          }}
+        >
+          {file.name}
+        </Typography>
+      </Box>
+      <Button
+        size="small"
+        onClick={onRemove}
+        sx={{
+          position: "absolute",
+          top: 6,
+          right: 6,
+          minWidth: 0,
+          p: 0.5,
+          borderRadius: "8px",
+          backgroundColor: "rgba(255,255,255,0.92)",
+          color: "#d32f2f",
+          "&:hover": { backgroundColor: "white" }
+        }}
+        aria-label="Remove image"
+      >
+        <X size={14} />
+      </Button>
+    </Box>
+  );
 };
 
 export const CircularFormPage = () => {
@@ -49,6 +126,7 @@ export const CircularFormPage = () => {
   });
   const [errors, setErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const mainImagePreview = useObjectUrl(formData.img);
 
   useEffect(() => {
     if (circulars.length === 0) fetchCirculars({ limit: 100 });
@@ -75,8 +153,11 @@ export const CircularFormPage = () => {
   const handleImg = (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    if (!file.type.startsWith("image/")) {
-      setErrors((p) => ({ ...p, img: "Only image files allowed" }));
+    if (!isImageFile(file)) {
+      setErrors((p) => ({
+        ...p,
+        img: "Use a standard image file (JPG, PNG, WebP, or GIF)"
+      }));
       return;
     }
     setFormData((p) => ({ ...p, img: file }));
@@ -87,9 +168,12 @@ export const CircularFormPage = () => {
 
   const handleRelatedImages = (e) => {
     const files = Array.from(e.target.files || []);
-    const imageFiles = files.filter((f) => f.type.startsWith("image/"));
+    const imageFiles = files.filter(isImageFile);
     if (imageFiles.length !== files.length) {
-      setErrors((p) => ({ ...p, relatedInformationImages: "Only image files allowed" }));
+      setErrors((p) => ({
+        ...p,
+        relatedInformationImages: "Use standard image files (JPG, PNG, WebP, or GIF)"
+      }));
     } else {
       setErrors((p) => ({ ...p, relatedInformationImages: "" }));
     }
@@ -277,6 +361,10 @@ export const CircularFormPage = () => {
             >
               Circular Image
             </Typography>
+            <Typography sx={{ mb: 1.5, fontSize: 12, color: "#8d7f7b", lineHeight: 1.6 }}>
+              Required cover image shown on the circulars list and detail page. Use JPG, PNG, or
+              WebP (recommended size: 800×600 px or larger).
+            </Typography>
             {existing?.img && !formData.img && (
               <Box sx={{ mb: 1.5, display: "flex", alignItems: "center", gap: 1.5 }}>
                 <Avatar
@@ -302,31 +390,45 @@ export const CircularFormPage = () => {
               <Box
                 sx={{
                   mt: 1.5,
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 1.5,
                   p: 1.5,
                   borderRadius: "14px",
                   border: "1px solid #efe2dc",
                   backgroundColor: "white"
                 }}
               >
-                <ImageOutlinedIcon sx={{ fontSize: 20, color: "#f6765e" }} />
-                <Box sx={{ flex: 1 }}>
-                  <Typography sx={{ fontSize: 13, fontWeight: 600, color: "#2f2829" }}>
-                    {formData.img.name}
-                  </Typography>
-                  <Typography sx={{ fontSize: 11, color: "#978883" }}>Ready to save</Typography>
-                </Box>
-                <Button
-                  size="small"
-                  startIcon={<X size={13} />}
-                  color="error"
-                  onClick={handleRemoveImg}
-                  sx={{ borderRadius: "10px", textTransform: "none", fontSize: 12 }}
-                >
-                  Remove
-                </Button>
+                <Stack direction="row" spacing={1.5} sx={{ alignItems: "center" }}>
+                  <Box
+                    component="img"
+                    src={mainImagePreview}
+                    alt={formData.img.name}
+                    sx={{
+                      width: 96,
+                      height: 96,
+                      borderRadius: "12px",
+                      objectFit: "cover",
+                      border: "1px solid #f0e1da",
+                      flexShrink: 0,
+                      backgroundColor: "#faf6f4"
+                    }}
+                  />
+                  <Box sx={{ flex: 1, minWidth: 0 }}>
+                    <Typography sx={{ fontSize: 13, fontWeight: 600, color: "#2f2829" }}>
+                      {formData.img.name}
+                    </Typography>
+                    <Typography sx={{ fontSize: 11, color: "#978883" }}>
+                      Preview — this is how the cover will appear after save
+                    </Typography>
+                  </Box>
+                  <Button
+                    size="small"
+                    startIcon={<X size={13} />}
+                    color="error"
+                    onClick={handleRemoveImg}
+                    sx={{ borderRadius: "10px", textTransform: "none", fontSize: 12, flexShrink: 0 }}
+                  >
+                    Remove
+                  </Button>
+                </Stack>
               </Box>
             )}
             {errors.img && (
@@ -404,55 +506,33 @@ export const CircularFormPage = () => {
               <input type="file" accept="image/*" multiple hidden onChange={handleRelatedImages} />
             </Button>
 
+            <Typography sx={{ mt: 1, mb: 1.5, fontSize: 12, color: "#8d7f7b", lineHeight: 1.6 }}>
+              Optional extra images (posters, guidelines, notices) shown in the circular detail
+              page. JPG, PNG, or WebP only.
+            </Typography>
+
             {/* New file previews */}
             {formData.relatedInformationImages.length > 0 && (
-              <Stack spacing={1} sx={{ mt: 1.5 }}>
+              <Box
+                sx={{
+                  mt: 1.5,
+                  display: "grid",
+                  gridTemplateColumns: {
+                    xs: "repeat(2, minmax(0, 1fr))",
+                    sm: "repeat(3, minmax(0, 1fr))",
+                    md: "repeat(4, minmax(0, 1fr))"
+                  },
+                  gap: 1.5
+                }}
+              >
                 {formData.relatedInformationImages.map((file, idx) => (
-                  <Box
-                    key={idx}
-                    sx={{
-                      display: "flex",
-                      alignItems: "center",
-                      gap: 1.5,
-                      p: 1.5,
-                      borderRadius: "14px",
-                      border: "1px solid #efe2dc",
-                      backgroundColor: "white"
-                    }}
-                  >
-                    <ImageOutlinedIcon sx={{ fontSize: 20, color: "#f6765e", flexShrink: 0 }} />
-                    <Box sx={{ flex: 1, minWidth: 0 }}>
-                      <Typography
-                        sx={{
-                          fontSize: 13,
-                          fontWeight: 600,
-                          color: "#2f2829",
-                          overflow: "hidden",
-                          textOverflow: "ellipsis",
-                          whiteSpace: "nowrap"
-                        }}
-                      >
-                        {file.name}
-                      </Typography>
-                      <Typography sx={{ fontSize: 11, color: "#978883" }}>Ready to save</Typography>
-                    </Box>
-                    <Button
-                      size="small"
-                      startIcon={<X size={13} />}
-                      color="error"
-                      onClick={() => handleRemoveRelatedImage(idx)}
-                      sx={{
-                        borderRadius: "10px",
-                        textTransform: "none",
-                        fontSize: 12,
-                        flexShrink: 0
-                      }}
-                    >
-                      Remove
-                    </Button>
-                  </Box>
+                  <RelatedImagePreview
+                    key={`${file.name}-${file.size}-${idx}`}
+                    file={file}
+                    onRemove={() => handleRemoveRelatedImage(idx)}
+                  />
                 ))}
-              </Stack>
+              </Box>
             )}
 
             {errors.relatedInformationImages && (
