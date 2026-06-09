@@ -23,7 +23,11 @@ jobs:
         run: npm ci
 
       - name: Create .env File
-        run: echo "${{ secrets.ENV_FILE }}" > .env
+        run: |
+          echo "${{ secrets.ENV_FILE }}" > .env
+          if ! grep -q '^VITE_API_BASE_URL=' .env; then
+            echo 'VITE_API_BASE_URL=https://api.karnatakarollerskatingassociation.com' >> .env
+          fi
 
       - name: Build Project
         run: npm run build

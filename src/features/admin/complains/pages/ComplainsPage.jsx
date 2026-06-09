@@ -49,10 +49,14 @@ export const ComplainsPage = () => {
     fetchComplains({ page: page + 1, limit: rowsPerPage });
   }, [fetchComplains, page, rowsPerPage]);
 
-  const filtered = useMemo(() => {
+  const isBackendPagination = !!pagination;
+  const hasSearch = searchTerm.trim().length > 0;
+
+  const displayRows = useMemo(() => {
     const q = searchTerm.trim().toLowerCase();
-    if (!q) return complains;
-    return complains.filter((item) =>
+    const source = complains;
+    if (!q) return source;
+    return source.filter((item) =>
       [
         item.skaterName,
         item.krsaId,
@@ -61,6 +65,8 @@ export const ComplainsPage = () => {
         item.reportType,
         item.message,
         item.complainedBy,
+        item.clubStatus,
+        item.districtStatus,
         item.stateStatus,
       ]
         .join(" ")
@@ -69,7 +75,16 @@ export const ComplainsPage = () => {
     );
   }, [complains, searchTerm]);
 
-  const totalCount = pagination?.total ?? filtered.length;
+  const totalCount = useMemo(() => {
+    if (hasSearch) return displayRows.length;
+    if (isBackendPagination) return pagination.total || 0;
+    return complains.length;
+  }, [complains.length, displayRows.length, hasSearch, isBackendPagination, pagination]);
+
+  const handleSearchChange = (e) => {
+    setSearchTerm(e.target.value);
+    setPage(0);
+  };
 
   return (
     <Box className="space-y-5">
@@ -125,7 +140,7 @@ export const ComplainsPage = () => {
           </Stack>
           <TextField
             value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
+            onChange={handleSearchChange}
             placeholder="Search by name, message, type..."
             size="small"
             sx={{ minWidth: { lg: 320 } }}
@@ -145,23 +160,31 @@ export const ComplainsPage = () => {
           <Table>
             <TableHead>
               <TableRow sx={{ bgcolor: "#fff8f5" }}>
-                {["Name", "Type", "Message", "State status", "Date", ""].map(
-                  (head) => (
-                    <TableCell
-                      key={head}
-                      sx={{ fontWeight: 700, color: "#7d6a64", borderBottom: "1px solid #f3e3dc" }}
-                    >
-                      {head}
-                    </TableCell>
-                  )
-                )}
+                {[
+                  "Subject",
+                  "Complained by",
+                  "Type",
+                  "Message",
+                  "Club",
+                  "District",
+                  "State",
+                  "Date",
+                  "",
+                ].map((head) => (
+                  <TableCell
+                    key={head || "actions"}
+                    sx={{ fontWeight: 700, color: "#7d6a64", borderBottom: "1px solid #f3e3dc" }}
+                  >
+                    {head}
+                  </TableCell>
+                ))}
               </TableRow>
             </TableHead>
             <TableBody>
               {isLoading
                 ? Array.from({ length: 5 }).map((_, index) => (
                     <TableRow key={`sk-${index}`}>
-                      {Array.from({ length: 6 }).map((__, cell) => (
+                      {Array.from({ length: 9 }).map((__, cell) => (
                         <TableCell key={cell}>
                           <Skeleton />
                         </TableCell>
@@ -169,15 +192,15 @@ export const ComplainsPage = () => {
                     </TableRow>
                   ))
                 : null}
-              {!isLoading && filtered.length === 0 ? (
+              {!isLoading && displayRows.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={6} align="center" sx={{ py: 6, color: "#a28f89" }}>
+                  <TableCell colSpan={9} align="center" sx={{ py: 6, color: "#a28f89" }}>
                     No complaints found.
                   </TableCell>
                 </TableRow>
               ) : null}
               {!isLoading &&
-                filtered.map((row) => (
+                displayRows.map((row) => (
                   <TableRow
                     key={row.id}
                     hover
@@ -185,12 +208,13 @@ export const ComplainsPage = () => {
                     onClick={() => navigate(`/complains/${row.id}`)}
                   >
                     <TableCell sx={{ fontWeight: 600 }}>{getComplainSubjectLabel(row)}</TableCell>
+                    <TableCell sx={{ color: "#5c4f4b" }}>{row.complainedBy || "—"}</TableCell>
                     <TableCell sx={{ textTransform: "capitalize", fontWeight: 600 }}>
                       {formatReportTypeLabel(row.reportType)}
                     </TableCell>
                     <TableCell
                       sx={{
-                        maxWidth: 280,
+                        maxWidth: 220,
                         color: "#5c4f4b",
                         whiteSpace: "nowrap",
                         overflow: "hidden",
@@ -199,6 +223,22 @@ export const ComplainsPage = () => {
                       title={row.message || ""}
                     >
                       {truncateMessage(row.message)}
+                    </TableCell>
+                    <TableCell>
+                      <Chip
+                        size="small"
+                        label={formatStatusLabel(row.clubStatus)}
+                        variant="outlined"
+                        sx={getStatusChipSx(row.clubStatus)}
+                      />
+                    </TableCell>
+                    <TableCell>
+                      <Chip
+                        size="small"
+                        label={formatStatusLabel(row.districtStatus)}
+                        variant="outlined"
+                        sx={getStatusChipSx(row.districtStatus)}
+                      />
                     </TableCell>
                     <TableCell>
                       <Chip
@@ -227,8 +267,10 @@ export const ComplainsPage = () => {
         <TablePagination
           component="div"
           count={totalCount}
-          page={page}
-          onPageChange={(_, newPage) => setPage(newPage)}
+          page={hasSearch ? 0 : page}
+          onPageChange={(_, newPage) => {
+            if (!hasSearch) setPage(newPage);
+          }}
           rowsPerPage={rowsPerPage}
           onRowsPerPageChange={(e) => {
             setRowsPerPage(parseInt(e.target.value, 10));

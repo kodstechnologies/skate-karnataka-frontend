@@ -116,10 +116,14 @@ export const ComplainDetailsPage = () => {
   const { complains, isLoading, isSaving, fetchComplains, updateComplain } = useComplainsStore();
 
   useEffect(() => {
-    if (complains.length === 0) {
+    if (!complainId) return;
+    const found = useComplainsStore
+      .getState()
+      .complains.some((row) => String(row.id) === String(complainId));
+    if (!found) {
       fetchComplains({ page: 1, limit: 100 });
     }
-  }, [complains.length, fetchComplains]);
+  }, [complainId, fetchComplains]);
 
   const item = complains.find((row) => String(row.id) === String(complainId)) ?? null;
 

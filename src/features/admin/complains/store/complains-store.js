@@ -30,15 +30,17 @@ export const useComplainsStore = create((set, get) => ({
 
   fetchComplains: async (params = {}) => {
     set({ isLoading: true, error: null });
-    console.log("===================== 1")
     try {
-      console.log("===================== 2")
       const response = await reportApi.getStateReports(params);
-      console.log("Fetched complaints:", response ,"======================================");
-      const rows = Array.isArray(response?.data) ? response.data : [];
+      const rows = Array.isArray(response?.data)
+        ? response.data
+        : Array.isArray(response?.data?.data)
+          ? response.data.data
+          : [];
+      const pagination = response?.pagination ?? response?.data?.pagination ?? null;
       set({
         complains: rows.map(mapReport),
-        pagination: response?.pagination ?? null,
+        pagination,
         isLoading: false,
       });
     } catch (error) {
