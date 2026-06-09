@@ -28,6 +28,68 @@ import {
   STATE_REVIEW_STATUS_OPTIONS,
 } from "@/features/admin/complains/utils/complain-display";
 
+const StateReviewForm = ({ item, isSaving, onSubmit, onCancel }) => {
+  const [stateStatus, setStateStatus] = useState(() =>
+    normalizeStateReviewStatus(item.stateStatus)
+  );
+  const [message, setMessage] = useState(() => item.stateMessage || "");
+
+  const handleSubmit = (event) => {
+    event.preventDefault();
+    onSubmit({ stateStatus, message: message.trim() });
+  };
+
+  return (
+    <Box component="form" onSubmit={handleSubmit}>
+      <Stack spacing={2.5} sx={{ maxWidth: 720 }}>
+        <FormControl fullWidth size="small">
+          <InputLabel id="state-status-label">State status</InputLabel>
+          <Select
+            labelId="state-status-label"
+            label="State status"
+            value={stateStatus}
+            onChange={(e) => setStateStatus(e.target.value)}
+          >
+            {STATE_REVIEW_STATUS_OPTIONS.map((option) => (
+              <MenuItem key={option.value} value={option.value}>
+                {option.label}
+              </MenuItem>
+            ))}
+          </Select>
+        </FormControl>
+
+        <TextField
+          label="State message"
+          value={message}
+          onChange={(e) => setMessage(e.target.value)}
+          multiline
+          minRows={4}
+          placeholder="The issue has been reviewed and resolved successfully by the state authority."
+          fullWidth
+        />
+
+        <Stack direction="row" spacing={2} sx={{ alignItems: "center" }}>
+          <Button
+            type="submit"
+            variant="contained"
+            disabled={isSaving}
+            sx={{
+              backgroundColor: "#f6765e",
+              boxShadow: "none",
+              "&:hover": { backgroundColor: "#ea6b54", boxShadow: "none" },
+            }}
+          >
+            {isSaving ? "Saving..." : "Update complaint"}
+          </Button>
+          <Button variant="outlined" onClick={onCancel} disabled={isSaving}>
+            Cancel
+          </Button>
+        </Stack>
+      </Stack>
+    </Box>
+  );
+};
+
 const DetailItem = ({ label, value }) => (
   <Box
     sx={{
@@ -53,9 +115,6 @@ export const ComplainDetailsPage = () => {
   const { complainId } = useParams();
   const { complains, isLoading, isSaving, fetchComplains, updateComplain } = useComplainsStore();
 
-  const [stateStatus, setStateStatus] = useState("inprogress");
-  const [message, setMessage] = useState("");
-
   useEffect(() => {
     if (complains.length === 0) {
       fetchComplains({ page: 1, limit: 100 });
@@ -64,18 +123,11 @@ export const ComplainDetailsPage = () => {
 
   const item = complains.find((row) => String(row.id) === String(complainId)) ?? null;
 
-  useEffect(() => {
-    if (!item) return;
-    setStateStatus(normalizeStateReviewStatus(item.stateStatus));
-    setMessage(item.stateMessage || "");
-  }, [item]);
-
-  const handleSubmit = async (event) => {
-    event.preventDefault();
+  const handleSubmit = async ({ stateStatus, message }) => {
     if (!item?.id) return;
     const ok = await updateComplain(item.id, {
       stateStatus,
-      message: message.trim(),
+      message,
     });
     if (ok) {
       navigate("/complains");
@@ -195,53 +247,13 @@ export const ComplainDetailsPage = () => {
           State review
         </Typography>
 
-        <Box component="form" onSubmit={handleSubmit}>
-          <Stack spacing={2.5} sx={{ maxWidth: 720 }}>
-            <FormControl fullWidth size="small">
-              <InputLabel id="state-status-label">State status</InputLabel>
-              <Select
-                labelId="state-status-label"
-                label="State status"
-                value={stateStatus}
-                onChange={(e) => setStateStatus(e.target.value)}
-              >
-                {STATE_REVIEW_STATUS_OPTIONS.map((option) => (
-                  <MenuItem key={option.value} value={option.value}>
-                    {option.label}
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
-
-            <TextField
-              label="State message"
-              value={message}
-              onChange={(e) => setMessage(e.target.value)}
-              multiline
-              minRows={4}
-              placeholder="The issue has been reviewed and resolved successfully by the state authority."
-              fullWidth
-            />
-
-            <Stack direction="row" spacing={2}>
-              <Button
-                type="submit"
-                variant="contained"
-                disabled={isSaving}
-                sx={{
-                  backgroundColor: "#f6765e",
-                  boxShadow: "none",
-                  "&:hover": { backgroundColor: "#ea6b54", boxShadow: "none" },
-                }}
-              >
-                {isSaving ? "Saving..." : "Update complaint"}
-              </Button>
-              <Button variant="outlined" onClick={() => navigate("/complains")} disabled={isSaving}>
-                Cancel
-              </Button>
-            </Stack>
-          </Stack>
-        </Box>
+        <StateReviewForm
+          key={item.id}
+          item={item}
+          isSaving={isSaving}
+          onSubmit={handleSubmit}
+          onCancel={() => navigate("/complains")}
+        />
       </Paper>
     </Box>
   );

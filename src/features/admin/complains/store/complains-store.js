@@ -32,6 +32,7 @@ export const useComplainsStore = create((set, get) => ({
     set({ isLoading: true, error: null });
     try {
       const response = await reportApi.getStateReports(params);
+      console.log("Fetched complaints:", response);
       const rows = Array.isArray(response?.data) ? response.data : [];
       set({
         complains: rows.map(mapReport),

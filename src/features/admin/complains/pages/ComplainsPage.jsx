@@ -117,7 +117,7 @@ export const ComplainsPage = () => {
           spacing={2}
           sx={{ p: 3, alignItems: { lg: "center" }, justifyContent: "space-between" }}
         >
-          <Stack direction="row" spacing={1.5} alignItems="center">
+          <Stack direction="row" spacing={1.5} sx={{ alignItems: "center" }}>
             <AlertTriangle size={22} color="#f6765e" />
             <Typography variant="h5" sx={{ fontWeight: 700, letterSpacing: "-0.04em" }}>
               All complaints
