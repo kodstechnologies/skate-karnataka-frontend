@@ -15,6 +15,7 @@ import { CalendarDays, ChevronRight, Image as ImageIcon, User, Video, Info } fro
 import { Link as RouterLink, useNavigate, useParams } from "react-router-dom";
 import galleryHero from "@/assets/Gallery_header.jpg";
 import { useGalleryStore } from "@/features/admin/gallery/store/gallery-store";
+import { getGalleryUploadedByDetail } from "@/features/admin/gallery/utils/gallery-display";
 
 const formatDate = (dateStr) => {
   if (!dateStr) return "—";
@@ -30,11 +31,12 @@ export const GalleryDetailPage = () => {
 
   const items = useGalleryStore((s) => s.items);
   const isLoading = useGalleryStore((s) => s.isLoading);
-  const fetchItems = useGalleryStore((s) => s.fetchItems);
+  const fetchItemById = useGalleryStore((s) => s.fetchItemById);
 
   useEffect(() => {
-    if (items.length === 0) fetchItems("all", 1, 100);
-  }, [items.length, fetchItems]);
+    if (!itemId) return;
+    fetchItemById(itemId);
+  }, [itemId, fetchItemById]);
 
   const item = useMemo(() => items.find((i) => i._id === itemId) ?? null, [itemId, items]);
 
@@ -183,6 +185,11 @@ export const GalleryDetailPage = () => {
 
             <Stack direction="row" spacing={1.25} useFlexGap sx={{ mt: 3, flexWrap: "wrap" }}>
               <Chip
+                icon={<User size={16} />}
+                label={`Uploaded by: ${getGalleryUploadedByDetail(item)}`}
+                sx={{ color: "white", backgroundColor: "rgba(255,255,255,0.14)" }}
+              />
+              <Chip
                 icon={<CalendarDays size={16} />}
                 label={formatDate(item?.createdAt)}
                 sx={{ color: "white", backgroundColor: "rgba(255,255,255,0.14)" }}
@@ -252,7 +259,7 @@ export const GalleryDetailPage = () => {
                   </Typography>
                 </Box>
                 <Divider sx={{ borderColor: "#f0e1da" }} />
-                <Box>
+                {/* <Box>
                   <Stack
                     direction="row"
                     spacing={1}
@@ -264,11 +271,10 @@ export const GalleryDetailPage = () => {
                     </Typography>
                   </Stack>
                   <Typography sx={{ fontSize: 15, color: "#2f2829" }}>
-                    {item?.ownerName || "—"}
+                    {getGalleryUploadedByDetail(item)}
                   </Typography>
-                  {/* <Typography sx={{ fontSize: 13, color: "#8d7f7b", textTransform: "capitalize", mt: 0.5 }}>Role: {item?.ownerType || "—"}</Typography> */}
                 </Box>
-                <Divider sx={{ borderColor: "#f0e1da" }} />
+                <Divider sx={{ borderColor: "#f0e1da" }} /> */}
                 <Box>
                   <Stack
                     direction="row"

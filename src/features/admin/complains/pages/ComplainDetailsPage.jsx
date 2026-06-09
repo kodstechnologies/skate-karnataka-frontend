@@ -20,9 +20,9 @@ import { Link as RouterLink, useNavigate, useParams } from "react-router-dom";
 import circularHero from "@/assets/Circular_header.jpg";
 import { useComplainsStore } from "@/features/admin/complains/store/complains-store";
 import {
-  formatReportTypeLabel,
   formatStatusLabel,
   getComplainDetailFields,
+  getComplainReviewLevels,
   getStatusChipSx,
   normalizeStateReviewStatus,
   STATE_REVIEW_STATUS_OPTIONS,
@@ -90,6 +90,34 @@ const StateReviewForm = ({ item, isSaving, onSubmit, onCancel }) => {
   );
 };
 
+const ReviewLevelCard = ({ label, status, message }) => (
+  <Box
+    sx={{
+      p: 2.2,
+      borderRadius: "22px",
+      border: "1px solid #f3e3dc",
+      background: "linear-gradient(180deg, #fffefd 0%, #fff8f5 100%)",
+    }}
+  >
+    <Stack direction="row" spacing={1.5} sx={{ alignItems: "center", justifyContent: "space-between" }}>
+      <Typography
+        sx={{ fontSize: 11, color: "#a28f89", textTransform: "uppercase", letterSpacing: "0.08em" }}
+      >
+        {label}
+      </Typography>
+      <Chip
+        size="small"
+        label={formatStatusLabel(status)}
+        variant="outlined"
+        sx={getStatusChipSx(status)}
+      />
+    </Stack>
+    <Typography sx={{ mt: 1.2, fontSize: 15, fontWeight: 600, color: "#2f2829", lineHeight: 1.7 }}>
+      {message || "—"}
+    </Typography>
+  </Box>
+);
+
 const DetailItem = ({ label, value }) => (
   <Box
     sx={{
@@ -113,17 +141,12 @@ const DetailItem = ({ label, value }) => (
 export const ComplainDetailsPage = () => {
   const navigate = useNavigate();
   const { complainId } = useParams();
-  const { complains, isLoading, isSaving, fetchComplains, updateComplain } = useComplainsStore();
+  const { complains, isLoading, isSaving, fetchComplainById, updateComplain } = useComplainsStore();
 
   useEffect(() => {
     if (!complainId) return;
-    const found = useComplainsStore
-      .getState()
-      .complains.some((row) => String(row.id) === String(complainId));
-    if (!found) {
-      fetchComplains({ page: 1, limit: 100 });
-    }
-  }, [complainId, fetchComplains]);
+    fetchComplainById(complainId);
+  }, [complainId, fetchComplainById]);
 
   const item = complains.find((row) => String(row.id) === String(complainId)) ?? null;
 
@@ -192,19 +215,21 @@ export const ComplainDetailsPage = () => {
           <Typography variant="h4" sx={{ fontWeight: 700, letterSpacing: "-0.04em" }}>
             Complaint details
           </Typography>
-          <Stack direction="row" spacing={1} sx={{ mt: 2, flexWrap: "wrap" }}>
-            <Chip
-              size="small"
-              label={`State: ${formatStatusLabel(item.stateStatus)}`}
-              variant="outlined"
-              sx={{ ...getStatusChipSx(item.stateStatus), bgcolor: "rgba(255,255,255,0.12)" }}
-            />
-            <Chip
-              size="small"
-              label={`Skater: ${formatStatusLabel(item.status)}`}
-              sx={{ color: "white", borderColor: "rgba(255,255,255,0.4)" }}
-              variant="outlined"
-            />
+          <Stack direction="row" spacing={1} sx={{ mt: 2, flexWrap: "wrap", gap: 1 }}>
+            {[
+              { label: "Club", status: item.clubStatus },
+              { label: "District", status: item.districtStatus },
+              { label: "State", status: item.stateStatus },
+              { label: "Skater", status: item.status },
+            ].map((entry) => (
+              <Chip
+                key={entry.label}
+                size="small"
+                label={`${entry.label}: ${formatStatusLabel(entry.status)}`}
+                variant="outlined"
+                sx={{ ...getStatusChipSx(entry.status), bgcolor: "rgba(255,255,255,0.12)" }}
+              />
+            ))}
           </Stack>
         </Stack>
       </Paper>
@@ -229,21 +254,25 @@ export const ComplainDetailsPage = () => {
           <DetailItem label="Complaint message" value={item.message} />
         </Box>
 
-        {(item.clubMessage || item.districtMessage) && (
-          <Box
-            sx={{
-              mt: 2,
-              display: "grid",
-              gridTemplateColumns: { xs: "1fr", md: "1fr 1fr" },
-              gap: 2,
-            }}
-          >
-            {item.clubMessage ? <DetailItem label="Club message" value={item.clubMessage} /> : null}
-            {item.districtMessage ? (
-              <DetailItem label="District message" value={item.districtMessage} />
-            ) : null}
-          </Box>
-        )}
+        <Typography variant="h6" sx={{ fontWeight: 700, mt: 3, mb: 2 }}>
+          Club, district & state responses
+        </Typography>
+        <Box
+          sx={{
+            display: "grid",
+            gridTemplateColumns: { xs: "1fr", md: "repeat(3, 1fr)" },
+            gap: 2,
+          }}
+        >
+          {getComplainReviewLevels(item).map((level) => (
+            <ReviewLevelCard
+              key={level.key}
+              label={`${level.label} message`}
+              status={level.status}
+              message={level.message}
+            />
+          ))}
+        </Box>
 
         <Divider sx={{ my: 3 }} />
 

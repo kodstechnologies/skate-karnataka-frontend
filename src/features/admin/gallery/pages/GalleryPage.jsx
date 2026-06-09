@@ -19,6 +19,7 @@ import galleryHero from "@/assets/Gallery_header.jpg";
 import { ConfirmDeleteModal } from "@/components/ui/ConfirmDeleteModal";
 import { useAuthStore } from "@/features/auth/store/auth-store";
 import { useGalleryStore } from "@/features/admin/gallery/store/gallery-store";
+import { getGalleryUploadedBy } from "@/features/admin/gallery/utils/gallery-display";
 
 export const GalleryPage = () => {
   const navigate = useNavigate();
@@ -483,12 +484,9 @@ export const GalleryPage = () => {
                       </Typography>
                     )}
 
-                    {/* ownerName (API field) */}
-                    {item.ownerName && (
-                      <Typography sx={{ fontSize: 12, color: "#9e8c87", fontWeight: 600 }}>
-                        {item.ownerName}
-                      </Typography>
-                    )}
+                    <Typography sx={{ fontSize: 12, color: "#9e8c87", fontWeight: 600 }}>
+                      Uploaded by: {getGalleryUploadedBy(item)}
+                    </Typography>
 
                     {/* createdAt (API field) */}
                     <Typography sx={{ fontSize: 11, color: "#b8a8a4" }}>

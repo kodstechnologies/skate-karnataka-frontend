@@ -43,9 +43,56 @@ export const useComplainsStore = create((set, get) => ({
         pagination,
         isLoading: false,
       });
+      return rows.map(mapReport);
     } catch (error) {
       set({ error: error.message, isLoading: false });
       toast.error(error.response?.data?.message || "Failed to load complaints");
+      return [];
+    }
+  },
+
+  fetchComplainById: async (id) => {
+    const hasCached = get().complains.some((row) => String(row.id) === String(id));
+    if (!hasCached) {
+      set({ isLoading: true, error: null });
+    }
+    try {
+      let page = 1;
+      const limit = 100;
+      let total = Infinity;
+
+      while ((page - 1) * limit < total) {
+        const response = await reportApi.getStateReports({ page, limit });
+        const rawRows = Array.isArray(response?.data)
+          ? response.data
+          : Array.isArray(response?.data?.data)
+            ? response.data.data
+            : [];
+        const rows = rawRows.map(mapReport);
+        const found = rows.find((row) => String(row.id) === String(id));
+
+        if (found) {
+          set((state) => ({
+            complains: state.complains.some((row) => String(row.id) === String(found.id))
+              ? state.complains.map((row) => (String(row.id) === String(found.id) ? found : row))
+              : [...state.complains, found],
+            isLoading: false,
+          }));
+          return found;
+        }
+
+        const pagination = response?.pagination ?? response?.data?.pagination ?? null;
+        total = pagination?.total ?? rows.length;
+        if (rows.length < limit || page * limit >= total) break;
+        page += 1;
+      }
+
+      set({ isLoading: false });
+      return null;
+    } catch (error) {
+      set({ error: error.message, isLoading: false });
+      toast.error(error.response?.data?.message || "Failed to load complaint");
+      return null;
     }
   },
 

@@ -95,6 +95,12 @@ export const getComplainSubjectLabel = (row) => {
   return row?.skaterName || row?.complainedBy || "—";
 };
 
+export const COMPLAIN_REVIEW_LEVELS = [
+  { key: "club", statusKey: "clubStatus", messageKey: "clubMessage", label: "Club" },
+  { key: "district", statusKey: "districtStatus", messageKey: "districtMessage", label: "District" },
+  { key: "state", statusKey: "stateStatus", messageKey: "stateMessage", label: "State" },
+];
+
 export const getComplainDetailFields = (item) => {
   if (!item) return [];
 
@@ -107,9 +113,18 @@ export const getComplainDetailFields = (item) => {
     { key: "districtName", label: "District", value: item.districtName },
     { key: "reportType", label: "Report type", value: formatReportTypeLabel(item.reportType), always: true },
     { key: "submitted", label: "Submitted", value: formatComplainDate(item.createdAt), always: true },
-    { key: "clubStatus", label: "Club status", value: formatStatusLabel(item.clubStatus), always: true },
-    { key: "districtStatus", label: "District status", value: formatStatusLabel(item.districtStatus), always: true },
+    { key: "skaterStatus", label: "Skater status", value: formatStatusLabel(item.status), always: true },
   ];
 
   return candidates.filter((field) => field.always || visibility[field.key]);
+};
+
+export const getComplainReviewLevels = (item) => {
+  if (!item) return [];
+
+  return COMPLAIN_REVIEW_LEVELS.map((level) => ({
+    ...level,
+    status: item[level.statusKey] || "pending",
+    message: String(item[level.messageKey] || "").trim(),
+  }));
 };
