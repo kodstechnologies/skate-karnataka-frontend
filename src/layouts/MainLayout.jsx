@@ -39,7 +39,7 @@ export const MainLayout = () => {
   if (
     allowedSlugs &&
     user &&
-    !isPathAllowedForModules(location.pathname, allowedSlugs, userRole)
+    !isPathAllowedForModules(location.pathname, allowedSlugs, userRole, user?.allowedModule)
   ) {
     const fallback =
       userRole === "club"

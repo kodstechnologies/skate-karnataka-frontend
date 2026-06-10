@@ -27,6 +27,16 @@ const MODULE_TO_NAV_SLUGS = {
   Reports: ["reports", "complains"]
 };
 
+/** Sub-admin Events submenu: hide Events-Category and Formula (state officials with assigned modules). */
+const SUB_ADMIN_HIDDEN_EVENT_CHILD_SLUGS = new Set(["events-category", "events-formula"]);
+
+const SUB_ADMIN_BLOCKED_EVENT_PATHS = ["/events/category", "/events/formula"];
+
+const isSubAdminUser = (role, allowedModule) => {
+  if (String(role || "").toLowerCase() !== "state") return false;
+  return normalizeAllowedModules(allowedModule).length > 0;
+};
+
 const PATH_PREFIX_TO_SLUG = [
   ["/skaters", "skaters"],
   ["/clubs", "clubs"],
@@ -128,6 +138,15 @@ export const filterNavigationGroups = (groups, role, allowedModule) => {
           if (!allowedSlugs.has(item.slug)) {
             return null;
           }
+
+          // Sub-admin panel: only show Events list — not Events-Category or Formula.
+          if (isSubAdminUser(role, allowedModule) && item.slug === "events") {
+            const children = item.children.filter(
+              (child) => !SUB_ADMIN_HIDDEN_EVENT_CHILD_SLUGS.has(child.slug)
+            );
+            return children.length ? { ...item, children } : null;
+          }
+
           return item;
         })
         .filter(Boolean);
@@ -163,7 +182,7 @@ export const getNavigationForUser = (role, allowedModule) => {
   return { navigationGroups: groups, navigationItems: items, allowedSlugs };
 };
 
-export const isPathAllowedForModules = (pathname, allowedSlugs, role) => {
+export const isPathAllowedForModules = (pathname, allowedSlugs, role, allowedModule) => {
   const normalizedRole = String(role || "").toLowerCase();
   if (normalizedRole === "club") {
     return isPathAllowedForClub(pathname);
@@ -175,6 +194,13 @@ export const isPathAllowedForModules = (pathname, allowedSlugs, role) => {
   if (!allowedSlugs) return true;
 
   const path = pathname.split("?")[0];
+
+  if (isSubAdminUser(normalizedRole, allowedModule)) {
+    const blocked = SUB_ADMIN_BLOCKED_EVENT_PATHS.some(
+      (prefix) => path === prefix || path.startsWith(`${prefix}/`)
+    );
+    if (blocked) return false;
+  }
   if (ALWAYS_ALLOWED_PATHS.some((allowed) => path === allowed || path.startsWith(`${allowed}/`))) {
     return true;
   }

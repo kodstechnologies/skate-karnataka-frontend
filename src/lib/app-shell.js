@@ -63,6 +63,7 @@ export const navigationGroups = [
         label: "Events",
         icon: Folder,
         children: [
+          // Hidden for sub-admin panel — see SUB_ADMIN_HIDDEN_EVENT_CHILD_SLUGS in navigation-modules.js
           { slug: "events-category", to: "/events/category", label: "Events-Category", icon: Tags },
           { slug: "events-formula", to: "/events/formula", label: "Formula", icon: FunctionSquare },
           { slug: "events", to: "/events/detail", label: "Events", icon: Layers }

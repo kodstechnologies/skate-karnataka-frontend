@@ -8,7 +8,6 @@ import {
   TablePagination,
   TextField,
   Typography,
-  CircularProgress,
   Skeleton
 } from "@mui/material";
 import { ChevronRight, PencilLine, Plus, Search, Trash2 } from "lucide-react";
@@ -17,8 +16,7 @@ import { Link as RouterLink, useNavigate } from "react-router-dom";
 import eventsHero from "@/assets/Events_header.jpg";
 import { ConfirmDeleteModal } from "@/components/ui/ConfirmDeleteModal";
 import { eventsApi } from "@/api/events-api";
-import GenerateEventCertificatesButton from "@/features/admin/events/components/GenerateEventCertificatesButton";
-import EventChestNumbersButton from "@/features/admin/events/components/EventChestNumbersButton";
+import EventCardActionsMenu from "@/features/admin/events/components/EventCardActionsMenu";
 import { useAuthStore } from "@/features/auth/store/auth-store";
 import { canApproveEvents, getEventApprovalChipProps } from "@/utils/eventApprovalStatus";
 import toast from "react-hot-toast";
@@ -60,17 +58,6 @@ const fmtTime = (v) => {
   }
 };
 
-const formatCurrency = (value) => {
-  if (!value) return "Free";
-  const amount = Number(value);
-  if (Number.isNaN(amount)) return value;
-  return new Intl.NumberFormat("en-IN", {
-    style: "currency",
-    currency: "INR",
-    maximumFractionDigits: 0
-  }).format(amount);
-};
-
 const getStatusLabel = (status) => {
   switch (status) {
     case "coming_soon":
@@ -86,15 +73,6 @@ const getStatusLabel = (status) => {
   }
 };
 
-const getCategoryLabels = (categories = []) =>
-  (Array.isArray(categories) ? categories : [])
-    .map((item) => {
-      if (!item) return "";
-      if (typeof item === "string") return item;
-      return item.typeName || item.name || item.label || "";
-    })
-    .filter(Boolean);
-
 const getStatusColor = (status) => {
   switch (status) {
     case "active":
@@ -108,6 +86,20 @@ const getStatusColor = (status) => {
     default:
       return "#8b7e7a"; // Gray
   }
+};
+
+const getEventCardPalette = (event) => {
+  const text = event?.textColor || "#ffffff";
+  const muted = event?.textColor ? `${event.textColor}cc` : "rgba(255,255,255,0.78)";
+  const accent = event?.textColor || "#f6a192";
+
+  return {
+    background: `linear-gradient(135deg, ${event?.colorOne || "#141012"} 0%, ${event?.colorTwo || "#2a2224"} 100%)`,
+    text,
+    muted,
+    accent,
+    label: event?.textColor || "#f6a192"
+  };
 };
 
 export const EventsPage = () => {
@@ -356,22 +348,45 @@ export const EventsPage = () => {
                   elevation={0}
                   sx={{
                     borderRadius: "24px",
-                    border: "1px solid #f0ddd5",
+                    border: "1px solid rgba(255,255,255,0.08)",
                     overflow: "hidden",
-                    background: "linear-gradient(135deg, #fff9f7 0%, #fef0eb 100%)",
-                    boxShadow: "0 20px 50px rgba(56, 36, 29, 0.08)"
+                    background: "linear-gradient(135deg, #141012 0%, #2a2224 100%)",
+                    boxShadow: "0 20px 50px rgba(0, 0, 0, 0.18)"
                   }}
                 >
-                  <Box sx={{ px: 2, py: 1.5 }}>
+                  <Box
+                    sx={{
+                      px: 2,
+                      py: 1.5,
+                      display: "flex",
+                      justifyContent: "space-between",
+                      alignItems: "center",
+                      gap: 1
+                    }}
+                  >
+                    <Stack direction="row" spacing={0.75}>
+                      <Skeleton
+                        variant="rounded"
+                        width={92}
+                        height={24}
+                        sx={{ borderRadius: "12px", bgcolor: "rgba(255,255,255,0.12)" }}
+                      />
+                      <Skeleton
+                        variant="rounded"
+                        width={76}
+                        height={24}
+                        sx={{ borderRadius: "12px", bgcolor: "rgba(255,255,255,0.12)" }}
+                      />
+                    </Stack>
                     <Skeleton
-                      variant="rounded"
-                      width={80}
-                      height={24}
-                      sx={{ borderRadius: "12px" }}
+                      variant="circular"
+                      width={34}
+                      height={34}
+                      sx={{ bgcolor: "rgba(255,255,255,0.12)" }}
                     />
                   </Box>
 
-                  <Stack spacing={1.35} sx={{ p: 2.25 }}>
+                  <Stack spacing={1.35} sx={{ p: 2.25, pt: 0 }}>
                     <Skeleton variant="text" width="80%" height={28} sx={{ mb: 0.5 }} />
                     <Box sx={{ minHeight: 52 }}>
                       <Skeleton variant="text" width="100%" />
@@ -416,209 +431,231 @@ export const EventsPage = () => {
                 gap: 2
               }}
             >
-              {events.map((event) => (
-                <Paper
-                  key={event._id || event.id}
-                  elevation={0}
-                  sx={{
-                    borderRadius: "24px",
-                    border: "1px solid #f0ddd5",
-                    overflow: "hidden",
-                    background: `linear-gradient(135deg, ${event.colorOne || "#fff1eb"} 0%, ${event.colorTwo || "#fce3d9"} 100%)`,
+              {events.map((event) => {
+                const palette = getEventCardPalette(event);
 
-                    boxShadow: "0 20px 50px rgba(56, 36, 29, 0.08)",
-                    transition: "transform 0.25s ease, box-shadow 0.25s ease",
-                    "&:hover": {
-                      transform: "translateY(-4px)",
-                      boxShadow: "0 28px 65px rgba(56, 36, 29, 0.12)"
-                    }
-                  }}
-                >
-                  <Stack
-                    direction="row"
-                    spacing={1}
+                return (
+                  <Paper
+                    key={event._id || event.id}
+                    elevation={0}
                     sx={{
-                      px: 2,
-                      py: 1.5,
-                      alignItems: "center",
-                      justifyContent: "space-between",
-                      width: "100%",
-                      flexWrap: "wrap",
-                      gap: 1
+                      borderRadius: "24px",
+                      border: "1px solid rgba(255,255,255,0.08)",
+                      overflow: "hidden",
+                      background: palette.background,
+                      boxShadow: "0 20px 50px rgba(0, 0, 0, 0.18)",
+                      transition: "transform 0.25s ease, box-shadow 0.25s ease",
+                      display: "flex",
+                      flexDirection: "column",
+                      height: "100%",
+                      "&:hover": {
+                        transform: "translateY(-4px)",
+                        boxShadow: "0 28px 65px rgba(0, 0, 0, 0.24)"
+                      }
                     }}
                   >
-                    <Chip
-                      size="small"
-                      label={getStatusLabel(event.status)}
+                    <Stack
+                      direction="row"
+                      spacing={1}
                       sx={{
-                        backgroundColor: getStatusColor(event.status),
-                        color: "white",
-                        fontWeight: 700
-                      }}
-                    />
-                    <Chip size="small" {...getEventApprovalChipProps(event)} />
-                    <EventChestNumbersButton event={event} />
-                    <GenerateEventCertificatesButton
-                      event={event}
-                      role={role}
-                      variant="corner"
-                    />
-                  </Stack>
-
-                  <Stack spacing={1.35} sx={{ p: 2.25 }}>
-                    <Typography
-                      sx={{
-                        fontSize: 19,
-                        fontWeight: 800,
-                        color: event.textColor || "#2f2829",
-                        lineHeight: 1.3
+                        px: 2,
+                        py: 1.5,
+                        alignItems: "center",
+                        justifyContent: "space-between",
+                        gap: 1
                       }}
                     >
-                      {event.header}
-                    </Typography>
-                    <Typography
-                      sx={{ color: event.textColor || "#7e716d", lineHeight: 1.7, minHeight: 52 }}
-                    >
-                      {event.about || "No description provided."}
-                    </Typography>
-
-                    {event.address ? (
-                      <Typography sx={{ fontSize: 13, color: event.textColor || "#6f625e" }}>
-                        📍 {event.address}
-                      </Typography>
-                    ) : null}
-
-                    {getCategoryLabels(event.skatingEventCategories).length > 0 ? (
                       <Stack direction="row" spacing={0.75} useFlexGap sx={{ flexWrap: "wrap" }}>
-                        {getCategoryLabels(event.skatingEventCategories).map((label) => (
-                          <Chip
-                            key={`${event._id || event.id}-${label}`}
-                            size="small"
-                            label={label}
-                            sx={{
-                              bgcolor: "rgba(255,255,255,0.72)",
-                              color: event.textColor || "#2f2829",
-                              fontWeight: 600
-                            }}
-                          />
-                        ))}
+                        <Chip
+                          size="small"
+                          label={getStatusLabel(event.status)}
+                          sx={{
+                            backgroundColor: getStatusColor(event.status),
+                            color: "white",
+                            fontWeight: 700
+                          }}
+                        />
+                        <Chip size="small" {...getEventApprovalChipProps(event)} />
                       </Stack>
-                    ) : null}
 
-                    <Typography sx={{ fontSize: 14, fontWeight: 700, color: event.textColor || "#2f2829" }}>
-                      {formatCurrency(event.entryFee)}
-                    </Typography>
-
-                    {/* Schedule block */}
-                    <Box>
-                      <Typography
-                        sx={{
-                          fontSize: 11,
-                          fontWeight: 700,
-                          color: event.textColor || "#f6765e",
-                          mb: 0.5,
-                          textTransform: "uppercase",
-                          letterSpacing: "0.05em"
-                        }}
-                      >
-                        Registration
-                      </Typography>
-                      <Typography sx={{ fontSize: 12, color: event.textColor || "#5f5552" }}>
-                        {fmtDate(event.registerStartDate)} → {fmtDate(event.registerEndDate)}
-                      </Typography>
-
-                      <Typography
-                        sx={{
-                          fontSize: 11,
-                          fontWeight: 700,
-                          color: event.textColor || "#f6765e",
-                          mt: 1,
-                          mb: 0.5,
-                          textTransform: "uppercase",
-                          letterSpacing: "0.05em"
-                        }}
-                      >
-                        Event
-                      </Typography>
-                      <Typography sx={{ fontSize: 12, color: event.textColor || "#5f5552" }}>
-                        {fmtDate(event.eventStartDate)} → {fmtDate(event.eventEndDate)}
-                      </Typography>
-
-                      {event.eventStartTime && (
-                        <Typography
-                          sx={{ fontSize: 12, color: event.textColor || "#5f5552", mt: 0.5 }}
-                        >
-                          🕐 {fmtTime(event.eventStartTime)}
-                          {event.eventEndTime && ` – ${fmtTime(event.eventEndTime)}`}
-                        </Typography>
-                      )}
-                    </Box>
-
-                    <Stack direction="row" spacing={1} sx={{ pt: 1, flexWrap: "wrap" }}>
-                      {canApprove && event.adminApprovalStatus === "pending" && (
-                        <>
-                          <Button
-                            variant="contained"
-                            size="small"
-                            onClick={() => handleApprove(event._id || event.id)}
-                            sx={{ backgroundColor: "#2e7d32", flex: 1 }}
-                          >
-                            Approve
-                          </Button>
-                          <Button
-                            variant="outlined"
-                            size="small"
-                            onClick={() => handleReject(event._id || event.id)}
-                            sx={{ flex: 1 }}
-                          >
-                            Reject
-                          </Button>
-                        </>
-                      )}
-                      {canApprove && event.deleteApprovalStatus === "pending" && (
-                        <>
-                          <Button
-                            variant="contained"
-                            size="small"
-                            onClick={() => handleApproveDelete(event._id || event.id)}
-                            sx={{ backgroundColor: "#c62828", flex: 1 }}
-                          >
-                            Approve delete
-                          </Button>
-                          <Button
-                            variant="outlined"
-                            size="small"
-                            onClick={() => handleRejectDelete(event._id || event.id)}
-                            sx={{ flex: 1 }}
-                          >
-                            Cancel delete
-                          </Button>
-                        </>
-                      )}
-                      <Button
-                        variant="outlined"
-                        startIcon={<PencilLine size={16} />}
-                        onClick={() => navigate(`/events/${event._id || event.id}/edit`)}
-                        fullWidth
-                      >
-                        Edit
-                      </Button>
-                      <Button
-                        variant="contained"
-                        startIcon={<Trash2 size={16} />}
-                        onClick={() => setPendingDeleteEvent(event)}
-                        fullWidth
-                        sx={{
-                          backgroundColor: "#f6765e",
-                          "&:hover": { backgroundColor: "#ea6b54" }
-                        }}
-                      >
-                        Delete
-                      </Button>
+                      <EventCardActionsMenu event={event} role={role} />
                     </Stack>
-                  </Stack>
-                </Paper>
-              ))}
+
+                    <Stack spacing={1.35} sx={{ px: 2.25, pb: 2.25, pt: 0, flex: 1 }}>
+                      <Typography
+                        sx={{
+                          fontSize: 19,
+                          fontWeight: 800,
+                          color: palette.text,
+                          lineHeight: 1.3
+                        }}
+                      >
+                        {event.header}
+                      </Typography>
+                      <Typography
+                        sx={{
+                          color: palette.muted,
+                          lineHeight: 1.7,
+                          minHeight: 48,
+                          fontSize: 14
+                        }}
+                      >
+                        {event.about || "No description provided."}
+                      </Typography>
+
+                      <Box>
+                        <Typography
+                          sx={{
+                            fontSize: 11,
+                            fontWeight: 700,
+                            color: palette.label,
+                            mb: 0.5,
+                            textTransform: "uppercase",
+                            letterSpacing: "0.05em"
+                          }}
+                        >
+                          Registration
+                        </Typography>
+                        <Typography sx={{ fontSize: 13, color: palette.text }}>
+                          {fmtDate(event.registerStartDate)} → {fmtDate(event.registerEndDate)}
+                        </Typography>
+
+                        <Typography
+                          sx={{
+                            fontSize: 11,
+                            fontWeight: 700,
+                            color: palette.label,
+                            mt: 1.25,
+                            mb: 0.5,
+                            textTransform: "uppercase",
+                            letterSpacing: "0.05em"
+                          }}
+                        >
+                          Event
+                        </Typography>
+                        <Typography sx={{ fontSize: 13, color: palette.text }}>
+                          {fmtDate(event.eventStartDate)} → {fmtDate(event.eventEndDate)}
+                        </Typography>
+
+                        {event.eventStartTime && (
+                          <Typography sx={{ fontSize: 13, color: palette.text, mt: 0.5 }}>
+                            {fmtTime(event.eventStartTime)}
+                            {event.eventEndTime && ` – ${fmtTime(event.eventEndTime)}`}
+                          </Typography>
+                        )}
+                      </Box>
+
+                      {(canApprove && event.adminApprovalStatus === "pending") ||
+                      (canApprove && event.deleteApprovalStatus === "pending") ? (
+                        <Stack direction="row" spacing={1} sx={{ pt: 0.5, display: "flex" }}>
+                          {canApprove && event.adminApprovalStatus === "pending" && (
+                            <>
+                              <Button
+                                variant="contained"
+                                size="small"
+                                onClick={() => handleApprove(event._id || event.id)}
+                                sx={{ backgroundColor: "#2e7d32", flex: 1, borderRadius: "14px" }}
+                              >
+                                Approve
+                              </Button>
+                              <Button
+                                variant="outlined"
+                                size="small"
+                                onClick={() => handleReject(event._id || event.id)}
+                                sx={{
+                                  flex: 1,
+                                  borderRadius: "14px",
+                                  borderColor: "rgba(255,255,255,0.35)",
+                                  color: palette.text
+                                }}
+                              >
+                                Reject
+                              </Button>
+                            </>
+                          )}
+                          {canApprove && event.deleteApprovalStatus === "pending" && (
+                            <>
+                              <Button
+                                variant="contained"
+                                size="small"
+                                onClick={() => handleApproveDelete(event._id || event.id)}
+                                sx={{ backgroundColor: "#c62828", flex: 1, borderRadius: "14px" }}
+                              >
+                                Approve delete
+                              </Button>
+                              <Button
+                                variant="outlined"
+                                size="small"
+                                onClick={() => handleRejectDelete(event._id || event.id)}
+                                sx={{
+                                  flex: 1,
+                                  borderRadius: "14px",
+                                  borderColor: "rgba(255,255,255,0.35)",
+                                  color: palette.text
+                                }}
+                              >
+                                Cancel delete
+                              </Button>
+                            </>
+                          )}
+                        </Stack>
+                      ) : null}
+
+                      <Box
+                        sx={{
+                          display: "flex",
+                          gap: 1,
+                          width: "100%",
+                          mt: "auto",
+                          pt: 1.5
+                        }}
+                      >
+                        <Button
+                          variant="outlined"
+                          startIcon={<PencilLine size={16} />}
+                          onClick={() => navigate(`/events/${event._id || event.id}/edit`)}
+                          sx={{
+                            flex: 1,
+                            minWidth: 0,
+                            borderRadius: "14px",
+                            textTransform: "none",
+                            fontWeight: 600,
+                            py: 1.1,
+                            borderColor: "rgba(246,118,94,0.55)",
+                            color: palette.accent,
+                            backgroundColor: "rgba(0,0,0,0.12)",
+                            "&:hover": {
+                              borderColor: palette.accent,
+                              backgroundColor: "rgba(246,118,94,0.12)"
+                            }
+                          }}
+                        >
+                          Edit
+                        </Button>
+                        <Button
+                          variant="contained"
+                          startIcon={<Trash2 size={16} />}
+                          onClick={() => setPendingDeleteEvent(event)}
+                          sx={{
+                            flex: 1,
+                            minWidth: 0,
+                            borderRadius: "14px",
+                            textTransform: "none",
+                            fontWeight: 700,
+                            py: 1.1,
+                            color: "#2f2829",
+                            backgroundColor: "#f4a598",
+                            boxShadow: "none",
+                            "&:hover": { backgroundColor: "#f08f82", boxShadow: "none" }
+                          }}
+                        >
+                          Delete
+                        </Button>
+                      </Box>
+                    </Stack>
+                  </Paper>
+                );
+              })}
             </Box>
           ) : (
             <Paper
