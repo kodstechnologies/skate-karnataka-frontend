@@ -7,6 +7,7 @@ import WorkspacePremiumIcon from "@mui/icons-material/WorkspacePremium";
 import BusinessIcon from "@mui/icons-material/Business";
 import AdminPanelSettingsIcon from "@mui/icons-material/AdminPanelSettings";
 import FamilyRestroomIcon from "@mui/icons-material/FamilyRestroom";
+import PersonOutlinedIcon from "@mui/icons-material/PersonOutlined";
 
 import {
   Layers,
@@ -114,6 +115,12 @@ export const navigationGroups = [
             to: "/reports/academy",
             label: "Academy",
             icon: BusinessIcon
+          },
+          {
+            slug: "guest-reports",
+            to: "/reports/guest",
+            label: "Guest",
+            icon: PersonOutlinedIcon
           }
         ]
       },

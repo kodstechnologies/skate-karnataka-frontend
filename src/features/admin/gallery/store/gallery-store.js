@@ -133,10 +133,26 @@ export const useGalleryStore = create((set, get) => ({
     set({ isLoading: true, error: null });
     try {
       const response = await galleryApi.delete(id);
+      const result = response?.data?.data ?? response?.data ?? response;
       set({ isLoading: false });
-      toast.success(response?.message || "Gallery item deleted successfully");
+      toast.success(
+        result?.message ||
+          (result?.pendingDelete
+            ? "Delete request sent for admin approval"
+            : "Gallery item deleted successfully")
+      );
       const { pagination, currentType } = get();
-      await get().fetchItems(currentType, pagination.page, pagination.limit);
+      if (result?.pendingDelete) {
+        set((state) => ({
+          items: state.items.map((item) =>
+            String(item._id) === String(id)
+              ? { ...item, deleteApprovalStatus: "pending" }
+              : item
+          ),
+        }));
+      } else {
+        await get().fetchItems(currentType, pagination.page, pagination.limit);
+      }
       return response;
     } catch (error) {
       const errorMessage = error?.response?.data?.message || "Failed to delete gallery item";

@@ -3,6 +3,7 @@ import { schoolApi } from "@/api/school-api";
 import { officialApi } from "@/api/official-api";
 import { parentApi } from "@/api/parent-api";
 import { academyApi } from "@/api/academy-api";
+import { guestApi } from "@/api/guest-api";
 import toast from "react-hot-toast";
 
 const withRequestMeta = (request) => ({
@@ -19,6 +20,8 @@ export const useRequestsStore = create((set) => ({
   selectedParent: null,
   academyRequests: [],
   selectedAcademy: null,
+  guestRequests: [],
+  selectedGuest: null,
   loading: false,
   fetchSchoolRequests: async (params) => {
     try {
@@ -126,6 +129,34 @@ export const useRequestsStore = create((set) => ({
       set({ selectedAcademy: details });
     } catch (error) {
       const errorMessage = error?.response?.data?.message || "Failed to fetch academy details";
+      console.error(errorMessage, error);
+      toast.error(errorMessage);
+    } finally {
+      set({ loading: false });
+    }
+  },
+  fetchGuestRequests: async (params) => {
+    try {
+      set({ loading: true });
+      const response = await guestApi.getAll(params);
+      const guests = response?.data?.data?.map(withRequestMeta) || [];
+      set({ guestRequests: guests });
+    } catch (error) {
+      const errorMessage = error?.response?.data?.message || "Failed to fetch guest reports";
+      console.error(errorMessage, error);
+      toast.error(errorMessage);
+    } finally {
+      set({ loading: false });
+    }
+  },
+  fetchGuestDetails: async (id) => {
+    try {
+      set({ loading: true, selectedGuest: null });
+      const response = await guestApi.getDetails(id);
+      const details = response?.data ? withRequestMeta(response.data) : null;
+      set({ selectedGuest: details });
+    } catch (error) {
+      const errorMessage = error?.response?.data?.message || "Failed to fetch guest details";
       console.error(errorMessage, error);
       toast.error(errorMessage);
     } finally {

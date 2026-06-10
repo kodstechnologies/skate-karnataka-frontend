@@ -399,9 +399,7 @@ export const OrgMediaPage = ({ orgType, portalMode = false }) => {
                         startIcon={<Trash2 size={14} />}
                         onClick={() => setPendingDelete(item)}
                       >
-                        {status === MEDIA_APPROVAL.APPROVED && orgType !== "state" && !canApprove
-                          ? "Request delete"
-                          : "Delete"}
+                        {canApprove && !portalMode ? "Delete" : "Request delete"}
                       </Button>
                     )}
                   </Stack>

@@ -20,15 +20,26 @@ import {
   Phone,
   Mail,
   MapPin,
-  FileText,
   Calendar,
   ShieldCheck,
   CheckCircle2,
   Bell,
-  Activity
+  Activity,
+  Users
 } from "lucide-react";
 import { useRequestsStore } from "@/features/admin/requests/store/requests-store";
+import {
+  formatSkaterDate,
+  getSkaterProfileImage
+} from "@/features/admin/skaters/utils/skater-display";
 import officialHero from "@/assets/Official_header.jpg";
+
+const formatGender = (gender) => {
+  if (!gender) return "-";
+  const value = String(gender).trim();
+  if (!value) return "-";
+  return value.charAt(0).toUpperCase() + value.slice(1).toLowerCase();
+};
 
 const InfoCard = ({ icon: Icon, label, value, color = "primary.main" }) => (
   <Paper
@@ -157,6 +168,7 @@ export const ParentRequestDetailsPage = () => {
   }
 
   const parent = selectedParent;
+  const children = Array.isArray(parent.skaters) ? parent.skaters : [];
 
   return (
     <Box sx={{ pb: 8 }}>
@@ -238,6 +250,12 @@ export const ParentRequestDetailsPage = () => {
                 <ShieldCheck size={18} />
                 <Typography sx={{ fontWeight: 600 }}>{parent.krsaId || "No KRSA ID"}</Typography>
               </Stack>
+              <Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
+                <Users size={18} />
+                <Typography sx={{ fontWeight: 600 }}>
+                  {children.length} {children.length === 1 ? "Child" : "Children"}
+                </Typography>
+              </Stack>
             </Stack>
           </Box>
         </Box>
@@ -314,77 +332,213 @@ export const ParentRequestDetailsPage = () => {
               </Grid>
             </Box>
 
-            {/* Documents Section */}
+            {/* Children / Skaters */}
             <Box>
-              <SectionTitle title="Documents & Certificates" icon={FileText} />
-              <Grid container spacing={2}>
-                {parent.documents && parent.documents.length > 0 ? (
-                  parent.documents.map((doc, index) => (
-                    <Grid size={{ xs: 12, sm: 6 }} key={index}>
-                      <Paper
-                        elevation={0}
-                        sx={{
-                          p: 2,
-                          borderRadius: "16px",
-                          border: "1px dashed #f2dfd7",
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "space-between",
-                          background: "#fffefd"
-                        }}
-                      >
-                        <Stack direction="row" spacing={2} sx={{ alignItems: "center" }}>
-                          <Box
-                            sx={{
-                              p: 1,
-                              bgcolor: "#fff8f5",
-                              color: "#f6765e",
-                              borderRadius: "10px"
-                            }}
-                          >
-                            <FileText size={20} />
-                          </Box>
-                          <Typography sx={{ fontWeight: 600, fontSize: 14 }}>
-                            {doc.name || `Document ${index + 1}`}
-                          </Typography>
-                        </Stack>
-                        <Button
-                          size="small"
-                          component="a"
-                          href={doc.url}
-                          target="_blank"
+              <SectionTitle title="Children" icon={Users} />
+              {children.length > 0 ? (
+                <Grid container spacing={2}>
+                  {children.map((child) => {
+                    const profileImage = getSkaterProfileImage(child);
+                    const childId = child._id || child.id;
+
+                    return (
+                      <Grid size={{ xs: 12, md: 6 }} key={childId}>
+                        <Paper
+                          elevation={0}
                           sx={{
-                            fontWeight: 700,
-                            minWidth: "unset",
-                            p: 1,
-                            borderRadius: "10px",
-                            bgcolor: "#f6765e15",
-                            color: "#f6765e",
-                            "&:hover": { bgcolor: "#f6765e25" }
+                            p: 2.5,
+                            borderRadius: "20px",
+                            border: "1px solid #f2dfd7",
+                            background: "linear-gradient(180deg, #fffdfc 0%, #fff8f5 100%)",
+                            height: "100%"
                           }}
                         >
-                          View
-                        </Button>
-                      </Paper>
-                    </Grid>
-                  ))
-                ) : (
-                  <Grid size={12}>
-                    <Paper
-                      elevation={0}
-                      sx={{
-                        p: 4,
-                        borderRadius: "20px",
-                        border: "1px dashed #f2dfd7",
-                        textAlign: "center",
-                        bgcolor: "#fafafa"
-                      }}
-                    >
-                      <Typography sx={{ color: "#a28f89" }}>No documents uploaded yet.</Typography>
-                    </Paper>
-                  </Grid>
-                )}
-              </Grid>
+                          <Stack spacing={2}>
+                            <Stack direction="row" spacing={2} sx={{ alignItems: "center" }}>
+                              <Box
+                                sx={{
+                                  width: 56,
+                                  height: 56,
+                                  borderRadius: "16px",
+                                  overflow: "hidden",
+                                  border: "1px solid #f4e5de",
+                                  bgcolor: "#fffaf8",
+                                  display: "grid",
+                                  placeItems: "center",
+                                  flexShrink: 0
+                                }}
+                              >
+                                {profileImage ? (
+                                  <Box
+                                    component="img"
+                                    src={profileImage}
+                                    alt={child.fullName}
+                                    sx={{ width: "100%", height: "100%", objectFit: "cover" }}
+                                  />
+                                ) : (
+                                  <User size={24} color="#f6765e" />
+                                )}
+                              </Box>
+                              <Box sx={{ flex: 1, minWidth: 0 }}>
+                                <Typography
+                                  sx={{ fontSize: 12, fontWeight: 700, color: "#f6765e" }}
+                                >
+                                  {child.krsaId || "No KRSA ID"}
+                                </Typography>
+                                <Typography
+                                  sx={{
+                                    mt: 0.25,
+                                    fontWeight: 800,
+                                    color: "#2f2829",
+                                    overflow: "hidden",
+                                    textOverflow: "ellipsis",
+                                    whiteSpace: "nowrap"
+                                  }}
+                                >
+                                  {child.fullName || "Unnamed skater"}
+                                </Typography>
+                                <Stack direction="row" spacing={1} sx={{ mt: 1, flexWrap: "wrap" }}>
+                                  <Chip
+                                    size="small"
+                                    label={child.verify ? "Verified" : "Unverified"}
+                                    sx={{
+                                      bgcolor: child.verify ? "#e8f5e9" : "#fff3e0",
+                                      color: child.verify ? "#2e7d32" : "#ef6c00",
+                                      fontWeight: 700,
+                                      height: 24
+                                    }}
+                                  />
+                                </Stack>
+                              </Box>
+                            </Stack>
+
+                            <Grid container spacing={1.5}>
+                              <Grid size={{ xs: 6 }}>
+                                <Typography
+                                  sx={{
+                                    fontSize: 11,
+                                    color: "#a28f89",
+                                    textTransform: "uppercase",
+                                    fontWeight: 700
+                                  }}
+                                >
+                                  RSFI ID
+                                </Typography>
+                                <Typography sx={{ fontWeight: 600, color: "#2f2829", fontSize: 14 }}>
+                                  {child.rsfiId || "-"}
+                                </Typography>
+                              </Grid>
+                              <Grid size={{ xs: 6 }}>
+                                <Typography
+                                  sx={{
+                                    fontSize: 11,
+                                    color: "#a28f89",
+                                    textTransform: "uppercase",
+                                    fontWeight: 700
+                                  }}
+                                >
+                                  Date of Birth
+                                </Typography>
+                                <Typography sx={{ fontWeight: 600, color: "#2f2829", fontSize: 14 }}>
+                                  {formatSkaterDate(child.dob)}
+                                </Typography>
+                              </Grid>
+                              <Grid size={{ xs: 6 }}>
+                                <Typography
+                                  sx={{
+                                    fontSize: 11,
+                                    color: "#a28f89",
+                                    textTransform: "uppercase",
+                                    fontWeight: 700
+                                  }}
+                                >
+                                  Phone
+                                </Typography>
+                                <Typography sx={{ fontWeight: 600, color: "#2f2829", fontSize: 14 }}>
+                                  {child.phone || "-"}
+                                </Typography>
+                              </Grid>
+                              <Grid size={{ xs: 6 }}>
+                                <Typography
+                                  sx={{
+                                    fontSize: 11,
+                                    color: "#a28f89",
+                                    textTransform: "uppercase",
+                                    fontWeight: 700
+                                  }}
+                                >
+                                  Gender
+                                </Typography>
+                                <Typography sx={{ fontWeight: 600, color: "#2f2829", fontSize: 14 }}>
+                                  {formatGender(child.gender)}
+                                </Typography>
+                              </Grid>
+                              <Grid size={12}>
+                                <Typography
+                                  sx={{
+                                    fontSize: 11,
+                                    color: "#a28f89",
+                                    textTransform: "uppercase",
+                                    fontWeight: 700
+                                  }}
+                                >
+                                  Email
+                                </Typography>
+                                <Typography
+                                  sx={{
+                                    fontWeight: 600,
+                                    color: "#2f2829",
+                                    fontSize: 14,
+                                    overflow: "hidden",
+                                    textOverflow: "ellipsis",
+                                    whiteSpace: "nowrap"
+                                  }}
+                                >
+                                  {child.email || "-"}
+                                </Typography>
+                              </Grid>
+                            </Grid>
+
+                            {childId && (
+                              <Button
+                                variant="outlined"
+                                size="small"
+                                component={RouterLink}
+                                to={`/skaters/${childId}`}
+                                sx={{
+                                  alignSelf: "flex-start",
+                                  fontWeight: 700,
+                                  borderRadius: "12px",
+                                  borderColor: "#f2dfd7",
+                                  color: "#f6765e",
+                                  "&:hover": { borderColor: "#f6765e", bgcolor: "#fff8f5" }
+                                }}
+                              >
+                                View skater profile
+                              </Button>
+                            )}
+                          </Stack>
+                        </Paper>
+                      </Grid>
+                    );
+                  })}
+                </Grid>
+              ) : (
+                <Paper
+                  elevation={0}
+                  sx={{
+                    p: 4,
+                    borderRadius: "20px",
+                    border: "1px dashed #f2dfd7",
+                    textAlign: "center",
+                    bgcolor: "#fafafa"
+                  }}
+                >
+                  <Typography sx={{ color: "#a28f89" }}>
+                    No children linked to this parent yet.
+                  </Typography>
+                </Paper>
+              )}
             </Box>
           </Stack>
         </Grid>

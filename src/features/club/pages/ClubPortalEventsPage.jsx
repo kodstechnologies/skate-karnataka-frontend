@@ -95,20 +95,9 @@ const getEventCardPalette = (event) => {
   };
 };
 
-const getEventTypeLabel = (eventType) => {
-  switch (String(eventType || "").toLowerCase()) {
-    case "state":
-      return "State";
-    case "district":
-      return "District";
-    case "club":
-      return "Club";
-    default:
-      return eventType || "Event";
-  }
-};
+const isClubOwnedEvent = (event) => String(event?.eventType || "").trim().toLowerCase() === "club";
 
-const canManageClubEvent = (event) => String(event?.eventType || "").toLowerCase() === "club";
+const filterClubOwnedEvents = (rows = []) => rows.filter(isClubOwnedEvent);
 
 /** Club list API returns `{ data: Event[], pagination }` at top level (not nested under `data.data`). */
 const parseClubEventsListResponse = (response) => {
@@ -146,8 +135,9 @@ export const ClubPortalEventsPage = () => {
     try {
       const response = await eventsApi.getClubEvents({ page: currentPage, limit });
       const { events: list, total } = parseClubEventsListResponse(response);
-      setEvents(list);
-      setTotalCount(total);
+      const clubOnly = filterClubOwnedEvents(list);
+      setEvents(clubOnly);
+      setTotalCount(clubOnly.length !== list.length ? clubOnly.length : total);
     } catch (err) {
       const message = err?.response?.data?.message || "Failed to fetch club events";
       toast.error(message);
@@ -226,8 +216,7 @@ export const ClubPortalEventsPage = () => {
             {displayName}
           </Typography>
           <Typography sx={{ color: "rgba(255,255,255,0.86)", maxWidth: 640, lineHeight: 1.7 }}>
-            State, your district, and club events visible to your club members (from your login
-            token).
+            Only club events created by your organization are shown here.
           </Typography>
           <Stack sx={{ alignItems: "center", flexWrap: "wrap" }} direction="row" spacing={1.5}>
             <Chip
@@ -321,7 +310,6 @@ export const ClubPortalEventsPage = () => {
               }}
             >
               {events.map((event) => {
-                const manageable = canManageClubEvent(event);
                 const palette = getEventCardPalette(event);
 
                 return (
@@ -365,18 +353,8 @@ export const ClubPortalEventsPage = () => {
                             fontWeight: 700
                           }}
                         />
-                        <Chip
-                          size="small"
-                          label={getEventTypeLabel(event.eventType)}
-                          sx={{
-                            bgcolor: "rgba(255,255,255,0.16)",
-                            color: palette.text,
-                            fontWeight: 700
-                          }}
-                        />
-                        {manageable && (
-                          <Chip size="small" {...getEventApprovalChipProps(event)} />
-                        )}
+                        <Chip size="small" label="Club" sx={{ bgcolor: "rgba(255,255,255,0.16)", color: palette.text, fontWeight: 700 }} />
+                        <Chip size="small" {...getEventApprovalChipProps(event)} />
                       </Stack>
 
                       <EventCardActionsMenu
@@ -451,22 +429,21 @@ export const ClubPortalEventsPage = () => {
                         ) : null}
                       </Box>
 
-                      {manageable ? (
-                        <Box
-                          sx={{
-                            display: "flex",
-                            gap: 1,
-                            width: "100%",
-                            mt: "auto",
-                            pt: 1.5
-                          }}
-                        >
-                          <Button
-                            variant="outlined"
-                            startIcon={<PencilLine size={16} />}
-                            onClick={() =>
-                              navigate(`/club/events/${event._id || event.id}/edit`)
-                            }
+                      <Box
+                        sx={{
+                          display: "flex",
+                          gap: 1,
+                          width: "100%",
+                          mt: "auto",
+                          pt: 1.5
+                        }}
+                      >
+                        <Button
+                          variant="outlined"
+                          startIcon={<PencilLine size={16} />}
+                          onClick={() =>
+                            navigate(`/club/events/${event._id || event.id}/edit`)
+                          }
                             sx={{
                               flex: 1,
                               minWidth: 0,
@@ -505,7 +482,6 @@ export const ClubPortalEventsPage = () => {
                             Delete
                           </Button>
                         </Box>
-                      ) : null}
                     </Stack>
                   </Paper>
                 );

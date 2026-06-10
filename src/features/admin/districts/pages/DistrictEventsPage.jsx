@@ -21,6 +21,7 @@ import { useAuthStore } from "@/features/auth/store/auth-store";
 import { useDistrictsStore } from "@/features/admin/districts/store/districts-store";
 import { canApproveEvents, getEventApprovalChipProps } from "@/utils/eventApprovalStatus";
 import EventCardActionsMenu from "@/features/admin/events/components/EventCardActionsMenu";
+import { resolveEventDisplayStatus } from "@/features/admin/events/utils/resolveEventDisplayStatus";
 import toast from "react-hot-toast";
 
 const fmtDate = (v) => {
@@ -412,7 +413,10 @@ export const DistrictEventsPage = () => {
                 gap: 2
               }}
             >
-              {events.map((event) => (
+              {events.map((event) => {
+                const displayStatus = resolveEventDisplayStatus(event);
+
+                return (
                 <Paper
                   key={event._id || event.id}
                   elevation={0}
@@ -444,9 +448,9 @@ export const DistrictEventsPage = () => {
                     <Stack direction="row" spacing={1} sx={{ flexWrap: "wrap" }}>
                       <Chip
                         size="small"
-                        label={getStatusLabel(event.status)}
+                        label={getStatusLabel(displayStatus)}
                         sx={{
-                          backgroundColor: getStatusColor(event.status),
+                          backgroundColor: getStatusColor(displayStatus),
                           color: "white",
                           fontWeight: 700
                         }}
@@ -604,7 +608,8 @@ export const DistrictEventsPage = () => {
                     </Stack>
                   </Stack>
                 </Paper>
-              ))}
+                );
+              })}
             </Box>
           ) : (
             <Paper

@@ -31,6 +31,12 @@ const formatValue = (value) => {
   if (value === undefined || value === null || value === "") {
     return "-";
   }
+  if (Array.isArray(value)) {
+    const items = value.filter(
+      (item) => item !== undefined && item !== null && String(item).trim() !== ""
+    );
+    return items.length ? items.join(", ") : "-";
+  }
   return String(value);
 };
 

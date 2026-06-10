@@ -128,6 +128,48 @@ export const parentRequestConfig = {
   ]
 };
 
+export const guestRequestConfig = {
+  label: "Guest",
+  basePath: "/reports/guest",
+  heroImage: officialHero,
+  useRequests: () => useRequestsStore((state) => state.guestRequests),
+  onSearch: (value) => {
+    const params = {};
+    const search = value.trim();
+
+    if (!search) {
+      return useRequestsStore.getState().fetchGuestRequests({});
+    }
+
+    if (search.includes("@")) {
+      params.email = search;
+    } else if (/^\+?\d+$/.test(search)) {
+      params.phone = search;
+    } else if (["male", "female"].includes(search.toLowerCase())) {
+      params.gender = search.toLowerCase();
+    } else {
+      params.fullName = search;
+    }
+
+    useRequestsStore.getState().fetchGuestRequests(params);
+  },
+  listFields: [
+    { key: "fullName", label: "Full Name" },
+    { key: "email", label: "Email" },
+    { key: "phone", label: "Phone" },
+    { key: "gender", label: "Gender" },
+    { key: "interestedIn", label: "Interested In" }
+  ],
+  detailFields: [
+    { key: "fullName", label: "Full Name" },
+    { key: "email", label: "Email" },
+    { key: "phone", label: "Phone" },
+    { key: "gender", label: "Gender" },
+    { key: "address", label: "Address" },
+    { key: "role", label: "Role" }
+  ]
+};
+
 export const academyRequestConfig = {
   label: "Academy",
   basePath: "/reports/academy",

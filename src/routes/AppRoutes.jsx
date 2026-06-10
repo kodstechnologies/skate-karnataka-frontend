@@ -29,6 +29,8 @@ import { OfficialRequestDetailsPage } from "@/features/admin/requests/pages/Offi
 import { OfficialRequestsPage } from "@/features/admin/requests/pages/OfficialRequestsPage";
 import { ParentRequestDetailsPage } from "@/features/admin/requests/pages/ParentRequestDetailsPage";
 import { ParentRequestsPage } from "@/features/admin/requests/pages/ParentRequestsPage";
+import { GuestRequestDetailsPage } from "@/features/admin/requests/pages/GuestRequestDetailsPage";
+import { GuestRequestsPage } from "@/features/admin/requests/pages/GuestRequestsPage";
 import { SchoolRequestDetailsPage } from "@/features/admin/requests/pages/SchoolRequestDetailsPage";
 import { SchoolRequestsPage } from "@/features/admin/requests/pages/SchoolRequestsPage";
 import { SkaterDetailsPage } from "@/features/admin/skaters/pages/SkaterDetailsPage";
@@ -156,6 +158,7 @@ export const AppRoutes = () => {
         <Route path="/district/events" element={<DistrictPortalEventsPage />} />
         <Route path="/district/events/:eventId/attendees" element={<EventAttendeesPage />} />
         <Route path="/district/events/create" element={<DistrictEventFormPage />} />
+        <Route path="/district/events/:eventId/edit" element={<DistrictEventFormPage />} />
         <Route path="/district/members/create" element={<DistrictMemberFormPage />} />
         <Route
           path="/district/members/bulk"
@@ -248,6 +251,8 @@ export const AppRoutes = () => {
         <Route path="/reports/parent/:requestId" element={<ParentRequestDetailsPage />} />
         <Route path="/reports/academy" element={<AcademyRequestsPage />} />
         <Route path="/reports/academy/:requestId" element={<AcademyRequestDetailsPage />} />
+        <Route path="/reports/guest" element={<GuestRequestsPage />} />
+        <Route path="/reports/guest/:requestId" element={<GuestRequestDetailsPage />} />
         <Route path="/certification" element={<CertificateManagement />} />
         <Route path="/certification/create" element={<CertificateTemplateFormPage />} />
         <Route path="/certification/:templateId/edit" element={<CertificateTemplateFormPage />} />

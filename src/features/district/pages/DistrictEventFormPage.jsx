@@ -1,10 +1,11 @@
 import { useCallback, useEffect, useState } from "react";
 import { Box, Breadcrumbs, Button, Paper, Stack, Typography } from "@mui/material";
 import { ChevronRight, Save } from "lucide-react";
-import { Link as RouterLink, useNavigate } from "react-router-dom";
+import { Link as RouterLink, useNavigate, useParams } from "react-router-dom";
 import districtHero from "@/assets/District_header.jpg";
 import { EventForm } from "@/features/admin/events/components/EventForm";
 import {
+  createEventFormValues,
   initialEventFormValues,
   normalizeSkatingEventCategoryIds,
   validateEventForm
@@ -18,7 +19,11 @@ import toast from "react-hot-toast";
 
 export const DistrictEventFormPage = () => {
   const navigate = useNavigate();
+  const { eventId } = useParams();
   const user = useAuthStore((s) => s.user);
+  const isEditing = Boolean(eventId);
+  const [existingEvent, setExistingEvent] = useState(null);
+  const [loading, setLoading] = useState(isEditing);
   const [saving, setSaving] = useState(false);
   const [eventCategories, setEventCategories] = useState([]);
   const [categoryFormat, setCategoryFormat] = useState("standard");
@@ -28,6 +33,33 @@ export const DistrictEventFormPage = () => {
   const [errors, setErrors] = useState({});
 
   const districtName = user?.districtName || user?.name || "District";
+
+  useEffect(() => {
+    if (!isEditing || !eventId) return;
+
+    let cancelled = false;
+    setLoading(true);
+
+    eventsApi
+      .getDistrictEventById(eventId)
+      .then((response) => {
+        if (cancelled) return;
+        const ev = response?.data ?? response;
+        setExistingEvent(ev);
+        setFormData(createEventFormValues(ev));
+      })
+      .catch((err) => {
+        if (cancelled) return;
+        toast.error(err?.response?.data?.message || "Failed to load event");
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [isEditing, eventId]);
 
   const loadCategories = useCallback(async (format) => {
     try {
@@ -79,11 +111,18 @@ export const DistrictEventFormPage = () => {
 
     setSaving(true);
     try {
-      const response = await eventsApi.createDistrictEvent({ ...formData });
-      toast.success(
-        response?.message ||
-          "District event submitted — pending super admin approval"
-      );
+      if (isEditing && existingEvent) {
+        const response = await eventsApi.updateDistrictEvent(
+          existingEvent._id || existingEvent.id,
+          { ...formData }
+        );
+        toast.success(response?.message || response?.data?.message || "Event updated successfully");
+      } else {
+        const response = await eventsApi.createDistrictEvent({ ...formData });
+        toast.success(
+          response?.message || "District event submitted — pending super admin approval"
+        );
+      }
       navigate("/district/events");
     } catch (err) {
       toast.error(err?.response?.data?.message || err?.message || "Failed to create event");
@@ -132,15 +171,18 @@ export const DistrictEventFormPage = () => {
             >
               District Events
             </Typography>
-            <Typography sx={{ color: "white", fontWeight: 700 }}>Create</Typography>
+            <Typography sx={{ color: "white", fontWeight: 700 }}>
+              {isEditing ? "Edit" : "Create"}
+            </Typography>
           </Breadcrumbs>
 
           <Typography variant="h3" sx={{ fontWeight: 800, letterSpacing: "-0.06em", mb: 1 }}>
-            Create District Event
+            {isEditing ? "Edit District Event" : "Create District Event"}
           </Typography>
           <Typography sx={{ color: "rgba(255,255,255,0.86)", maxWidth: 640, lineHeight: 1.7 }}>
-            Publish a new event for {districtName}. It will appear to skaters after super admin
-            approval.
+            {isEditing
+              ? `Update event details for ${districtName}.`
+              : `Publish a new event for ${districtName}. It will appear to skaters after super admin approval.`}
           </Typography>
         </Stack>
       </Paper>
@@ -154,16 +196,22 @@ export const DistrictEventFormPage = () => {
           boxShadow: "0 26px 80px rgba(48, 30, 24, 0.07)"
         }}
       >
-        <EventForm
-          formData={formData}
-          errors={errors}
-          onFieldChange={handleFieldChange}
-          disabled={saving}
-          eventCategories={eventCategories}
-          showCategorySourcePicker
-          onCategoryFormatChange={handleCategoryFormatChange}
-          categorySourceUsesStandardFallback={categorySourceUsesStandardFallback}
-        />
+        {loading ? (
+          <Typography sx={{ py: 4, textAlign: "center", color: "#8d7f7b" }}>
+            Loading event...
+          </Typography>
+        ) : (
+          <EventForm
+            formData={formData}
+            errors={errors}
+            onFieldChange={handleFieldChange}
+            disabled={saving}
+            eventCategories={eventCategories}
+            showCategorySourcePicker
+            onCategoryFormatChange={handleCategoryFormatChange}
+            categorySourceUsesStandardFallback={categorySourceUsesStandardFallback}
+          />
+        )}
 
         <Stack
           direction={{ xs: "column", sm: "row" }}
@@ -177,10 +225,10 @@ export const DistrictEventFormPage = () => {
             variant="contained"
             startIcon={!saving && <Save size={16} />}
             onClick={handleSubmit}
-            disabled={saving}
+            disabled={saving || loading}
             sx={{ bgcolor: "#53c7c5", "&:hover": { bgcolor: "#45b3b1" } }}
           >
-            {saving ? "Processing..." : "Create district event"}
+            {saving ? "Processing..." : isEditing ? "Save changes" : "Create district event"}
           </Button>
         </Stack>
       </Paper>
