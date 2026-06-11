@@ -8,7 +8,11 @@ const mapToFrontend = (apiData) => ({
   img: apiData.img || "",
   about: apiData.about || "",
   officeAddress: apiData.officeAddress || "",
-  members: apiData.memberCount ?? (Array.isArray(apiData.members) ? apiData.members.length : 0)
+  members: apiData.memberCount ?? (Array.isArray(apiData.members) ? apiData.members.length : 0),
+  pendingEventApprovals: apiData.pendingEventApprovals ?? 0,
+  pendingEventDeleteApprovals: apiData.pendingEventDeleteApprovals ?? 0,
+  pendingMediaApprovals: apiData.pendingMediaApprovals ?? 0,
+  pendingMediaDeleteApprovals: apiData.pendingMediaDeleteApprovals ?? 0
 });
 
 const mapToBackend = (payload) => {

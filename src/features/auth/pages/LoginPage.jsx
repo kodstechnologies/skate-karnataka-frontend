@@ -252,7 +252,8 @@ export const LoginPage = () => {
   const handleVerifyOtp = async (e) => {
     e.preventDefault();
     try {
-      const result = await verifyLoginOtp(userId, otpValue, fcmToken);
+      const tokenForLogin = fcmToken || localStorage.getItem("fcm_token");
+      const result = await verifyLoginOtp(userId, otpValue, tokenForLogin);
       navigate(getHomePathForRole(result?.role || useAuthStore.getState().role));
     } catch (error) {
       console.error("OTP verification failed:", error);

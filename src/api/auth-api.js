@@ -10,6 +10,9 @@ export const authApi = {
   logout: async (refreshTokens, firebaseTokens) => {
     return api.post("/auth/logout", { refreshTokens, firebaseTokens });
   },
+  updateFCMToken: async (firebaseToken) => {
+    return api.post("/auth/v1/fcm-token", { firebaseToken });
+  },
   getProfile: async (role) => {
     const normalizedRole = String(role || "").toLowerCase();
     if (normalizedRole === "state") {
@@ -29,21 +32,21 @@ export const authApi = {
 
     if (normalizedRole === "district") {
       return api.patch(`/admin/v1/district-member/${memberId}`, data, {
-        headers: multipartHeaders,
+        headers: multipartHeaders
       });
     }
     if (normalizedRole === "club") {
       return api.patch(`/admin/v1/club-member/${memberId}`, data, {
-        headers: multipartHeaders,
+        headers: multipartHeaders
       });
     }
     if (normalizedRole === "state") {
       return api.patch("/state/v1/edit-profile", data, {
-        headers: multipartHeaders,
+        headers: multipartHeaders
       });
     }
     return api.patch("/admin/v1/edit-profile", data, {
-      headers: multipartHeaders,
+      headers: multipartHeaders
     });
-  },
+  }
 };

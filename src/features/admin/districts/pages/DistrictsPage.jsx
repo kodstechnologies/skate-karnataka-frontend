@@ -36,6 +36,7 @@ import {
 } from "lucide-react";
 import { Link as RouterLink, useNavigate } from "react-router-dom";
 import districtHero from "@/assets/District_header.jpg";
+import { ApprovalGlowIconButton } from "@/components/ui/ApprovalGlowIconButton";
 import { ConfirmDeleteModal } from "@/components/ui/ConfirmDeleteModal";
 import { useDistrictsStore } from "@/features/admin/districts/store/districts-store";
 
@@ -431,7 +432,8 @@ export const DistrictsPage = () => {
 
                     {/* Members */}
                     <TableCell>
-                      <Stack sx={{ alignItems: "center" }}
+                      <Stack
+                        sx={{ alignItems: "center" }}
                         direction="row"
                         spacing={0.75}
                         onClick={() => navigate(`/districts/${district.id}/members`)}
@@ -465,30 +467,35 @@ export const DistrictsPage = () => {
                     {/* Actions */}
                     <TableCell>
                       <Stack direction="row" spacing={1}>
-                        <IconButton
+                        <ApprovalGlowIconButton
+                          dot={district.pendingEventDeleteApprovals > 0}
+                          glow={district.pendingEventApprovals > 0}
                           onClick={() => navigate(`/districts/${district.id}/events`)}
                           sx={{
                             border: "1px solid #efe2dc",
                             color: "#f6765e",
                             backgroundColor: "#fff8f4"
                           }}
-                          aria-label={`View events for ${district.districtName}`}
+                          ariaLabel={`View events for ${district.districtName}`}
                           title="Events"
                         >
                           <CalendarDays size={16} />
-                        </IconButton>
-                        <IconButton
+                        </ApprovalGlowIconButton>
+                        <ApprovalGlowIconButton
+                          dot={district.pendingMediaDeleteApprovals > 0}
+                          glow={district.pendingMediaApprovals > 0}
+                          glowVariant="teal"
                           onClick={() => navigate(`/districts/${district.id}/media`)}
                           sx={{
                             border: "1px solid #e0f2f1",
                             color: "#00897b",
                             backgroundColor: "#e0f7f5"
                           }}
-                          aria-label={`Media for ${district.districtName}`}
+                          ariaLabel={`Media for ${district.districtName}`}
                           title="Media"
                         >
                           <Image size={16} />
-                        </IconButton>
+                        </ApprovalGlowIconButton>
                         <IconButton
                           onClick={() => navigate(`/districts/${district.id}/edit`)}
                           sx={{ border: "1px solid #efe2dc", backgroundColor: "#fff8f4" }}

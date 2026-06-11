@@ -1,5 +1,6 @@
 import { Bell, RefreshCw } from "lucide-react";
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   Box,
   Button,
@@ -61,6 +62,7 @@ const RoleBadge = ({ role, prefix = "From" }) => {
 };
 
 export const NotificationBell = () => {
+  const navigate = useNavigate();
   const [anchorEl, setAnchorEl] = useState(null);
   const open = Boolean(anchorEl);
   const {
@@ -83,6 +85,13 @@ export const NotificationBell = () => {
 
   const handleClose = () => {
     setAnchorEl(null);
+  };
+
+  const handleNotificationClick = (item) => {
+    const link = String(item?.link || "").trim();
+    if (!link) return;
+    handleClose();
+    navigate(link);
   };
 
   const totalCount = pagination?.total ?? notifications.length;
@@ -167,13 +176,18 @@ export const NotificationBell = () => {
               <Box key={item._id || index}>
                 {index > 0 && <Divider sx={{ borderColor: "#f5ebe6" }} />}
                 <Box
+                  onClick={() => handleNotificationClick(item)}
                   sx={{
                     px: 2.5,
                     py: 2,
-                    bgcolor: item.isRead ? "transparent" : "#fffaf7"
+                    bgcolor: item.isRead ? "transparent" : "#fffaf7",
+                    cursor: item.link ? "pointer" : "default",
+                    transition: "background-color 0.2s",
+                    "&:hover": item.link ? { bgcolor: "#fff3ee" } : undefined
                   }}
                 >
-                  <Stack sx={{ alignItems: "flex-start", justifyContent: "space-between" }}
+                  <Stack
+                    sx={{ alignItems: "flex-start", justifyContent: "space-between" }}
                     direction="row"
                     gap={1}
                   >

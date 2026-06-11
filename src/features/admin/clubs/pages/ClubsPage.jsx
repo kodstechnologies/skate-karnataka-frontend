@@ -37,6 +37,7 @@ import {
 } from "lucide-react";
 import { Link as RouterLink, useNavigate } from "react-router-dom";
 import clubHero from "@/assets/Club_header.jpg";
+import { ApprovalGlowIconButton } from "@/components/ui/ApprovalGlowIconButton";
 import { ConfirmDeleteModal } from "@/components/ui/ConfirmDeleteModal";
 import { useClubsStore } from "@/features/admin/clubs/store/clubs-store";
 
@@ -445,7 +446,8 @@ export const ClubsPage = () => {
                       />
                     </TableCell>
                     <TableCell>
-                      <Stack sx={{ alignItems: "center" }}
+                      <Stack
+                        sx={{ alignItems: "center" }}
                         direction="row"
                         spacing={0.75}
                         onClick={() => navigate(`/clubs/${club.id}/members`)}
@@ -520,30 +522,38 @@ export const ClubsPage = () => {
                     </TableCell>
                     <TableCell>
                       <Stack direction="row" spacing={0.75}>
-                        <IconButton
+                        <ApprovalGlowIconButton
+                          dot={
+                            club.pendingEventApprovals > 0 || club.pendingEventDeleteApprovals > 0
+                          }
+                          dotColor="#f6765e"
                           onClick={() => navigate(`/clubs/${club.id}/events`)}
                           sx={{
                             border: "1px solid #efe2dc",
                             color: "#f6765e",
                             backgroundColor: "#fff8f4"
                           }}
-                          aria-label={`View events for ${club.name}`}
+                          ariaLabel={`View events for ${club.name}`}
                           title="Events"
                         >
                           <CalendarDays size={16} />
-                        </IconButton>
-                        <IconButton
+                        </ApprovalGlowIconButton>
+                        <ApprovalGlowIconButton
+                          dot={
+                            club.pendingMediaApprovals > 0 || club.pendingMediaDeleteApprovals > 0
+                          }
+                          dotColor="#00897b"
                           onClick={() => navigate(`/clubs/${club.id}/media`)}
                           sx={{
                             border: "1px solid #e0f2f1",
                             color: "#00897b",
                             backgroundColor: "#e0f7f5"
                           }}
-                          aria-label={`Media for ${club.name}`}
+                          ariaLabel={`Media for ${club.name}`}
                           title="Media"
                         >
                           <Image size={16} />
-                        </IconButton>
+                        </ApprovalGlowIconButton>
                         <IconButton
                           onClick={() =>
                             navigate(`/clubs/${club.id}/members/create`, {

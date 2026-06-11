@@ -54,6 +54,16 @@ export const useFirebaseMessaging = () => {
           notifPermission: Notification.permission
         });
 
+        const syncTokenToBackend = async (token) => {
+          if (!token || cancelled) return;
+          try {
+            await authApi.updateFCMToken(token);
+            console.log("[FCM] Token synced to backend.");
+          } catch (apiErr) {
+            console.error("[FCM] Failed to sync token to backend:", apiErr);
+          }
+        };
+
         if (isTokenValid) {
           const perm = Notification.permission;
 
@@ -75,6 +85,7 @@ export const useFirebaseMessaging = () => {
           }
 
           console.log("[FCM] ✅ Valid cached token, permission granted. Proceeding.", perm);
+          await syncTokenToBackend(cachedToken);
         } else {
           // Token missing or generated with old strategy — regenerate.
           if (cachedToken && cachedVersion !== FCM_TOKEN_VERSION) {
@@ -92,13 +103,7 @@ export const useFirebaseMessaging = () => {
           if (token) {
             localStorage.setItem("fcm_token", token);
             localStorage.setItem("fcm_token_version", FCM_TOKEN_VERSION);
-
-            try {
-              await authApi.updateFCMToken(token);
-              console.log("[FCM] New token synced to backend.");
-            } catch (apiErr) {
-              console.error("[FCM] Failed to sync token to backend:", apiErr);
-            }
+            await syncTokenToBackend(token);
           } else {
             console.warn("[FCM] No token returned — permission may be denied or Firebase failed.");
             return;

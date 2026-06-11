@@ -58,6 +58,15 @@ export const useAuthStore = create()(
 
             await get().getProfile();
 
+            const storedFcmToken = localStorage.getItem("fcm_token");
+            if (storedFcmToken) {
+              try {
+                await authApi.updateFCMToken(storedFcmToken);
+              } catch (syncErr) {
+                console.warn("[FCM] Post-login token sync failed:", syncErr?.message);
+              }
+            }
+
             toast.success(response.message || "Logged in successfully");
             set({ isLoading: false });
             return response.data.result;
@@ -126,10 +135,7 @@ export const useAuthStore = create()(
           const role = get().role;
           const user = get().user || {};
           const memberId =
-            user?.currentMember?.userId ||
-            user?.currentMember?._id ||
-            user?.memberId ||
-            user?._id;
+            user?.currentMember?.userId || user?.currentMember?._id || user?.memberId || user?._id;
 
           const response = await authApi.updateProfile(data, role, memberId);
           if (response.success) {

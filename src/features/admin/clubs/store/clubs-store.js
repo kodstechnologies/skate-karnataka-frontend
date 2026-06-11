@@ -13,7 +13,11 @@ const mapToFrontend = (apiData) => ({
   officeAddress: apiData.officeAddress || "",
   about: apiData.about || "",
   members: apiData.members || [],
-  memberCount: apiData.memberCount ?? (apiData.members?.length || 0)
+  memberCount: apiData.memberCount ?? (apiData.members?.length || 0),
+  pendingEventApprovals: apiData.pendingEventApprovals ?? 0,
+  pendingEventDeleteApprovals: apiData.pendingEventDeleteApprovals ?? 0,
+  pendingMediaApprovals: apiData.pendingMediaApprovals ?? 0,
+  pendingMediaDeleteApprovals: apiData.pendingMediaDeleteApprovals ?? 0
 });
 
 const mapToBackend = (payload) => {

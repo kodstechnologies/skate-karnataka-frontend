@@ -10,7 +10,15 @@ import {
   TextField,
   Typography
 } from "@mui/material";
-import { CalendarDays, CheckCircle2, ChevronRight, PencilLine, Search, Trash2, XCircle } from "lucide-react";
+import {
+  CalendarDays,
+  CheckCircle2,
+  ChevronRight,
+  PencilLine,
+  Search,
+  Trash2,
+  XCircle
+} from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link as RouterLink, useNavigate, useParams } from "react-router-dom";
 import clubHero from "@/assets/Club_header.jpg";
@@ -95,35 +103,93 @@ const parseHexColor = (color) => {
   };
 };
 
+const rgbToHex = ({ r, g, b }) =>
+  `#${[r, g, b].map((v) => v.toString(16).padStart(2, "0")).join("")}`;
+
+const blendHexColors = (colorA, colorB, weightB = 0.5) => {
+  const a = parseHexColor(colorA);
+  const b = parseHexColor(colorB);
+  if (!a || !b) return null;
+  return {
+    r: Math.round(a.r * (1 - weightB) + b.r * weightB),
+    g: Math.round(a.g * (1 - weightB) + b.g * weightB),
+    b: Math.round(a.b * (1 - weightB) + b.b * weightB)
+  };
+};
+
+const getRelativeLuminance = (rgb) => {
+  const transform = (value) => {
+    const channel = value / 255;
+    return channel <= 0.03928 ? channel / 12.92 : ((channel + 0.055) / 1.055) ** 2.4;
+  };
+  return 0.2126 * transform(rgb.r) + 0.7152 * transform(rgb.g) + 0.0722 * transform(rgb.b);
+};
+
+const contrastRatio = (lum1, lum2) => {
+  const lighter = Math.max(lum1, lum2);
+  const darker = Math.min(lum1, lum2);
+  return (lighter + 0.05) / (darker + 0.05);
+};
+
 const isLightHexColor = (color) => {
   const rgb = parseHexColor(color);
   if (!rgb) return false;
-  const luminance = (0.299 * rgb.r + 0.587 * rgb.g + 0.114 * rgb.b) / 255;
-  return luminance > 0.62;
+  return getRelativeLuminance(rgb) > 0.62;
+};
+
+const getReadableTextOnBackground = (bgHex, preferredHex) => {
+  const bgRgb = parseHexColor(bgHex);
+  if (!bgRgb) return "#ffffff";
+
+  const bgLum = getRelativeLuminance(bgRgb);
+  const preferredRgb = parseHexColor(preferredHex);
+
+  if (preferredRgb && contrastRatio(bgLum, getRelativeLuminance(preferredRgb)) >= 4.5) {
+    return preferredHex;
+  }
+
+  const whiteLum = getRelativeLuminance({ r: 255, g: 255, b: 255 });
+  const darkLum = getRelativeLuminance({ r: 47, g: 40, b: 41 });
+  return contrastRatio(bgLum, whiteLum) >= contrastRatio(bgLum, darkLum) ? "#ffffff" : "#2f2829";
 };
 
 const getEventCardPalette = (event) => {
   const colorOne = event?.colorOne || "#141012";
   const colorTwo = event?.colorTwo || "#2a2224";
+  const blended = blendHexColors(colorOne, colorTwo, 0.55);
+  const bgSample = blended ? rgbToHex(blended) : colorOne;
   const isLight = isLightHexColor(colorOne) || isLightHexColor(colorTwo);
+  const text = getReadableTextOnBackground(bgSample, event?.textColor);
+  const textRgb = parseHexColor(text);
+  const muted = textRgb
+    ? `rgba(${textRgb.r}, ${textRgb.g}, ${textRgb.b}, 0.78)`
+    : isLight
+      ? "rgba(47,40,41,0.72)"
+      : "rgba(255,255,255,0.78)";
 
   return {
     background: `linear-gradient(135deg, ${colorOne} 0%, ${colorTwo} 100%)`,
-    text: event?.textColor || (isLight ? "#2f2829" : "#ffffff"),
-    muted: isLight ? "#5c4f4b" : "rgba(255,255,255,0.78)",
-    label: "#f6765e",
+    text,
+    muted,
+    label: isLight ? "#f6765e" : "#f6a192",
+    accent: text,
     isLight
   };
 };
 
-const reviewButtonSx = {
+const actionButtonSx = {
   flex: 1,
   minWidth: 0,
-  borderRadius: "12px",
+  borderRadius: "14px",
   textTransform: "none",
-  fontWeight: 700,
-  py: 1,
+  fontWeight: 600,
+  py: 1.1,
   boxShadow: "none"
+};
+
+const reviewButtonSx = {
+  ...actionButtonSx,
+  fontWeight: 700
 };
 
 const EventReviewPanel = ({ title, message, tone = "danger", onColorful = false, children }) => {
@@ -139,11 +205,7 @@ const EventReviewPanel = ({ title, message, tone = "danger", onColorful = false,
           : isDanger
             ? "1px solid #f5c4c0"
             : "1px solid #b8e6cc",
-        backgroundColor: onColorful
-          ? "rgba(255,255,255,0.9)"
-          : isDanger
-            ? "#fff5f4"
-            : "#f0fdf4",
+        backgroundColor: onColorful ? "rgba(255,255,255,0.9)" : isDanger ? "#fff5f4" : "#f0fdf4",
         backdropFilter: onColorful ? "blur(8px)" : "none"
       }}
     >
@@ -179,10 +241,7 @@ export const ClubEventsPage = () => {
   const canApprove = canApproveEvents(role);
 
   const clubs = useClubsStore((s) => s.clubs);
-  const clubFromStore = useMemo(
-    () => clubs.find((c) => c.id === clubId) ?? null,
-    [clubs, clubId]
-  );
+  const clubFromStore = useMemo(() => clubs.find((c) => c.id === clubId) ?? null, [clubs, clubId]);
 
   const [events, setEvents] = useState([]);
   const [clubName, setClubName] = useState(clubFromStore?.name || "");
@@ -262,9 +321,7 @@ export const ClubEventsPage = () => {
           )
         );
       } else {
-        setEvents((prev) =>
-          prev.filter((item) => item._id !== eventId && item.id !== eventId)
-        );
+        setEvents((prev) => prev.filter((item) => item._id !== eventId && item.id !== eventId));
         setTotalCount((prev) => Math.max(0, prev - 1));
       }
       toast.success(payload?.message || response?.message || "Event deleted successfully");
@@ -497,7 +554,8 @@ export const ClubEventsPage = () => {
                   md: "repeat(2, minmax(0, 1fr))",
                   xl: "repeat(3, minmax(0, 1fr))"
                 },
-                gap: 2
+                gap: 2,
+                alignItems: "stretch"
               }}
             >
               {events.map((event) => {
@@ -512,7 +570,7 @@ export const ClubEventsPage = () => {
                     elevation={0}
                     sx={{
                       borderRadius: "24px",
-                      border: "1px solid rgba(255,255,255,0.1)",
+                      border: "1px solid rgba(255,255,255,0.08)",
                       overflow: "hidden",
                       background: palette.background,
                       boxShadow: "0 20px 50px rgba(0, 0, 0, 0.18)",
@@ -526,103 +584,118 @@ export const ClubEventsPage = () => {
                       }
                     }}
                   >
-                    <Stack spacing={1.35} sx={{ p: 2.25, flex: 1 }}>
-                      <Stack
-                        direction="row"
-                        spacing={1}
-                        sx={{
-                          alignItems: "center",
-                          justifyContent: "space-between",
-                          gap: 1
-                        }}
-                      >
-                        <Stack direction="row" spacing={0.75} useFlexGap sx={{ flexWrap: "wrap" }}>
-                          <Chip
-                            size="small"
-                            label={getStatusLabel(event.status)}
-                            sx={{
-                              backgroundColor: getStatusColor(event.status),
-                              color: "white",
-                              fontWeight: 700
-                            }}
-                          />
-                          <Chip size="small" {...getEventApprovalChipProps(event)} />
-                        </Stack>
-                        <EventCardActionsMenu
-                          event={event}
-                          role={role}
-                          returnTo={`/clubs/${clubId}/events`}
-                          returnLabel="Club events"
+                    <Stack
+                      direction="row"
+                      spacing={1}
+                      sx={{
+                        px: 2,
+                        py: 1.5,
+                        alignItems: "center",
+                        justifyContent: "space-between",
+                        gap: 1
+                      }}
+                    >
+                      <Stack direction="row" spacing={0.75} useFlexGap sx={{ flexWrap: "wrap" }}>
+                        <Chip
+                          size="small"
+                          label={getStatusLabel(event.status)}
+                          sx={{
+                            backgroundColor: getStatusColor(event.status),
+                            color: "white",
+                            fontWeight: 700
+                          }}
                         />
+                        <Chip size="small" {...getEventApprovalChipProps(event)} />
+                      </Stack>
+                      <EventCardActionsMenu
+                        event={event}
+                        role={role}
+                        returnTo={`/clubs/${clubId}/events`}
+                        returnLabel="Club events"
+                      />
+                    </Stack>
+
+                    <Box
+                      sx={{
+                        px: 2.25,
+                        pb: 2.25,
+                        pt: 0,
+                        flex: 1,
+                        display: "flex",
+                        flexDirection: "column",
+                        minHeight: 0
+                      }}
+                    >
+                      <Stack spacing={1.35} sx={{ flex: 1 }}>
+                        <Typography
+                          sx={{
+                            fontSize: 19,
+                            fontWeight: 800,
+                            color: palette.text,
+                            lineHeight: 1.3,
+                            textShadow: palette.isLight ? "none" : "0 1px 10px rgba(0,0,0,0.28)"
+                          }}
+                        >
+                          {event.header}
+                        </Typography>
+                        <Typography
+                          sx={{
+                            color: palette.muted,
+                            lineHeight: 1.7,
+                            minHeight: 48,
+                            fontSize: 14
+                          }}
+                        >
+                          {event.about || "No description provided."}
+                        </Typography>
+
+                        <Box>
+                          <Typography
+                            sx={{
+                              fontSize: 11,
+                              fontWeight: 700,
+                              color: palette.label,
+                              mb: 0.5,
+                              textTransform: "uppercase",
+                              letterSpacing: "0.05em"
+                            }}
+                          >
+                            Registration
+                          </Typography>
+                          <Typography sx={{ fontSize: 13, color: palette.text }}>
+                            {fmtDate(event.registerStartDate)} → {fmtDate(event.registerEndDate)}
+                          </Typography>
+
+                          <Typography
+                            sx={{
+                              fontSize: 11,
+                              fontWeight: 700,
+                              color: palette.label,
+                              mt: 1.25,
+                              mb: 0.5,
+                              textTransform: "uppercase",
+                              letterSpacing: "0.05em"
+                            }}
+                          >
+                            Event
+                          </Typography>
+                          <Typography sx={{ fontSize: 13, color: palette.text }}>
+                            {fmtDate(event.eventStartDate)} → {fmtDate(event.eventEndDate)}
+                          </Typography>
+                          {event.eventStartTime && (
+                            <Typography sx={{ fontSize: 13, color: palette.text, mt: 0.5 }}>
+                              {fmtTime(event.eventStartTime)}
+                              {event.eventEndTime && ` – ${fmtTime(event.eventEndTime)}`}
+                            </Typography>
+                          )}
+                        </Box>
                       </Stack>
 
-                      <Typography
-                        sx={{
-                          fontSize: 19,
-                          fontWeight: 800,
-                          color: palette.text,
-                          lineHeight: 1.3
-                        }}
-                      >
-                        {event.header}
-                      </Typography>
-                      <Typography
-                        sx={{
-                          color: palette.muted,
-                          lineHeight: 1.7,
-                          minHeight: 44,
-                          fontSize: 14
-                        }}
-                      >
-                        {event.about || "No description provided."}
-                      </Typography>
-
-                      <Box>
-                        <Typography
-                          sx={{
-                            fontSize: 11,
-                            fontWeight: 700,
-                            color: palette.label,
-                            mb: 0.5,
-                            textTransform: "uppercase",
-                            letterSpacing: "0.05em"
-                          }}
-                        >
-                          Registration
-                        </Typography>
-                        <Typography sx={{ fontSize: 13, color: palette.text }}>
-                          {fmtDate(event.registerStartDate)} → {fmtDate(event.registerEndDate)}
-                        </Typography>
-
-                        <Typography
-                          sx={{
-                            fontSize: 11,
-                            fontWeight: 700,
-                            color: palette.label,
-                            mt: 1.1,
-                            mb: 0.5,
-                            textTransform: "uppercase",
-                            letterSpacing: "0.05em"
-                          }}
-                        >
-                          Event
-                        </Typography>
-                        <Typography sx={{ fontSize: 13, color: palette.text }}>
-                          {fmtDate(event.eventStartDate)} → {fmtDate(event.eventEndDate)}
-                        </Typography>
-                        {event.eventStartTime && (
-                          <Typography sx={{ fontSize: 13, color: palette.text, mt: 0.5 }}>
-                            {fmtTime(event.eventStartTime)}
-                            {event.eventEndTime && ` – ${fmtTime(event.eventEndTime)}`}
-                          </Typography>
-                        )}
-                      </Box>
-
-                      <Stack spacing={1.25} sx={{ mt: "auto", pt: 1.5 }}>
+                      <Stack spacing={1.25} sx={{ mt: "auto", pt: 1.5, flexShrink: 0 }}>
                         {canApprove && isApprovalPending && (
                           <EventReviewPanel
                             tone="success"
-                            onColorful={!palette.isLight}
+                            onColorful
                             title="Approval required"
                             message="This club event is waiting for your review."
                           >
@@ -662,7 +735,7 @@ export const ClubEventsPage = () => {
                         {canApprove && isDeletePending && (
                           <EventReviewPanel
                             tone="danger"
-                            onColorful={!palette.isLight}
+                            onColorful
                             title="Delete request"
                             message="The club asked to remove this event. Approve to delete, or cancel to keep it live."
                           >
@@ -710,19 +783,19 @@ export const ClubEventsPage = () => {
                               })
                             }
                             sx={{
-                              ...reviewButtonSx,
+                              ...actionButtonSx,
                               borderColor: palette.isLight
                                 ? "rgba(246,118,94,0.55)"
-                                : "rgba(255,255,255,0.45)",
-                              color: palette.isLight ? "#5c4f4b" : palette.text,
+                                : "rgba(255,255,255,0.35)",
+                              color: palette.accent,
                               backgroundColor: palette.isLight
                                 ? "rgba(255,255,255,0.55)"
-                                : "rgba(0,0,0,0.14)",
+                                : "rgba(0,0,0,0.12)",
                               "&:hover": {
-                                borderColor: palette.isLight ? "#f6765e" : "rgba(255,255,255,0.7)",
+                                borderColor: palette.isLight ? "#f6765e" : palette.accent,
                                 backgroundColor: palette.isLight
                                   ? "rgba(246,118,94,0.08)"
-                                  : "rgba(0,0,0,0.22)"
+                                  : "rgba(246,118,94,0.12)"
                               }
                             }}
                           >
@@ -734,11 +807,11 @@ export const ClubEventsPage = () => {
                               startIcon={<Trash2 size={16} />}
                               onClick={() => setPendingDeleteEvent(event)}
                               sx={{
-                                ...reviewButtonSx,
-                                backgroundColor: palette.isLight ? "#f6765e" : "#f4a598",
-                                color: palette.isLight ? "white" : "#2f2829",
+                                ...actionButtonSx,
+                                color: "#2f2829",
+                                backgroundColor: "#f4a598",
                                 "&:hover": {
-                                  backgroundColor: palette.isLight ? "#ea6b54" : "#f08f82",
+                                  backgroundColor: "#f08f82",
                                   boxShadow: "none"
                                 }
                               }}
@@ -748,7 +821,7 @@ export const ClubEventsPage = () => {
                           )}
                         </Box>
                       </Stack>
-                    </Stack>
+                    </Box>
                   </Paper>
                 );
               })}
@@ -780,7 +853,9 @@ export const ClubEventsPage = () => {
                 >
                   <CalendarDays size={28} strokeWidth={1.75} />
                 </Box>
-                <Typography sx={{ fontWeight: 700, fontSize: { xs: 17, md: 18 }, color: "#5f5552" }}>
+                <Typography
+                  sx={{ fontWeight: 700, fontSize: { xs: 17, md: 18 }, color: "#5f5552" }}
+                >
                   No events found for this club.
                 </Typography>
                 <Typography sx={{ color: "#978a86", lineHeight: 1.7, fontSize: 14 }}>
