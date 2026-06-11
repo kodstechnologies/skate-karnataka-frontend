@@ -68,27 +68,69 @@ export const initialEventFormValues = {
   textColor: "#000000"
 };
 
-/** Format a date string/object to YYYY-MM-DD for HTML date inputs */
+/** Format a date string/object to YYYY-MM-DD for HTML date inputs (calendar date, no TZ shift). */
 const formatDateForInput = (v) => {
-  if (!v) return "";
-  const d = new Date(v);
-  if (isNaN(d.getTime())) return v;
-  const year = d.getFullYear();
-  const month = String(d.getMonth() + 1).padStart(2, "0");
-  const day = String(d.getDate()).padStart(2, "0");
+  if (v == null || v === "") return "";
+
+  if (typeof v === "string") {
+    const trimmed = v.trim();
+    if (/^\d{4}-\d{2}-\d{2}$/.test(trimmed)) return trimmed;
+    const isoPrefix = trimmed.match(/^(\d{4}-\d{2}-\d{2})/);
+    if (isoPrefix) return isoPrefix[1];
+  }
+
+  const d = v instanceof Date ? v : new Date(v);
+  if (Number.isNaN(d.getTime())) return "";
+
+  const year = d.getUTCFullYear();
+  const month = String(d.getUTCMonth() + 1).padStart(2, "0");
+  const day = String(d.getUTCDate()).padStart(2, "0");
   return `${year}-${month}-${day}`;
+};
+
+/** Parse HH:mm, H:mm, or h:mm AM/PM to minutes since midnight (matches backend validation). */
+const parseClockToMinutes = (rawValue) => {
+  const raw = String(rawValue ?? "").trim();
+  const match = raw.match(/^(\d{1,2}):(\d{2})(?::\d{2})?(?:\s*(AM|PM))?$/i);
+  if (!match) return null;
+
+  let hours = Number(match[1]);
+  const minutes = Number(match[2]);
+  if (Number.isNaN(hours) || Number.isNaN(minutes) || minutes < 0 || minutes > 59) {
+    return null;
+  }
+
+  const meridian = (match[3] || "").toUpperCase();
+  if (meridian) {
+    if (hours < 1 || hours > 12) return null;
+    if (meridian === "PM" && hours < 12) hours += 12;
+    if (meridian === "AM" && hours === 12) hours = 0;
+  } else if (hours < 0 || hours > 23) {
+    return null;
+  }
+
+  return hours * 60 + minutes;
+};
+
+const minutesToHHmm = (totalMinutes) => {
+  const hours = Math.floor(totalMinutes / 60);
+  const minutes = totalMinutes % 60;
+  return `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}`;
 };
 
 /** Format a time string/object to HH:mm for HTML time inputs */
 const formatTimeForInput = (v) => {
-  if (!v) return "";
-  // If it's already HH:mm or HH:mm:ss, just ensure it's HH:mm
-  if (typeof v === "string" && v.includes(":") && !v.includes("T")) {
-    return v.split(":").slice(0, 2).join(":");
+  if (v == null || v === "") return "";
+
+  const fromClock = parseClockToMinutes(v);
+  if (fromClock != null) return minutesToHHmm(fromClock);
+
+  const d = v instanceof Date ? v : new Date(v);
+  if (!Number.isNaN(d.getTime())) {
+    return minutesToHHmm(d.getHours() * 60 + d.getMinutes());
   }
-  const d = new Date(v);
-  if (isNaN(d.getTime())) return v;
-  return `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
+
+  return "";
 };
 
 /** Compare calendar dates only (YYYY-MM-DD), ignoring time/timezone drift. */
@@ -146,13 +188,16 @@ export const validateEventForm = (formData) => {
     errors.eventStartDate = "Event start date must be on or after registration end date";
   }
 
+  const startMinutes = parseClockToMinutes(formData.eventStartTime);
+  const endMinutes = parseClockToMinutes(formData.eventEndTime);
+
   if (
     eventStartMs != null &&
     eventEndMs != null &&
     eventStartMs === eventEndMs &&
-    formData.eventStartTime &&
-    formData.eventEndTime &&
-    formData.eventStartTime > formData.eventEndTime
+    startMinutes != null &&
+    endMinutes != null &&
+    startMinutes > endMinutes
   ) {
     errors.eventEndTime = "End time must be on or after start time for same-day events";
   }

@@ -44,12 +44,14 @@ export const EventFormPage = () => {
 
   const stateEventPreview = location.state?.event ?? null;
 
-  const [existingEvent, setExistingEvent] = useState(null);
+  const [existingEvent, setExistingEvent] = useState(() => stateEventPreview);
   const [loading, setLoading] = useState(isEditing);
   const [saving, setSaving] = useState(false);
   const [eventCategories, setEventCategories] = useState([]);
 
-  const [formData, setFormData] = useState(initialEventFormValues);
+  const [formData, setFormData] = useState(() =>
+    stateEventPreview ? createEventFormValues(stateEventPreview) : initialEventFormValues
+  );
   const [errors, setErrors] = useState({});
 
   const backPath = useMemo(() => {
@@ -66,11 +68,6 @@ export const EventFormPage = () => {
   useEffect(() => {
     if (!isEditing || !eventId) return;
 
-    if (stateEventPreview) {
-      setExistingEvent(stateEventPreview);
-      setFormData(createEventFormValues(stateEventPreview));
-    }
-
     let cancelled = false;
     setLoading(true);
 
@@ -80,17 +77,33 @@ export const EventFormPage = () => {
         if (cancelled) return;
         const ev = unwrapEventPayload(response);
         if (!ev) {
-          if (!stateEventPreview) {
+          if (!location.state?.event) {
             toast.error("Could not load event details");
           }
           return;
         }
         setExistingEvent(ev);
-        setFormData(createEventFormValues(ev));
+        setFormData((current) => {
+          const next = createEventFormValues(ev);
+          const preserveIfEmpty = [
+            "registerStartDate",
+            "registerEndDate",
+            "eventStartDate",
+            "eventEndDate",
+            "eventStartTime",
+            "eventEndTime"
+          ];
+          for (const field of preserveIfEmpty) {
+            if (!next[field] && current[field]) {
+              next[field] = current[field];
+            }
+          }
+          return next;
+        });
       })
       .catch((err) => {
         if (cancelled) return;
-        if (!stateEventPreview) {
+        if (!location.state?.event) {
           toast.error(err?.response?.data?.message || err?.message || "Failed to load event");
         }
       })
@@ -101,7 +114,7 @@ export const EventFormPage = () => {
     return () => {
       cancelled = true;
     };
-  }, [isEditing, eventId, stateEventPreview]);
+  }, [isEditing, eventId]);
 
   useEffect(() => {
     eventsApi

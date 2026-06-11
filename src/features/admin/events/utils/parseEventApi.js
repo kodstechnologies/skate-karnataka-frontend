@@ -3,12 +3,12 @@ export const unwrapEventPayload = (response) => {
   const body = response?.data ?? response;
   if (!body || typeof body !== "object") return null;
 
-  if (body._id || body.header) {
+  if (body._id || body.id || body.header) {
     return body;
   }
 
   const inner = body.data;
-  if (inner && typeof inner === "object" && (inner._id || inner.header)) {
+  if (inner && typeof inner === "object" && (inner._id || inner.id || inner.header)) {
     return inner;
   }
 
