@@ -12,7 +12,27 @@ const mapToFrontend = (apiData) => ({
   pendingEventApprovals: apiData.pendingEventApprovals ?? 0,
   pendingEventDeleteApprovals: apiData.pendingEventDeleteApprovals ?? 0,
   pendingMediaApprovals: apiData.pendingMediaApprovals ?? 0,
-  pendingMediaDeleteApprovals: apiData.pendingMediaDeleteApprovals ?? 0
+  pendingMediaDeleteApprovals: apiData.pendingMediaDeleteApprovals ?? 0,
+  event: Boolean(
+    apiData.event ??
+      apiData.hasPendingEventApproval ??
+      (apiData.pendingEventApprovals > 0 || apiData.pendingEventDeleteApprovals > 0)
+  ),
+  media: Boolean(
+    apiData.media ??
+      apiData.hasPendingMediaApproval ??
+      (apiData.pendingMediaApprovals > 0 || apiData.pendingMediaDeleteApprovals > 0)
+  ),
+  hasPendingEventApproval: Boolean(
+    apiData.event ??
+      apiData.hasPendingEventApproval ??
+      (apiData.pendingEventApprovals > 0 || apiData.pendingEventDeleteApprovals > 0)
+  ),
+  hasPendingMediaApproval: Boolean(
+    apiData.media ??
+      apiData.hasPendingMediaApproval ??
+      (apiData.pendingMediaApprovals > 0 || apiData.pendingMediaDeleteApprovals > 0)
+  )
 });
 
 const mapToBackend = (payload) => {

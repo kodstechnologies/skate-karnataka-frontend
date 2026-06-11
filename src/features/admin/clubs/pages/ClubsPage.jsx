@@ -523,10 +523,7 @@ export const ClubsPage = () => {
                     <TableCell>
                       <Stack direction="row" spacing={0.75}>
                         <ApprovalGlowIconButton
-                          dot={
-                            club.pendingEventApprovals > 0 || club.pendingEventDeleteApprovals > 0
-                          }
-                          dotColor="#f6765e"
+                          glow={club.event}
                           onClick={() => navigate(`/clubs/${club.id}/events`)}
                           sx={{
                             border: "1px solid #efe2dc",
@@ -539,10 +536,8 @@ export const ClubsPage = () => {
                           <CalendarDays size={16} />
                         </ApprovalGlowIconButton>
                         <ApprovalGlowIconButton
-                          dot={
-                            club.pendingMediaApprovals > 0 || club.pendingMediaDeleteApprovals > 0
-                          }
-                          dotColor="#00897b"
+                          glow={club.media}
+                          glowVariant="teal"
                           onClick={() => navigate(`/clubs/${club.id}/media`)}
                           sx={{
                             border: "1px solid #e0f2f1",

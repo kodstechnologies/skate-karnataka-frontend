@@ -468,8 +468,7 @@ export const DistrictsPage = () => {
                     <TableCell>
                       <Stack direction="row" spacing={1}>
                         <ApprovalGlowIconButton
-                          dot={district.pendingEventDeleteApprovals > 0}
-                          glow={district.pendingEventApprovals > 0}
+                          glow={district.event}
                           onClick={() => navigate(`/districts/${district.id}/events`)}
                           sx={{
                             border: "1px solid #efe2dc",
@@ -482,8 +481,7 @@ export const DistrictsPage = () => {
                           <CalendarDays size={16} />
                         </ApprovalGlowIconButton>
                         <ApprovalGlowIconButton
-                          dot={district.pendingMediaDeleteApprovals > 0}
-                          glow={district.pendingMediaApprovals > 0}
+                          glow={district.media}
                           glowVariant="teal"
                           onClick={() => navigate(`/districts/${district.id}/media`)}
                           sx={{
