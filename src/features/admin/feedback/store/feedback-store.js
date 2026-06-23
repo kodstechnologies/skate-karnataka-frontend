@@ -2,12 +2,13 @@ import { create } from "zustand";
 import { feedbackApi } from "@/api/feedback-api";
 import toast from "react-hot-toast";
 
-const mapToFrontend = (d) => ({
-  id: d._id,
+export const mapFeedbackToFrontend = (d) => ({
+  id: d._id || d.id,
   fullName: d.fullName || "",
   email: d.email || "",
   phone: d.phone || "",
   message: d.message || "",
+  file: d.file || "",
   createdAt: d.createdAt || null,
   updatedAt: d.updatedAt || null
 });
@@ -27,7 +28,7 @@ export const useFeedbackStore = create((set) => ({
       const payloadData = response.data?.data || [];
       const paginationData = response.data?.pagination || null;
 
-      const mapped = Array.isArray(payloadData) ? payloadData.map(mapToFrontend) : [];
+      const mapped = Array.isArray(payloadData) ? payloadData.map(mapFeedbackToFrontend) : [];
       set({ feedbacks: mapped, pagination: paginationData, isLoading: false });
     } catch (error) {
       set({ error: error.message, isLoading: false });
