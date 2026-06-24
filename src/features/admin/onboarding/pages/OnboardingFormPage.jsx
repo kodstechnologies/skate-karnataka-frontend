@@ -18,6 +18,7 @@ import {
 import UploadFileOutlinedIcon from "@mui/icons-material/UploadFileOutlined";
 import { ChevronRight, Save, X } from "lucide-react";
 import { Link as RouterLink, useNavigate } from "react-router-dom";
+import onboardingHero from "@/assets/Onboarding_header.png";
 import { useOnboardingStore } from "../store/onboarding-store";
 
 const inputSx = {
@@ -242,11 +243,17 @@ export const OnboardingFormPage = () => {
           p: { xs: 2.5, sm: 3, md: 4 },
           minHeight: { xs: "auto", md: 230 },
           borderRadius: { xs: "22px", sm: "28px" },
+          overflow: "hidden",
+          position: "relative",
           border: "1px solid rgba(255,255,255,0.8)",
-          background: "linear-gradient(135deg, #2f2829 0%, #f6765e 100%)",
-          color: "white"
+          background: `linear-gradient(120deg, rgba(18, 14, 16, 0.82) 0%, rgba(38, 25, 26, 0.62) 34%, rgba(246, 118, 94, 0.35) 100%), url("${onboardingHero}")`,
+          backgroundPosition: "center",
+          backgroundSize: "cover",
+          color: "white",
+          boxShadow: "0 28px 90px rgba(28, 18, 16, 0.22)"
         }}
       >
+        <Stack sx={{ position: "relative", zIndex: 1 }}>
         <Breadcrumbs
           separator={<ChevronRight size={14} />}
           sx={{
@@ -301,6 +308,7 @@ export const OnboardingFormPage = () => {
         >
           Upload or paste URLs for the three onboarding screen images.
         </Typography>
+        </Stack>
       </Paper>
 
       {/* Form */}

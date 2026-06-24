@@ -28,7 +28,8 @@ import {
   Folder,
   Tags,
   FunctionSquare,
-  Smartphone
+  Smartphone,
+  CreditCard
 } from "lucide-react";
 
 export const navigationGroups = [
@@ -54,6 +55,7 @@ export const navigationGroups = [
       { slug: "clubs", to: "/clubs", label: "Clubs", icon: Groups2Icon },
       { slug: "discipline", to: "/discipline", label: "Discipline", icon: Layers },
       { slug: "about", to: "/about", label: "About Us", icon: Info },
+      { slug: "about-us-card", to: "/about-us-card", label: "About usCard", icon: CreditCard },
       { slug: "onboarding", to: "/onboarding", label: "Onboarding", icon: Smartphone },
       { slug: "circulars", to: "/circulars", label: "Circulars & Guidelines", icon: FileText },
       { slug: "skaters", to: "/skaters", label: "Skaters", icon: RollerSkatingIcon },

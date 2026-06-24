@@ -11,6 +11,7 @@ import {
 import { Plus, Trash2 } from "lucide-react";
 import {
   FORMULA_QUALIFICATION_TYPES,
+  FORMULA_QUALIFY_PER_GROUP_VALUES,
   FORMULA_ROUND_NAMES,
   emptyRound,
   isFirstFormulaRound
@@ -251,14 +252,28 @@ export default function FormulaRoundsEditor({
                     "Skaters per group (optional)",
                     fieldErrors[`rounds.${index}.groupSize`]
                   )}
-                  {numberField(
-                    "Qualify per group",
-                    round.qualifyPerGroup,
-                    (e) => updateRound(index, { qualifyPerGroup: e.target.value }),
-                    disabled,
-                    '1 = position "1" only; 2 = positions "1" and "2"',
-                    fieldErrors[`rounds.${index}.qualifyPerGroup`]
-                  )}
+                  <TextField
+                    select
+                    size="small"
+                    label="Qualify per group"
+                    value={round.qualifyPerGroup}
+                    onChange={(e) =>
+                      updateRound(index, { qualifyPerGroup: e.target.value })
+                    }
+                    disabled={disabled}
+                    helperText={
+                      fieldErrors[`rounds.${index}.qualifyPerGroup`] ||
+                      '0 = time only; 1 = position "1"; 2 = positions "1" and "2"; 3 = positions "1", "2", and "3"'
+                    }
+                    error={Boolean(fieldErrors[`rounds.${index}.qualifyPerGroup`])}
+                    fullWidth
+                  >
+                    {FORMULA_QUALIFY_PER_GROUP_VALUES.map((value) => (
+                      <MenuItem key={value} value={String(value)}>
+                        {value}
+                      </MenuItem>
+                    ))}
+                  </TextField>
                   {numberField(
                     "How many advance to next round",
                     round.qualifyCount,

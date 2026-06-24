@@ -14,6 +14,7 @@ import {
 } from "@mui/material";
 import { ChevronRight, Image, PencilLine, Plus, Trash2, X, ZoomIn } from "lucide-react";
 import { Link as RouterLink, useNavigate } from "react-router-dom";
+import onboardingHero from "@/assets/Onboarding_header.png";
 import { useOnboardingStore } from "../store/onboarding-store";
 import { ConfirmDeleteModal } from "@/components/ui/ConfirmDeleteModal";
 
@@ -159,11 +160,17 @@ export const OnboardingPage = () => {
           p: { xs: 3, md: 4 },
           minHeight: { xs: 200, md: 230 },
           borderRadius: "28px",
+          overflow: "hidden",
+          position: "relative",
           border: "1px solid rgba(255,255,255,0.8)",
-          background: "linear-gradient(135deg, #2f2829 0%, #f6765e 100%)",
-          color: "white"
+          background: `linear-gradient(120deg, rgba(18, 14, 16, 0.82) 0%, rgba(38, 25, 26, 0.62) 34%, rgba(246, 118, 94, 0.35) 100%), url("${onboardingHero}")`,
+          backgroundPosition: "center",
+          backgroundSize: "cover",
+          color: "white",
+          boxShadow: "0 28px 90px rgba(28, 18, 16, 0.22)"
         }}
       >
+        <Stack sx={{ position: "relative", zIndex: 1 }}>
         <Breadcrumbs
           separator={<ChevronRight size={14} />}
           sx={{
@@ -191,6 +198,7 @@ export const OnboardingPage = () => {
           label="Single active record — always shows the latest"
           sx={{ mt: 2.5, color: "white", backgroundColor: "rgba(255,255,255,0.14)" }}
         />
+        </Stack>
       </Paper>
 
       {/* Content */}

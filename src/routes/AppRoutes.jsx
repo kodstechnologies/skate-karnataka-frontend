@@ -54,6 +54,10 @@ import { DisciplineFormPage } from "@/features/admin/disciplines/pages/Disciplin
 import { DisciplineDetailPage } from "@/features/admin/disciplines/pages/DisciplineDetailPage";
 import { AboutPage } from "@/features/admin/about/pages/AboutPage";
 import { AboutFormPage } from "@/features/admin/about/pages/AboutFormPage";
+import { AboutUsCardPage } from "@/features/admin/about/pages/AboutUsCardPage";
+import { AboutUsCardFormPage } from "@/features/admin/about/pages/AboutUsCardFormPage";
+import { AboutUsCardDetailPage } from "@/features/admin/about/pages/AboutUsCardDetailPage";
+import { AboutUsCardMemberFormPage } from "@/features/admin/about/pages/AboutUsCardMemberFormPage";
 import { CircularsPage } from "@/features/admin/circulars/pages/CircularsPage";
 import { CircularFormPage } from "@/features/admin/circulars/pages/CircularFormPage";
 import { CircularDetailPage } from "@/features/admin/circulars/pages/CircularDetailPage";
@@ -179,6 +183,12 @@ export const AppRoutes = () => {
         <Route path="/about" element={<AboutPage />} />
         <Route path="/about/create" element={<AboutFormPage />} />
         <Route path="/about/edit" element={<AboutFormPage />} />
+        <Route path="/about-us-card" element={<AboutUsCardPage />} />
+        <Route path="/about-us-card/create" element={<AboutUsCardFormPage />} />
+        <Route path="/about-us-card/:cardId/members/create" element={<AboutUsCardMemberFormPage />} />
+        <Route path="/about-us-card/:cardId/members/:memberId/edit" element={<AboutUsCardMemberFormPage />} />
+        <Route path="/about-us-card/:cardId/edit" element={<AboutUsCardFormPage />} />
+        <Route path="/about-us-card/:cardId" element={<AboutUsCardDetailPage />} />
         <Route path="/circulars" element={<CircularsPage />} />
         <Route path="/circulars/create" element={<CircularFormPage />} />
         <Route path="/circulars/:circularId" element={<CircularDetailPage />} />

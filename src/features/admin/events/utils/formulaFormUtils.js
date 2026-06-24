@@ -8,6 +8,8 @@ export const FORMULA_ROUND_NAMES = [
 
 export const FORMULA_QUALIFICATION_TYPES = ["TIME", "POSITION"];
 
+export const FORMULA_QUALIFY_PER_GROUP_VALUES = [0, 1, 2, 3];
+
 /** Only 1stRound uses below/above threshold; other rounds use fixed qualifyCount. */
 export const isFirstFormulaRound = (roundName) =>
   String(roundName || "").trim() === "1stRound";
@@ -100,7 +102,11 @@ export const buildFormulaFormState = (doc) => {
         qualifyCountLessThan65: r.qualifyCountLessThan65 ?? "",
         qualifyCountMoreThan65: r.qualifyCountMoreThan65 ?? "",
         groupSize: r.groupSize ?? "",
-        qualifyPerGroup: r.qualifyPerGroup ?? ""
+        qualifyPerGroup: (() => {
+          const n = toNumberOrUndefined(r.qualifyPerGroup);
+          if (n === undefined) return "";
+          return FORMULA_QUALIFY_PER_GROUP_VALUES.includes(n) ? String(n) : "";
+        })()
       };
 
       if (
@@ -168,9 +174,12 @@ export const validateFormulaForm = (form) => {
       errors[`rounds.${index}.qualifyCount`] =
         "Qualify count is required for POSITION rounds.";
     }
-    if (perGroup === undefined || perGroup < 1) {
+    if (perGroup === undefined) {
       errors[`rounds.${index}.qualifyPerGroup`] =
         "Qualify per group is required for POSITION rounds.";
+    } else if (!FORMULA_QUALIFY_PER_GROUP_VALUES.includes(perGroup)) {
+      errors[`rounds.${index}.qualifyPerGroup`] =
+        "Qualify per group must be 0, 1, 2, or 3.";
     }
   });
 
