@@ -11,13 +11,11 @@ import {
   CircularProgress,
   LinearProgress,
   Fade,
-  Select,
-  MenuItem,
   useTheme,
   useMediaQuery,
   alpha
 } from "@mui/material";
-import { Phone, LogIn, ArrowLeft, CheckCircle2, ShieldCheck, Timer } from "lucide-react";
+import { Mail, LogIn, ArrowLeft, CheckCircle2, ShieldCheck, Timer } from "lucide-react";
 import { useLottie } from "lottie-react";
 import { useAuthStore } from "@/features/auth/store/auth-store";
 import { getHomePathForRole } from "@/lib/role-navigation";
@@ -29,9 +27,6 @@ import { getFCMToken } from "@/firebase/fcm";
 const BRAND = "#f6765e";
 const BRAND_DARK = "#e85d44";
 const BRAND_LIGHT = "#ff8c75";
-
-// ─── Country codes list ────────────────────────────────────────────────────
-const COUNTRY_CODES = [{ flag: "🇮🇳", code: "+91", label: "India" }];
 
 // ─── Individual OTP digit box ──────────────────────────────────────────────
 const OtpBox = ({ index, value, onChange, onKeyDown, inputRef, filled }) => (
@@ -98,12 +93,11 @@ const OtpBox = ({ index, value, onChange, onKeyDown, inputRef, filled }) => (
   </Box>
 );
 
-// ─── Phone validation helper ───────────────────────────────────────────────
-const getPhoneError = (val) => {
+// ─── Email validation helper ───────────────────────────────────────────────
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const getEmailError = (val) => {
   if (!val) return "";
-  if (val.length < 10)
-    return `${10 - val.length} more digit${10 - val.length !== 1 ? "s" : ""} needed`;
-  if (/^[0-4]/.test(val)) return "Enter a valid Indian mobile number";
+  if (!EMAIL_REGEX.test(val)) return "Enter a valid email address";
   return "";
 };
 
@@ -132,13 +126,12 @@ export const LoginPage = () => {
   const [identifier, setIdentifier] = useState("");
   const [userId, setUserId] = useState("");
   const [otpDigits, setOtpDigits] = useState(["", "", "", ""]);
-  const [countryCode, setCountryCode] = useState("+91");
   const [timeLeft, setTimeLeft] = useState(300); // 5 minutes in seconds
   const [fcmToken, setFcmToken] = useState(null); // FCM token generated at OTP step
 
   const otpRefs = useRef([]);
-  const phoneError = getPhoneError(identifier);
-  const selectedCountry = COUNTRY_CODES.find((c) => c.code === countryCode) || COUNTRY_CODES[0];
+  const emailError = getEmailError(identifier);
+  const isEmailValid = EMAIL_REGEX.test(identifier);
   const otpValue = otpDigits.join("");
   const isOtpExpired = timeLeft === 0;
 
@@ -165,9 +158,8 @@ export const LoginPage = () => {
   const timerColor = timeLeft > 120 ? "#2e7d32" : timeLeft > 60 ? "#ed6c02" : "#d32f2f";
 
   // ── Handlers ────────────────────────────────────────────────────────────
-  const handlePhoneChange = (e) => {
-    const val = e.target.value.replace(/\D/g, "").slice(0, 10);
-    setIdentifier(val);
+  const handleEmailChange = (e) => {
+    setIdentifier(e.target.value.trim());
   };
 
   const handleRequestOtp = async (e) => {
@@ -260,7 +252,7 @@ export const LoginPage = () => {
     }
   };
 
-  const handleChangeNumber = () => {
+  const handleChangeEmail = () => {
     setStep(1);
     setOtpDigits(["", "", "", ""]);
     setUserId("");
@@ -453,7 +445,7 @@ export const LoginPage = () => {
             </Typography>
             <Typography variant="body1" component="div" sx={{ color: "#8d7f7b", fontWeight: 400 }}>
               {step === 1 ? (
-                "Enter your registered mobile number"
+                "Enter your registered email address"
               ) : (
                 <Box
                   component="span"
@@ -462,7 +454,7 @@ export const LoginPage = () => {
                   OTP sent to&nbsp;
                   <Chip
                     icon={<CheckCircle2 size={14} color={BRAND_DARK} />}
-                    label={`${countryCode} ${identifier}`}
+                    label={identifier}
                     size="small"
                     sx={{
                       fontWeight: 700,
@@ -486,139 +478,49 @@ export const LoginPage = () => {
               sx={{ display: step === 1 ? "block" : "none" }}
             >
               <Stack spacing={2.5}>
-                {/* Country code + phone field */}
-                <Box sx={{ display: "flex", gap: 1.5, alignItems: "flex-start" }}>
-                  {/* Country code selector */}
-                  <Select
-                    value={countryCode}
-                    onChange={(e) => setCountryCode(e.target.value)}
-                    variant="outlined"
-                    renderValue={(val) => {
-                      const c = COUNTRY_CODES.find((x) => x.code === val) || COUNTRY_CODES[0];
-                      return (
-                        <Box sx={{ display: "flex", alignItems: "center", gap: 0.75 }}>
-                          <Typography sx={{ fontSize: "1.2rem", lineHeight: 1 }}>
-                            {c.flag}
-                          </Typography>
-                          <Typography
-                            sx={{ fontWeight: 700, color: "#2f2829", fontSize: "0.9rem" }}
-                          >
-                            {val}
-                          </Typography>
-                        </Box>
-                      );
-                    }}
-                    sx={{
-                      height: "60px",
-                      borderRadius: "16px",
-                      backgroundColor: "#fbf6f4",
-                      flexShrink: 0,
-                      minWidth: "90px",
-                      "& .MuiOutlinedInput-notchedOutline": { border: "1.5px solid #efe2dc" },
-                      "&:hover .MuiOutlinedInput-notchedOutline": { borderColor: BRAND },
-                      "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
-                        borderColor: BRAND,
-                        borderWidth: "2px"
-                      },
-                      "& .MuiSelect-select": { py: 0, display: "flex", alignItems: "center" }
-                    }}
-                    MenuProps={{
-                      PaperProps: {
-                        sx: {
-                          borderRadius: "14px",
-                          boxShadow: "0 8px 30px rgba(0,0,0,0.12)",
-                          mt: 1
-                        }
-                      }
-                    }}
-                  >
-                    {COUNTRY_CODES.map((c) => (
-                      <MenuItem
-                        key={`${c.label}-${c.code}`}
-                        value={c.code}
-                        sx={{ gap: 1.5, borderRadius: "8px", mx: 0.5, my: 0.25 }}
-                      >
-                        <Typography sx={{ fontSize: "1.1rem" }}>{c.flag}</Typography>
-                        <Typography
-                          sx={{ fontWeight: 600, fontSize: "0.88rem", color: "#2f2829", flex: 1 }}
-                        >
-                          {c.label}
-                        </Typography>
-                        <Typography sx={{ fontWeight: 700, fontSize: "0.85rem", color: "#8d7f7b" }}>
-                          {c.code}
-                        </Typography>
-                      </MenuItem>
-                    ))}
-                  </Select>
-
-                  {/* Phone input */}
-                  <TextField
-                    fullWidth
-                    label="Mobile Number"
-                    placeholder="98765 43210"
-                    variant="outlined"
-                    type="tel"
-                    required
-                    autoFocus
-                    inputProps={{ maxLength: 10 }}
-                    value={identifier}
-                    onChange={handlePhoneChange}
-                    error={!!phoneError}
-                    helperText={
-                      phoneError ||
-                      (identifier.length === 10
-                        ? "✓ Valid mobile number"
-                        : `${identifier.length}/10 digits`)
+                {/* Email input */}
+                <TextField
+                  fullWidth
+                  label="Email Address"
+                  placeholder="you@example.com"
+                  variant="outlined"
+                  type="email"
+                  required
+                  autoFocus
+                  autoComplete="email"
+                  value={identifier}
+                  onChange={handleEmailChange}
+                  error={!!emailError}
+                  helperText={
+                    emailError || (isEmailValid ? "✓ Valid email address" : "Enter your email")
+                  }
+                  slotProps={{
+                    input: {
+                      startAdornment: (
+                        <InputAdornment position="start">
+                          <Mail size={18} style={{ color: "#b19f99" }} />
+                        </InputAdornment>
+                      )
                     }
-                    slotProps={{
-                      input: {
-                        startAdornment: (
-                          <InputAdornment position="start">
-                            <Phone size={18} style={{ color: "#b19f99" }} />
-                          </InputAdornment>
-                        )
-                      }
-                    }}
-                    sx={{
-                      ...inputSx,
-                      "& .MuiFormHelperText-root": {
-                        fontWeight: 600,
-                        fontSize: "0.75rem",
-                        color:
-                          identifier.length === 10 && !phoneError
-                            ? "#2e7d32"
-                            : phoneError
-                              ? "#d32f2f"
-                              : "#b19f99",
-                        mt: 0.75,
-                        ml: 0.5
-                      }
-                    }}
-                  />
-                </Box>
-
-                {/* Progress dots */}
-                <Box sx={{ display: "flex", gap: 0.75, px: 0.5 }}>
-                  {[...Array(10)].map((_, i) => (
-                    <Box
-                      key={i}
-                      sx={{
-                        flex: 1,
-                        height: "3px",
-                        borderRadius: "2px",
-                        backgroundColor: i < identifier.length ? "#2e7d32" : "#efe2dc",
-                        transition: "background-color 0.15s ease"
-                      }}
-                    />
-                  ))}
-                </Box>
+                  }}
+                  sx={{
+                    ...inputSx,
+                    "& .MuiFormHelperText-root": {
+                      fontWeight: 600,
+                      fontSize: "0.75rem",
+                      color: isEmailValid ? "#2e7d32" : emailError ? "#d32f2f" : "#b19f99",
+                      mt: 0.75,
+                      ml: 0.5
+                    }
+                  }}
+                />
 
                 <Button
                   fullWidth
                   variant="contained"
                   size="large"
                   type="submit"
-                  disabled={isLoading || identifier.length !== 10 || !!phoneError}
+                  disabled={isLoading || !isEmailValid}
                   sx={primaryBtnSx}
                 >
                   {isLoading ? (
@@ -865,7 +767,7 @@ export const LoginPage = () => {
                   sx={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}
                 >
                   <Button
-                    onClick={handleChangeNumber}
+                    onClick={handleChangeEmail}
                     startIcon={<ArrowLeft size={16} />}
                     sx={{
                       color: "#8d7f7b",
@@ -876,7 +778,7 @@ export const LoginPage = () => {
                       "&:hover": { backgroundColor: "transparent", color: BRAND }
                     }}
                   >
-                    Change Number
+                    Change Email
                   </Button>
 
                   {isOtpExpired && (
