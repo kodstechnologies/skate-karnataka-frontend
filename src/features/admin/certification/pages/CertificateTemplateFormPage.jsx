@@ -19,6 +19,7 @@ const FIELD_META = {
 
 // Event-table meta (separate from text FIELD_META — no size/color keys)
 const TABLE_META = { label: "Event Table", color: "#0EA5E9", bg: "#F0F9FF", border: "#BAE6FD" };
+const IMAGE_META = { label: "Skater Photo", color: "#06B6D4", bg: "#ECFEFF", border: "#A5F3FC" };
 // Column ratios must match backend COL_RATIOS exactly
 const TABLE_COL_RATIOS = [0.3, 0.4, 0.3];
 const TABLE_HEADERS = ["DISCIPLINE", "DISTANCE", "PLACEMENT"];
@@ -40,6 +41,7 @@ const DEFAULT_LAYOUT = {
   ageGroup: { x: 298, y: 530, size: 12, color: "dark" },
   clubName: { x: 298, y: 480, size: 12, color: "dark" },
   signature: { x: 350, y: 210, size: 12, color: "dark", text: "Authorized Signatory" },
+  skaterImage: { x: 72, y: 620, width: 90, height: 110 },
   eventTable: { x: 72, y: 463, width: 450 }
 };
 
@@ -157,7 +159,7 @@ function TemplateCoordsEditor({ previewUrl, layout, onLayoutChange, onUpdateLayo
       <div>
         <label className="block text-sm font-bold text-stone-700">Text Field Coordinates</label>
         <p className="text-[11px] text-stone-400 mt-0.5">
-          Drag each marker to position text on the certificate.
+          Drag each marker to position text, skater photo, and event table on the certificate.
         </p>
       </div>
 
@@ -173,6 +175,20 @@ function TemplateCoordsEditor({ previewUrl, layout, onLayoutChange, onUpdateLayo
               {m.label}
             </span>
           ))}
+          <span
+            className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold border"
+            style={{ color: IMAGE_META.color, background: IMAGE_META.bg, borderColor: IMAGE_META.border }}
+          >
+            <span className="w-2 h-2 rounded-full" style={{ background: IMAGE_META.color }} />
+            {IMAGE_META.label}
+          </span>
+          <span
+            className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold border"
+            style={{ color: TABLE_META.color, background: TABLE_META.bg, borderColor: TABLE_META.border }}
+          >
+            <span className="w-2 h-2 rounded-full" style={{ background: TABLE_META.color }} />
+            {TABLE_META.label}
+          </span>
         </div>
 
         <div className="overflow-x-auto pb-1">
@@ -351,6 +367,122 @@ function TemplateCoordsEditor({ previewUrl, layout, onLayoutChange, onUpdateLayo
                   </div>
                 );
               })}
+              {/* ── Skater Photo Marker ──────────────────────────────────────── */}
+              {(() => {
+                const imgPos = layout.skaterImage;
+                if (!imgPos) return null;
+                const imgPx = ptToPx(imgPos.x, imgPos.y);
+                if (!imgPx) return null;
+                const scaleRatio = (overlaySize?.width || PDF_W_PT) / PDF_W_PT;
+                const imgW = Math.round((imgPos.width || 90) * scaleRatio);
+                const imgH = Math.round((imgPos.height || 110) * scaleRatio);
+                const isImgDragging = dragging === "skaterImage";
+                return (
+                  <div
+                    key="skaterImage"
+                    style={{
+                      position: "absolute",
+                      left: imgPx.px,
+                      top: imgPx.py,
+                      zIndex: isImgDragging ? 30 : 20
+                    }}
+                    onPointerDown={(e) => handlePointerDown(e, "skaterImage")}
+                    onMouseEnter={() => setTooltip("skaterImage")}
+                    onMouseLeave={() => !dragging && setTooltip(null)}
+                  >
+                    <div
+                      style={{
+                        width: imgW,
+                        height: imgH,
+                        border: `2px dashed ${IMAGE_META.color}`,
+                        borderRadius: 8,
+                        cursor: isImgDragging ? "grabbing" : "grab",
+                        userSelect: "none",
+                        background: `${IMAGE_META.color}12`,
+                        display: "flex",
+                        flexDirection: "column",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        gap: 4,
+                        pointerEvents: "auto",
+                        overflow: "hidden"
+                      }}
+                    >
+                      <div
+                        style={{
+                          width: Math.max(24, imgW * 0.35),
+                          height: Math.max(24, imgW * 0.35),
+                          borderRadius: "50%",
+                          background: `${IMAGE_META.color}30`,
+                          border: `1.5px solid ${IMAGE_META.color}`,
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          fontSize: Math.max(10, 14 * scaleRatio),
+                          color: IMAGE_META.color
+                        }}
+                      >
+                        👤
+                      </div>
+                      <span
+                        style={{
+                          fontSize: Math.max(7, 9 * scaleRatio),
+                          fontWeight: 800,
+                          color: IMAGE_META.color,
+                          textTransform: "uppercase",
+                          letterSpacing: "0.04em"
+                        }}
+                      >
+                        Skater Photo
+                      </span>
+                    </div>
+                    {(tooltip === "skaterImage" || isImgDragging) && (
+                      <div
+                        style={{
+                          position: "absolute",
+                          top: "100%",
+                          left: 0,
+                          marginTop: 4,
+                          background: "white",
+                          border: `1.5px solid ${IMAGE_META.border}`,
+                          borderRadius: 8,
+                          padding: "6px 10px",
+                          minWidth: 160,
+                          boxShadow: "0 4px 16px rgba(0,0,0,0.15)",
+                          pointerEvents: "none",
+                          zIndex: 40
+                        }}
+                      >
+                        <p
+                          style={{
+                            fontSize: 10,
+                            fontWeight: 800,
+                            color: IMAGE_META.color,
+                            marginBottom: 4,
+                            textTransform: "uppercase"
+                          }}
+                        >
+                          Skater Photo
+                        </p>
+                        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 4 }}>
+                          <div style={{ fontSize: 10, color: "#78716c" }}>
+                            X: <b style={{ color: "#1c1917" }}>{imgPos.x}pt</b>
+                          </div>
+                          <div style={{ fontSize: 10, color: "#78716c" }}>
+                            Y: <b style={{ color: "#1c1917" }}>{imgPos.y}pt</b>
+                          </div>
+                          <div style={{ fontSize: 10, color: "#78716c" }}>
+                            W: <b style={{ color: "#1c1917" }}>{imgPos.width}pt</b>
+                          </div>
+                          <div style={{ fontSize: 10, color: "#78716c" }}>
+                            H: <b style={{ color: "#1c1917" }}>{imgPos.height}pt</b>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                );
+              })()}
               {/* ── Event Table Marker ───────────────────────────────────────── */}
               {(() => {
                 const tPos = layout.eventTable;
@@ -552,6 +684,46 @@ function TemplateCoordsEditor({ previewUrl, layout, onLayoutChange, onUpdateLayo
           })}
         </div>
 
+        {/* Skater photo size controls */}
+        {layout.skaterImage && (
+          <div
+            className="flex flex-col gap-1 p-2.5 rounded-xl border"
+            style={{ borderColor: IMAGE_META.border, background: IMAGE_META.bg }}
+          >
+            <label
+              className="text-[9px] font-bold uppercase tracking-widest"
+              style={{ color: IMAGE_META.color }}
+            >
+              Skater Photo — Width (pt)
+            </label>
+            <input
+              type="number"
+              min={30}
+              max={300}
+              value={layout.skaterImage.width || 90}
+              onChange={(e) => onUpdateLayout("skaterImage", "width", e.target.value)}
+              className="w-40 px-2 py-1 bg-white border border-stone-200 rounded text-xs focus:ring-2 focus:ring-cyan-400/20 outline-none font-semibold"
+            />
+            <label
+              className="text-[9px] font-bold uppercase tracking-widest mt-2"
+              style={{ color: IMAGE_META.color }}
+            >
+              Skater Photo — Height (pt)
+            </label>
+            <input
+              type="number"
+              min={30}
+              max={400}
+              value={layout.skaterImage.height || 110}
+              onChange={(e) => onUpdateLayout("skaterImage", "height", e.target.value)}
+              className="w-40 px-2 py-1 bg-white border border-stone-200 rounded text-xs focus:ring-2 focus:ring-cyan-400/20 outline-none font-semibold"
+            />
+            <p className="text-[9px] text-stone-400 mt-1">
+              Drag the photo box on the preview to set X/Y position.
+            </p>
+          </div>
+        )}
+
         {/* Event table width control */}
         {layout.eventTable && (
           <div
@@ -743,6 +915,7 @@ export default function CertificateTemplateFormPage() {
             ageGroup: { ...DEFAULT_LAYOUT.ageGroup, ...(il.ageGroup || il.field || {}) },
             clubName: { ...DEFAULT_LAYOUT.clubName, ...(il.clubName || {}) },
             signature: { ...DEFAULT_LAYOUT.signature, ...(il.signature || {}) },
+            skaterImage: { ...DEFAULT_LAYOUT.skaterImage, ...(il.skaterImage || {}) },
             eventTable: { ...DEFAULT_LAYOUT.eventTable, ...(il.eventTable || {}) }
           });
         }

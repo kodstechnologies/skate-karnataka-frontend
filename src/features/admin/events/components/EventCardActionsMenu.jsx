@@ -169,7 +169,7 @@ export default function EventCardActionsMenu({
       const detailsPayload = detailsRes?.data ?? detailsRes;
       const competitions = detailsPayload?.data ?? detailsPayload;
 
-      downloadEventReportExcel({
+      await downloadEventReportExcel({
         summary,
         competitions: Array.isArray(competitions) ? competitions : [],
         eventName: event?.header || summary?.eventName
@@ -242,7 +242,7 @@ export default function EventCardActionsMenu({
             </ListItemIcon>
             <ListItemText
               primary="Download report"
-              secondary="Excel: rounds, attendance & winners"
+              secondary="Styled Excel report by age group"
             />
           </MenuItem>
         )}
