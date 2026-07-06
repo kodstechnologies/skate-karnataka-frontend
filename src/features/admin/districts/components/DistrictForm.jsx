@@ -2,7 +2,7 @@ import ApartmentOutlinedIcon from "@mui/icons-material/ApartmentOutlined";
 import ImageOutlinedIcon from "@mui/icons-material/ImageOutlined";
 import { Avatar, Box, Button, Paper, Stack, TextField, Typography } from "@mui/material";
 import { Upload, X } from "lucide-react";
-import { useRef } from "react";
+import { useRef, useState } from "react";
 
 const sectionCardStyles = {
   p: { xs: 2.25, md: 2.75 },
@@ -52,11 +52,43 @@ const SectionCard = ({ icon, title, description, children }) => (
 
 export const DistrictForm = ({ formData, errors, onFieldChange, onFileChange }) => {
   const fileInputRef = useRef(null);
+  const [isDragging, setIsDragging] = useState(false);
+
+  const handleImageFile = (file) => {
+    if (!file?.type?.startsWith("image/")) return;
+    onFileChange(file);
+  };
 
   const handleFileSelect = (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    onFileChange(file);
+    handleImageFile(file);
+  };
+
+  const handleDragOver = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+  };
+
+  const handleDragEnter = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!e.currentTarget.contains(e.relatedTarget)) {
+      setIsDragging(false);
+    }
+  };
+
+  const handleDrop = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+    handleImageFile(e.dataTransfer.files?.[0]);
   };
 
   const handleRemoveImage = () => {
@@ -153,13 +185,17 @@ export const DistrictForm = ({ formData, errors, onFieldChange, onFileChange }) 
           ) : (
             <Box
               onClick={() => fileInputRef.current?.click()}
+              onDragOver={handleDragOver}
+              onDragEnter={handleDragEnter}
+              onDragLeave={handleDragLeave}
+              onDrop={handleDrop}
               sx={{
-                border: "2px dashed rgba(246,118,94,0.35)",
+                border: isDragging ? "2px dashed #f6765e" : "2px dashed rgba(246,118,94,0.35)",
                 borderRadius: "20px",
                 p: 4,
                 textAlign: "center",
                 cursor: "pointer",
-                backgroundColor: "rgba(246,118,94,0.03)",
+                backgroundColor: isDragging ? "rgba(246,118,94,0.12)" : "rgba(246,118,94,0.03)",
                 transition: "all 0.2s",
                 "&:hover": {
                   borderColor: "#f6765e",
@@ -182,7 +218,7 @@ export const DistrictForm = ({ formData, errors, onFieldChange, onFileChange }) 
                 <Upload size={22} color="#f6765e" />
               </Box>
               <Typography sx={{ fontWeight: 700, color: "#2f2829", mb: 0.5 }}>
-                Click to upload image
+                {isDragging ? "Drop image here" : "Drag and drop or click to upload"}
               </Typography>
               <Typography sx={{ fontSize: 13, color: "#8d7f7b" }}>
                 PNG, JPG, JPEG supported

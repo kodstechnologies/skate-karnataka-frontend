@@ -1,6 +1,5 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import ApartmentOutlinedIcon from "@mui/icons-material/ApartmentOutlined";
-import ImageOutlinedIcon from "@mui/icons-material/ImageOutlined";
 import UploadFileOutlinedIcon from "@mui/icons-material/UploadFileOutlined";
 import { Box, Button, MenuItem, Paper, Stack, TextField, Typography } from "@mui/material";
 
@@ -51,17 +50,8 @@ const SectionCard = ({ icon, title, description, children }) => (
 );
 
 const FileUploadField = ({ label, fileValue, existingImageUrl, error, helperText, onChange }) => {
-  // const [previewUrl, setPreviewUrl] = useState(null);
-
-  // useEffect(() => {
-  //   if (fileValue) {
-  //     const objectUrl = URL.createObjectURL(fileValue);
-  //     setPreviewUrl(objectUrl);
-  //     return () => URL.revokeObjectURL(objectUrl);
-  //   } else {
-  //     setPreviewUrl(null);
-  //   }
-  // }, [fileValue]);
+  const fileInputRef = useRef(null);
+  const [isDragging, setIsDragging] = useState(false);
 
   const previewUrl = useMemo(() => {
     if (!fileValue) return null;
@@ -76,13 +66,54 @@ const FileUploadField = ({ label, fileValue, existingImageUrl, error, helperText
       }
     };
   }, [previewUrl]);
+
+  const handleImageFile = (file) => {
+    if (!file?.type?.startsWith("image/")) return;
+    onChange({ target: { files: [file] } });
+  };
+
+  const handleFileSelect = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    handleImageFile(file);
+  };
+
+  const handleDragOver = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+  };
+
+  const handleDragEnter = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!e.currentTarget.contains(e.relatedTarget)) {
+      setIsDragging(false);
+    }
+  };
+
+  const handleDrop = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+    handleImageFile(e.dataTransfer.files?.[0]);
+  };
+
+  const displayPreview = previewUrl || existingImageUrl;
+
   return (
     <Box
       sx={{
         p: 2.25,
         borderRadius: "22px",
         border: "1px solid #f4e5de",
-        backgroundColor: "#fffaf8"
+        backgroundColor: "#fffaf8",
+        gridColumn: { md: "span 2" }
       }}
     >
       <Typography
@@ -101,38 +132,71 @@ const FileUploadField = ({ label, fileValue, existingImageUrl, error, helperText
         Upload an image for this section.
       </Typography>
       <Stack spacing={1.5}>
-        <Button
-          component="label"
-          variant="outlined"
-          startIcon={<UploadFileOutlinedIcon />}
-          sx={{ alignSelf: "flex-start", borderRadius: "14px" }}
-        >
-          Choose Image
-          <input type="file" accept="image/*" hidden onChange={onChange} />
-        </Button>
-        {previewUrl ? (
+        {displayPreview ? (
           <div className="rounded-2xl border border-[#efe2dc] bg-white p-3 shadow-sm">
             <img
-              src={previewUrl}
-              alt="New preview"
+              src={displayPreview}
+              alt={fileValue ? "New preview" : "Existing preview"}
               className="h-44 w-full rounded-xl object-cover"
             />
-            <div className="mt-2 truncate font-semibold text-center text-[#2f2829] text-sm">
-              {fileValue.name}
+            <div className="mt-2 truncate text-center text-sm font-semibold text-[#2f2829]">
+              {fileValue ? fileValue.name : "Current image"}
             </div>
-          </div>
-        ) : existingImageUrl ? (
-          <div className="rounded-2xl border border-[#efe2dc] bg-white p-3 shadow-sm">
-            <img
-              src={existingImageUrl}
-              alt="Existing preview"
-              className="h-44 w-full rounded-xl object-cover"
-            />
+            <Button
+              size="small"
+              variant="outlined"
+              startIcon={<UploadFileOutlinedIcon />}
+              onClick={() => fileInputRef.current?.click()}
+              sx={{ mt: 1.5, borderRadius: "12px", fontSize: 12 }}
+            >
+              Change image
+            </Button>
           </div>
         ) : (
-          <Typography sx={{ color: "#9b8d88", fontSize: 13 }}>No Image selected</Typography>
+          <Box
+            onClick={() => fileInputRef.current?.click()}
+            onDragOver={handleDragOver}
+            onDragEnter={handleDragEnter}
+            onDragLeave={handleDragLeave}
+            onDrop={handleDrop}
+            sx={{
+              border: isDragging ? "2px dashed #f6765e" : "2px dashed rgba(246,118,94,0.35)",
+              borderRadius: "20px",
+              p: 4,
+              textAlign: "center",
+              cursor: "pointer",
+              backgroundColor: isDragging ? "rgba(246,118,94,0.12)" : "rgba(246,118,94,0.03)",
+              transition: "all 0.2s",
+              "&:hover": {
+                borderColor: "#f6765e",
+                backgroundColor: "rgba(246,118,94,0.07)"
+              }
+            }}
+          >
+            <Box
+              sx={{
+                width: 52,
+                height: 52,
+                borderRadius: "16px",
+                backgroundColor: "rgba(246,118,94,0.12)",
+                display: "grid",
+                placeItems: "center",
+                mx: "auto",
+                mb: 1.5
+              }}
+            >
+              <UploadFileOutlinedIcon sx={{ fontSize: 22, color: "#f6765e" }} />
+            </Box>
+            <Typography sx={{ fontWeight: 700, color: "#2f2829", mb: 0.5 }}>
+              {isDragging ? "Drop image here" : "Drag and drop or click to upload"}
+            </Typography>
+            <Typography sx={{ fontSize: 13, color: "#8d7f7b" }}>
+              PNG, JPG, JPEG supported
+            </Typography>
+          </Box>
         )}
       </Stack>
+      <input ref={fileInputRef} type="file" accept="image/*" hidden onChange={handleFileSelect} />
       <Typography
         sx={{ mt: 1.25, minHeight: 20, color: error ? "#d32f2f" : "#8d7f7b", fontSize: 12 }}
       >
