@@ -14,6 +14,7 @@ import { GalleryApprovalsPage } from "@/features/admin/gallery/pages/GalleryAppr
 import { DistrictFormPage } from "@/features/admin/districts/pages/DistrictFormPage";
 import { DistrictMemberFormPage } from "@/features/admin/districts/pages/DistrictMemberFormPage";
 import { DistrictEventsPage } from "@/features/admin/districts/pages/DistrictEventsPage";
+import { DistrictClubBulkImportPage } from "@/features/admin/districts/pages/DistrictClubBulkImportPage";
 import { DistrictMembersPage } from "@/features/admin/districts/pages/DistrictMembersPage";
 import { DistrictsPage } from "@/features/admin/districts/pages/DistrictsPage";
 import { EventFormPage } from "@/features/admin/events/pages/EventFormPage";
@@ -120,7 +121,10 @@ export const AppRoutes = () => {
         <Route path="/club/event-categories" element={<ClubEventCategoriesPage />} />
         <Route path="/club/formula" element={<FormulasPage portalMode="club" />} />
         <Route path="/club/formula/create" element={<FormulaFormPage portalMode="club" />} />
-        <Route path="/club/formula/:formulaId/edit" element={<FormulaFormPage portalMode="club" />} />
+        <Route
+          path="/club/formula/:formulaId/edit"
+          element={<FormulaFormPage portalMode="club" />}
+        />
         <Route
           path="/club/event-categories/standard"
           element={<OrgStandardCategoriesPage orgType="club" />}
@@ -140,7 +144,10 @@ export const AppRoutes = () => {
         <Route path="/district/media" element={<DistrictPortalMediaPage />} />
         <Route path="/district/event-categories" element={<DistrictEventCategoriesPage />} />
         <Route path="/district/formula" element={<FormulasPage portalMode="district" />} />
-        <Route path="/district/formula/create" element={<FormulaFormPage portalMode="district" />} />
+        <Route
+          path="/district/formula/create"
+          element={<FormulaFormPage portalMode="district" />}
+        />
         <Route
           path="/district/formula/:formulaId/edit"
           element={<FormulaFormPage portalMode="district" />}
@@ -185,8 +192,14 @@ export const AppRoutes = () => {
         <Route path="/about/edit" element={<AboutFormPage />} />
         <Route path="/about-us-card" element={<AboutUsCardPage />} />
         <Route path="/about-us-card/create" element={<AboutUsCardFormPage />} />
-        <Route path="/about-us-card/:cardId/members/create" element={<AboutUsCardMemberFormPage />} />
-        <Route path="/about-us-card/:cardId/members/:memberId/edit" element={<AboutUsCardMemberFormPage />} />
+        <Route
+          path="/about-us-card/:cardId/members/create"
+          element={<AboutUsCardMemberFormPage />}
+        />
+        <Route
+          path="/about-us-card/:cardId/members/:memberId/edit"
+          element={<AboutUsCardMemberFormPage />}
+        />
         <Route path="/about-us-card/:cardId/edit" element={<AboutUsCardFormPage />} />
         <Route path="/about-us-card/:cardId" element={<AboutUsCardDetailPage />} />
         <Route path="/circulars" element={<CircularsPage />} />
@@ -244,6 +257,7 @@ export const AppRoutes = () => {
         />
         <Route path="/districts/:districtId/media" element={<DistrictMediaPage />} />
         <Route path="/districts/:districtId/members" element={<DistrictMembersPage />} />
+        <Route path="/districts/:districtId/clubs/bulk" element={<DistrictClubBulkImportPage />} />
         <Route path="/districts/:districtId/members/create" element={<DistrictMemberFormPage />} />
         <Route
           path="/districts/:districtId/members/bulk"

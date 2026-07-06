@@ -23,6 +23,7 @@ import {
   Typography
 } from "@mui/material";
 import {
+  Building2,
   CalendarDays,
   ChevronRight,
   Image,
@@ -277,6 +278,14 @@ export const DistrictsPage = () => {
                   <Stack direction="row" spacing={1}>
                     <Button
                       variant="outlined"
+                      startIcon={<Building2 size={16} />}
+                      onClick={() => navigate(`/districts/${district.id}/clubs/bulk`)}
+                      fullWidth
+                    >
+                      Clubs
+                    </Button>
+                    <Button
+                      variant="outlined"
                       startIcon={<PencilLine size={16} />}
                       onClick={() => navigate(`/districts/${district.id}/edit`)}
                       fullWidth
@@ -494,6 +503,18 @@ export const DistrictsPage = () => {
                         >
                           <Image size={16} />
                         </ApprovalGlowIconButton>
+                        <IconButton
+                          onClick={() => navigate(`/districts/${district.id}/clubs/bulk`)}
+                          sx={{
+                            border: "1px solid #e8eaf6",
+                            color: "#5c6bc0",
+                            backgroundColor: "#f3f4fd"
+                          }}
+                          aria-label={`Add clubs for ${district.districtName}`}
+                          title="Clubs"
+                        >
+                          <Building2 size={16} />
+                        </IconButton>
                         <IconButton
                           onClick={() => navigate(`/districts/${district.id}/edit`)}
                           sx={{ border: "1px solid #efe2dc", backgroundColor: "#fff8f4" }}
