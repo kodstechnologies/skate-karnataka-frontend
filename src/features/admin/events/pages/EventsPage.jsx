@@ -124,7 +124,7 @@ export const EventsPage = () => {
     setLoading(true);
     setError(null);
     try {
-      const response = await eventsApi.getAll(search, currentPage, limit);
+      const response = await eventsApi.getWebStateEvents(search, currentPage, limit);
       const payload = response?.data ?? response;
 
       setEvents(payload?.data || []);

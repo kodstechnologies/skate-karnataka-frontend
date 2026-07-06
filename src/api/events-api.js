@@ -13,6 +13,30 @@ export const eventsApi = {
     return api.get("/event/v1/state", { params });
   },
 
+  /** Web dashboard — all state events (Admin / State). */
+  getWebStateEvents: async (search = "", page = 1, limit = 10, stateId) => {
+    const params = { page, limit };
+    if (search.trim()) params.search = search.trim();
+    if (stateId) params.stateId = stateId;
+    return api.get("/event/v1/web/state", { params });
+  },
+
+  /** Web dashboard — all club events (Admin / State). */
+  getWebClubEvents: async (search = "", page = 1, limit = 10, clubId) => {
+    const params = { page, limit };
+    if (search.trim()) params.search = search.trim();
+    if (clubId) params.clubId = clubId;
+    return api.get("/event/v1/web/club", { params });
+  },
+
+  /** Web dashboard — all district events (Admin / State). */
+  getWebDistrictEvents: async (search = "", page = 1, limit = 10, districtId) => {
+    const params = { page, limit };
+    if (search.trim()) params.search = search.trim();
+    if (districtId) params.districtId = districtId;
+    return api.get("/event/v1/web/district", { params });
+  },
+
   /**
    * Fetch a single event by ID.
    */
@@ -71,6 +95,11 @@ export const eventsApi = {
     return api.get("/event/v1/club", { params });
   },
 
+  /** Club portal — all events for the logged-in club (web dashboard). */
+  getClubPortalEvents: async (params = {}) => {
+    return api.get("/event/v1/club/web", { params });
+  },
+
   getClubEventById: async (id) => {
     return api.get(`/event/v1/club/${id}`);
   },
@@ -89,6 +118,11 @@ export const eventsApi = {
 
   getDistrictEvents: async (params = {}) => {
     return api.get("/event/v1/district", { params });
+  },
+
+  /** District portal — all events for the logged-in district (web dashboard). */
+  getDistrictPortalEvents: async (params = {}) => {
+    return api.get("/event/v1/district/web", { params });
   },
 
   createDistrictEvent: async (payload) => {

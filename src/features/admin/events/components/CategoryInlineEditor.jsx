@@ -81,7 +81,7 @@ export default function CategoryInlineEditor({
                 "&:hover": { textDecoration: "underline" }
               }}
             >
-              Create a formula first
+              Create a rule first
             </Box>
           </>
         ) : null}
@@ -162,7 +162,7 @@ export default function CategoryInlineEditor({
                           select
                           required
                           size="small"
-                          label="Formula"
+                          label="Rules"
                           value={row.formula || ""}
                           onChange={(e) =>
                             onCategoryFormulaChange(ageIdx, catIdx, e.target.value)
@@ -173,7 +173,7 @@ export default function CategoryInlineEditor({
                           sx={{ minWidth: { xs: "100%", sm: 200 }, flexShrink: 0 }}
                         >
                           <MenuItem value="" disabled>
-                            <em>{formulasLoading ? "Loading…" : "Select formula"}</em>
+                            <em>{formulasLoading ? "Loading…" : "Select rule"}</em>
                           </MenuItem>
                           {formulas.map((f) => {
                             const id = String(f._id ?? f.id ?? "");

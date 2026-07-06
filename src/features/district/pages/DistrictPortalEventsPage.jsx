@@ -3,14 +3,19 @@ import {
   Breadcrumbs,
   Button,
   Chip,
+  FormControl,
+  InputLabel,
+  MenuItem,
   Paper,
+  Select,
   Skeleton,
   Stack,
   TablePagination,
+  TextField,
   Typography
 } from "@mui/material";
-import { CalendarDays, ChevronRight, PencilLine, Plus, Trash2 } from "lucide-react";
-import { useCallback, useEffect, useState } from "react";
+import { CalendarDays, ChevronRight, PencilLine, Plus, Search, Trash2 } from "lucide-react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Link as RouterLink, useNavigate } from "react-router-dom";
 import districtHero from "@/assets/District_header.jpg";
 import { ConfirmDeleteModal } from "@/components/ui/ConfirmDeleteModal";
@@ -95,11 +100,6 @@ const getEventCardPalette = (event) => {
   };
 };
 
-const isDistrictOwnedEvent = (event) =>
-  String(event?.eventType || "").trim().toLowerCase() === "district";
-
-const filterDistrictOwnedEvents = (rows = []) => rows.filter(isDistrictOwnedEvent);
-
 const parseDistrictEventsListResponse = (response) => {
   if (Array.isArray(response?.data)) {
     return {
@@ -120,6 +120,21 @@ const parseDistrictEventsListResponse = (response) => {
   return { events: [], total: 0 };
 };
 
+const EVENT_STATUS_FILTERS = [
+  { value: "", label: "All statuses" },
+  { value: "coming_soon", label: "Coming soon" },
+  { value: "active", label: "Active" },
+  { value: "completed", label: "Completed" },
+  { value: "cancelled", label: "Cancelled" }
+];
+
+const APPROVAL_FILTERS = [
+  { value: "", label: "All approval" },
+  { value: "pending", label: "Pending approval" },
+  { value: "approved", label: "Approved" },
+  { value: "rejected", label: "Rejected" }
+];
+
 export const DistrictPortalEventsPage = () => {
   const navigate = useNavigate();
   const user = useAuthStore((state) => state.user);
@@ -127,35 +142,68 @@ export const DistrictPortalEventsPage = () => {
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [statusFilter, setStatusFilter] = useState("");
+  const [approvalFilter, setApprovalFilter] = useState("");
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(9);
   const [totalCount, setTotalCount] = useState(0);
   const [pendingDeleteEvent, setPendingDeleteEvent] = useState(null);
   const [deleting, setDeleting] = useState(false);
+  const searchDebounceRef = useRef(null);
 
   const displayName = user?.districtName || user?.name || "District";
 
-  const fetchEvents = useCallback(async (currentPage = 1, limit = 9) => {
-    setLoading(true);
-    setError(null);
-    try {
-      const response = await eventsApi.getDistrictEvents({ page: currentPage, limit });
-      const { events: list, total } = parseDistrictEventsListResponse(response);
-      const districtOnly = filterDistrictOwnedEvents(list);
-      setEvents(districtOnly);
-      setTotalCount(districtOnly.length !== list.length ? districtOnly.length : total);
-    } catch (err) {
-      const message = err?.response?.data?.message || err?.message || "Failed to fetch district events";
-      toast.error(message);
-      setError(message);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+  const fetchEvents = useCallback(
+    async (
+      currentPage = 1,
+      limit = 9,
+      search = "",
+      status = "",
+      adminApprovalStatus = ""
+    ) => {
+      setLoading(true);
+      setError(null);
+      try {
+        const params = { page: currentPage, limit };
+        if (search.trim()) params.search = search.trim();
+        if (status) params.status = status;
+        if (adminApprovalStatus) params.adminApprovalStatus = adminApprovalStatus;
+
+        const response = await eventsApi.getDistrictPortalEvents(params);
+        const { events: list, total } = parseDistrictEventsListResponse(response);
+        setEvents(list);
+        setTotalCount(total);
+      } catch (err) {
+        const message = err?.response?.data?.message || err?.message || "Failed to fetch district events";
+        toast.error(message);
+        setError(message);
+      } finally {
+        setLoading(false);
+      }
+    },
+    []
+  );
 
   useEffect(() => {
-    fetchEvents(page + 1, rowsPerPage);
-  }, [page, rowsPerPage, fetchEvents]);
+    fetchEvents(page + 1, rowsPerPage, searchTerm, statusFilter, approvalFilter);
+  }, [page, rowsPerPage, statusFilter, approvalFilter, fetchEvents]);
+
+  const handleSearchChange = (event) => {
+    const value = event.target.value;
+    setSearchTerm(value);
+    setPage(0);
+
+    if (searchDebounceRef.current) {
+      clearTimeout(searchDebounceRef.current);
+    }
+
+    searchDebounceRef.current = setTimeout(() => {
+      fetchEvents(1, rowsPerPage, value, statusFilter, approvalFilter);
+    }, 400);
+  };
+
+  const hasActiveFilters = Boolean(searchTerm.trim() || statusFilter || approvalFilter);
 
   const handleDelete = async () => {
     if (!pendingDeleteEvent) return;
@@ -268,6 +316,58 @@ export const DistrictPortalEventsPage = () => {
               "linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(240,255,254,0.98) 100%)"
           }}
         >
+          <Stack
+            direction={{ xs: "column", lg: "row" }}
+            spacing={1.5}
+            sx={{ mb: 3, alignItems: { lg: "center" } }}
+          >
+            <TextField
+              value={searchTerm}
+              onChange={handleSearchChange}
+              placeholder="Search by title, description, location..."
+              sx={{ flex: 1, minWidth: { xs: "100%", sm: 280 } }}
+              slotProps={{
+                input: {
+                  startAdornment: <Search size={16} style={{ color: "#7aadaa", marginRight: 8 }} />
+                }
+              }}
+            />
+            <FormControl sx={{ minWidth: { xs: "100%", sm: 180 } }}>
+              <InputLabel>Event status</InputLabel>
+              <Select
+                value={statusFilter}
+                label="Event status"
+                onChange={(e) => {
+                  setStatusFilter(e.target.value);
+                  setPage(0);
+                }}
+              >
+                {EVENT_STATUS_FILTERS.map((opt) => (
+                  <MenuItem key={opt.value || "all"} value={opt.value}>
+                    {opt.label}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+            <FormControl sx={{ minWidth: { xs: "100%", sm: 200 } }}>
+              <InputLabel>Approval</InputLabel>
+              <Select
+                value={approvalFilter}
+                label="Approval"
+                onChange={(e) => {
+                  setApprovalFilter(e.target.value);
+                  setPage(0);
+                }}
+              >
+                {APPROVAL_FILTERS.map((opt) => (
+                  <MenuItem key={opt.value || "all"} value={opt.value}>
+                    {opt.label}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+          </Stack>
+
           {loading ? (
             <Box
               sx={{
@@ -291,13 +391,22 @@ export const DistrictPortalEventsPage = () => {
           ) : error ? (
             <Paper sx={{ p: 4, textAlign: "center", borderRadius: "22px", bgcolor: "#fff5f5" }}>
               <Typography color="error">{error}</Typography>
-              <Button onClick={() => fetchEvents(page + 1, rowsPerPage)} sx={{ mt: 2 }}>
+              <Button
+                onClick={() =>
+                  fetchEvents(page + 1, rowsPerPage, searchTerm, statusFilter, approvalFilter)
+                }
+                sx={{ mt: 2 }}
+              >
                 Retry
               </Button>
             </Paper>
           ) : events.length === 0 ? (
             <Paper sx={{ p: 5, textAlign: "center", borderRadius: "22px" }}>
-              <Typography color="#8d7f7b">No district events yet.</Typography>
+              <Typography color="#8d7f7b">
+                {hasActiveFilters
+                  ? "No events found for the current filters."
+                  : "No district events yet."}
+              </Typography>
               <Button
                 variant="contained"
                 startIcon={<Plus size={16} />}

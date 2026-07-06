@@ -18,7 +18,7 @@ export const useAuthStore = create()(
         try {
           const response = await authApi.requestLoginOtp(identifier);
           if (response.success) {
-            toast.success("OTP sent successfully");
+            toast.success(response.message || "OTP sent to registered email id");
             set({ isLoading: false });
             return response.data; // { id, type, identifier }
           } else {

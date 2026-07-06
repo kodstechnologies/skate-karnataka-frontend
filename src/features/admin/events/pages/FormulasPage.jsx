@@ -75,7 +75,7 @@ export default function FormulasPage({ portalMode = "admin" }) {
     setDeleting(true);
     try {
       const res = await api.delete(getFormulaId(pendingDelete));
-      toast.success(res?.message || "Formula deleted successfully");
+      toast.success(res?.message || "Rule deleted successfully");
       setPendingDelete(null);
       await fetchFormulas();
     } catch (err) {
@@ -129,15 +129,15 @@ export default function FormulasPage({ portalMode = "admin" }) {
                 Events
               </Typography>
             )}
-            <Typography sx={{ color: "white", fontWeight: 700 }}>Formula</Typography>
+            <Typography sx={{ color: "white", fontWeight: 700 }}>Rules</Typography>
           </Breadcrumbs>
           <Typography variant="h3" sx={{ fontWeight: 700, letterSpacing: "-0.05em", mb: 1.5 }}>
-            Competition Formulas
+            Competition Rules
           </Typography>
           <Typography sx={{ color: "rgba(255,255,255,0.86)", maxWidth: 620, lineHeight: 1.7 }}>
             {isOrgPortal
-              ? `Create your ${portalMode} qualification formulas, or use state admin formulas via the source setting below.`
-              : "Create and manage qualification formulas. These appear in Events-Category when you assign a formula to each lap name."}
+              ? `Create your ${portalMode} qualification rules, or use state admin rules via the source setting below.`
+              : "Create and manage qualification rules. These appear in Events-Category when you assign a rule to each lap name."}
           </Typography>
         </Stack>
       </Paper>
@@ -174,11 +174,11 @@ export default function FormulasPage({ portalMode = "admin" }) {
             </Box>
             <Box>
               <Typography variant="h5" sx={{ fontWeight: 700 }}>
-                Formula list
+                Rules list
               </Typography>
               <Typography sx={{ fontSize: 13, color: "#8d7f7b" }}>
                 {totalCount}{" "}
-                {isOrgPortal ? portal.listLabel : "formula"}
+                {isOrgPortal ? portal.listLabel : "rule"}
                 {totalCount === 1 ? "" : "s"} total
               </Typography>
             </Box>
@@ -193,7 +193,7 @@ export default function FormulasPage({ portalMode = "admin" }) {
               onClick={() => navigate(`${basePath}/create`)}
               sx={{ backgroundColor: "#f6765e", "&:hover": { backgroundColor: "#ea6b54" } }}
             >
-              Add formula
+              Add rule
             </Button>
           </Stack>
         </Stack>
@@ -202,7 +202,7 @@ export default function FormulasPage({ portalMode = "admin" }) {
           <Table>
             <TableHead>
               <TableRow sx={{ bgcolor: "#faf6f4" }}>
-                <TableCell sx={{ fontWeight: 700 }}>Formula name</TableCell>
+                <TableCell sx={{ fontWeight: 700 }}>Rule name</TableCell>
                 <TableCell sx={{ fontWeight: 700 }}>Rounds</TableCell>
                 <TableCell sx={{ fontWeight: 700 }} align="right">
                   Actions
@@ -222,8 +222,8 @@ export default function FormulasPage({ portalMode = "admin" }) {
                 <TableRow>
                   <TableCell colSpan={3} sx={{ py: 6, textAlign: "center", color: "#8d7f7b" }}>
                     {isOrgPortal
-                      ? `No ${portalMode} formulas yet. Add one or switch source to use state formulas.`
-                      : "No formulas yet. Click Add formula to create one."}
+                      ? `No ${portalMode} rules yet. Add one or switch source to use state rules.`
+                      : "No rules yet. Click Add rule to create one."}
                   </TableCell>
                 </TableRow>
               ) : (
@@ -271,9 +271,9 @@ export default function FormulasPage({ portalMode = "admin" }) {
 
       <ConfirmDeleteModal
         open={Boolean(pendingDelete)}
-        title="Delete formula"
+        title="Delete rule"
         itemLabel={pendingDelete ? getFormulaDisplayName(pendingDelete) : undefined}
-        description="Event categories using this formula will lose the link. This cannot be undone."
+        description="Event categories using this rule will lose the link. This cannot be undone."
         confirmLabel={deleting ? "Deleting…" : "Delete"}
         onClose={() => setPendingDelete(null)}
         onConfirm={handleDelete}

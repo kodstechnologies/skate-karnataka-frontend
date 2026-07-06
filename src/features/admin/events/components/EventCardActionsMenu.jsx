@@ -7,7 +7,7 @@ import {
   Menu,
   MenuItem
 } from "@mui/material";
-import { Hash, MoreVertical, Sparkles, Users } from "lucide-react";
+import { Download, Hash, MoreVertical, Sparkles, Users } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
 import { competitionApi } from "@/api/competition-api";
@@ -24,6 +24,8 @@ import {
   canShowGenerateCertificates,
   isEventEnded
 } from "@/features/admin/events/utils/eventCertificateUi";
+import { isEventCompleted } from "@/features/admin/events/utils/eventCompletionUi";
+import { downloadEventReportExcel } from "@/features/admin/events/utils/downloadEventReportExcel";
 
 const menuButtonSx = {
   flexShrink: 0,
@@ -52,6 +54,7 @@ export default function EventCardActionsMenu({
   const [anchorEl, setAnchorEl] = useState(null);
   const [generatingChest, setGeneratingChest] = useState(false);
   const [generatingCerts, setGeneratingCerts] = useState(false);
+  const [downloadingReport, setDownloadingReport] = useState(false);
 
   if (!eventId) {
     return null;
@@ -62,6 +65,7 @@ export default function EventCardActionsMenu({
     canShowGenerateChestNumbers(role) && isRegistrationClosedForChestGeneration(event);
   const showGenerateCerts =
     canShowGenerateCertificates(role) && isEventEnded(event);
+  const showDownloadReport = isEventCompleted(event);
 
   const resolvedDashboardPath =
     dashboardPath ||
@@ -151,7 +155,34 @@ export default function EventCardActionsMenu({
     }
   };
 
-  const busy = generatingChest || generatingCerts;
+  const handleDownloadReport = async () => {
+    handleClose();
+    setDownloadingReport(true);
+    try {
+      const [summaryRes, detailsRes] = await Promise.all([
+        competitionApi.getChestNumberSummary(eventId, { page: 1, limit: 1 }),
+        competitionApi.getFullDetails(eventId)
+      ]);
+
+      const summaryPayload = summaryRes?.data ?? summaryRes;
+      const summary = summaryPayload?.data ?? summaryPayload;
+      const detailsPayload = detailsRes?.data ?? detailsRes;
+      const competitions = detailsPayload?.data ?? detailsPayload;
+
+      downloadEventReportExcel({
+        summary,
+        competitions: Array.isArray(competitions) ? competitions : [],
+        eventName: event?.header || summary?.eventName
+      });
+      toast.success("Report downloaded");
+    } catch (err) {
+      toast.error(err?.response?.data?.message || "Failed to download report");
+    } finally {
+      setDownloadingReport(false);
+    }
+  };
+
+  const busy = generatingChest || generatingCerts || downloadingReport;
 
   return (
     <>
@@ -201,6 +232,18 @@ export default function EventCardActionsMenu({
               )}
             </ListItemIcon>
             <ListItemText primary="Generate chest numbers" />
+          </MenuItem>
+        )}
+
+        {showDownloadReport && (
+          <MenuItem onClick={handleDownloadReport} disabled={downloadingReport}>
+            <ListItemIcon>
+              {downloadingReport ? <CircularProgress size={18} /> : <Download size={18} />}
+            </ListItemIcon>
+            <ListItemText
+              primary="Download report"
+              secondary="Excel: rounds, attendance & winners"
+            />
           </MenuItem>
         )}
 

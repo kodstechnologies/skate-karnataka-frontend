@@ -8,21 +8,21 @@ export const PORTAL_FORMULA_CONFIG = {
     optionsApi: null,
     basePath: "/events/formula",
     dashboardPath: "/dashboard",
-    listLabel: "formula"
+    listLabel: "rule"
   },
   club: {
     api: clubFormulaApi,
     optionsApi: clubFormulaApi,
     basePath: "/club/formula",
     dashboardPath: "/club/dashboard",
-    listLabel: "club formula"
+    listLabel: "club rule"
   },
   district: {
     api: districtFormulaApi,
     optionsApi: districtFormulaApi,
     basePath: "/district/formula",
     dashboardPath: "/district/dashboard",
-    listLabel: "district formula"
+    listLabel: "district rule"
   }
 };
 

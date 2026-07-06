@@ -72,7 +72,7 @@ export const clubNavigationGroups = [
           {
             slug: "club-formula",
             to: "/club/formula",
-            label: "Formula",
+            label: "Rules",
             icon: FunctionSquare
           }
         ]
@@ -144,7 +144,7 @@ export const districtNavigationGroups = [
           {
             slug: "district-formula",
             to: "/district/formula",
-            label: "Formula",
+            label: "Rules",
             icon: FunctionSquare
           }
         ]

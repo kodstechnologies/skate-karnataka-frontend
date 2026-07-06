@@ -68,10 +68,10 @@ export default function FormulaFormPage({ portalMode = "admin" }) {
     try {
       if (isEditing) {
         const res = await api.update(formulaId, payload);
-        toast.success(res?.message || "Formula updated successfully");
+        toast.success(res?.message || "Rule updated successfully");
       } else {
         const res = await api.create(payload);
-        toast.success(res?.message || "Formula created successfully");
+        toast.success(res?.message || "Rule created successfully");
       }
       navigate(basePath);
     } catch (err) {
@@ -136,17 +136,17 @@ export default function FormulaFormPage({ portalMode = "admin" }) {
               to={basePath}
               sx={{ color: "inherit", textDecoration: "none", fontWeight: 600, "&:hover": { color: "white" } }}
             >
-              Formula
+              Rules
             </Typography>
             <Typography sx={{ color: "white", fontWeight: 700 }}>
               {isEditing ? "Edit" : "Create"}
             </Typography>
           </Breadcrumbs>
           <Typography variant="h3" sx={{ fontWeight: 700, letterSpacing: "-0.05em", mb: 1.5 }}>
-            {isEditing ? "Edit formula" : "Create formula"}
+            {isEditing ? "Edit rule" : "Create rule"}
           </Typography>
           <Typography sx={{ color: "rgba(255,255,255,0.86)", maxWidth: 620 }}>
-            Name the formula and configure round rules for competition promotion.
+            Name the rule and configure round settings for competition promotion.
           </Typography>
         </Stack>
       </Paper>
@@ -162,7 +162,7 @@ export default function FormulaFormPage({ portalMode = "admin" }) {
       >
         <Stack spacing={2.5}>
           <TextField
-            label="Formula name"
+            label="Rule name"
             placeholder='e.g. "Speed 500m — 6-8"'
             value={form.formulaName}
             onChange={(e) => {
@@ -170,7 +170,7 @@ export default function FormulaFormPage({ portalMode = "admin" }) {
               setErrors((err) => ({ ...err, formulaName: "" }));
             }}
             error={Boolean(errors.formulaName)}
-            helperText={errors.formulaName || "Shown when linking this formula to event categories"}
+            helperText={errors.formulaName || "Shown when linking this rule to event categories"}
             fullWidth
             required
           />
@@ -213,7 +213,7 @@ export default function FormulaFormPage({ portalMode = "admin" }) {
             disabled={saving}
             sx={{ backgroundColor: "#f6765e", "&:hover": { backgroundColor: "#ea6b54" } }}
           >
-            {saving ? "Saving…" : isEditing ? "Save changes" : "Create formula"}
+            {saving ? "Saving…" : isEditing ? "Save changes" : "Create rule"}
           </Button>
         </Stack>
       </Paper>
