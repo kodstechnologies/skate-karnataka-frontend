@@ -38,6 +38,7 @@ export const DistrictClubBulkImportPage = () => {
   const [rows, setRows] = useState([]);
   const [importing, setImporting] = useState(false);
   const [importProgress, setImportProgress] = useState({ done: 0, total: 0 });
+  const [isDraggingFile, setIsDraggingFile] = useState(false);
 
   useEffect(() => {
     if (districts.length === 0) {
@@ -54,9 +55,7 @@ export const DistrictClubBulkImportPage = () => {
   const validRows = useMemo(() => rows.filter((r) => r.errors.length === 0), [rows]);
   const invalidCount = rows.length - validRows.length;
 
-  const handleFileChange = async (event) => {
-    const file = event.target.files?.[0];
-    event.target.value = "";
+  const handleSpreadsheetFile = async (file) => {
     if (!file) return;
 
     try {
@@ -70,6 +69,39 @@ export const DistrictClubBulkImportPage = () => {
     } catch {
       toast.error("Could not read Excel file. Use .xlsx, .xls, or .csv");
     }
+  };
+
+  const handleFileChange = async (event) => {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    await handleSpreadsheetFile(file);
+  };
+
+  const handleDragOver = (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+  };
+
+  const handleDragEnter = (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+    setIsDraggingFile(true);
+  };
+
+  const handleDragLeave = (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+    if (!event.currentTarget.contains(event.relatedTarget)) {
+      setIsDraggingFile(false);
+    }
+  };
+
+  const handleDrop = async (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+    setIsDraggingFile(false);
+    const file = event.dataTransfer?.files?.[0];
+    await handleSpreadsheetFile(file);
   };
 
   const handleImport = async () => {
@@ -185,6 +217,30 @@ export const DistrictClubBulkImportPage = () => {
             Add single club instead
           </Button>
         </Stack>
+
+        <Box
+          onDragOver={handleDragOver}
+          onDragEnter={handleDragEnter}
+          onDragLeave={handleDragLeave}
+          onDrop={handleDrop}
+          sx={{
+            mt: 2,
+            borderRadius: "20px",
+            p: { xs: 2, md: 2.5 },
+            border: isDraggingFile ? "2px dashed #f6765e" : "2px dashed rgba(246,118,94,0.35)",
+            backgroundColor: isDraggingFile ? "rgba(246,118,94,0.12)" : "rgba(246,118,94,0.03)",
+            textAlign: "center",
+            transition: "all 0.2s ease"
+          }}
+        >
+          <FileSpreadsheet size={24} style={{ margin: "0 auto 8px", opacity: 0.7 }} />
+          <Typography sx={{ fontWeight: 700, color: "#2f2829" }}>
+            {isDraggingFile ? "Drop Excel / CSV file here" : "Drag and drop Excel / CSV here"}
+          </Typography>
+          <Typography sx={{ mt: 0.5, color: "#8d7f7b", fontSize: 13 }}>
+            Supported: .xlsx, .xls, .csv
+          </Typography>
+        </Box>
 
         {rows.length > 0 && (
           <Stack direction="row" spacing={1} sx={{ mt: 2, flexWrap: "wrap" }}>

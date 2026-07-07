@@ -28,11 +28,15 @@ import {
   VerifiedUser
 } from "@mui/icons-material";
 import { useAuthStore } from "@/features/auth/store/auth-store";
+import { districtPortalApi } from "@/api/district-portal-api";
+import { clubPortalApi } from "@/api/club-portal-api";
 import {
   buildProfileUpdateFormData,
+  buildOrgUpdateFormData,
   getProfileOrgCard,
   getProfileOrgDisplayName,
   getProfileRoleLabel,
+  hasOrgProfileChanges,
   normalizeProfileResponse
 } from "@/features/admin/pages/profileMapper";
 
@@ -270,7 +274,12 @@ const ProfilePageHeader = ({
               direction="row"
               spacing={1}
               useFlexGap
-              sx={{ flexWrap: "wrap", rowGap: 1, alignItems: "center", justifyContent: { xs: "center", md: "flex-start" } }}
+              sx={{
+                flexWrap: "wrap",
+                rowGap: 1,
+                alignItems: "center",
+                justifyContent: { xs: "center", md: "flex-start" }
+              }}
             >
               {showOrgPill ? (
                 <ProfileMetaPill icon={Business}>{orgDisplayName}</ProfileMetaPill>
@@ -368,7 +377,10 @@ const ProfileInfoField = ({
         slotProps={{
           input: {
             startAdornment: (
-              <InputAdornment position="start" sx={multiline ? { alignSelf: "flex-start", mt: 1.8 } : undefined}>
+              <InputAdornment
+                position="start"
+                sx={multiline ? { alignSelf: "flex-start", mt: 1.8 } : undefined}
+              >
                 <Icon sx={{ color: disabled ? "#b19f99" : "#f6765e" }} />
               </InputAdornment>
             ),
@@ -399,7 +411,8 @@ const emptyForm = {
   orgName: "",
   orgSubtitle: "",
   orgAddress: "",
-  orgAbout: ""
+  orgAbout: "",
+  orgImg: ""
 };
 
 const mapProfileToForm = (data, role) => normalizeProfileResponse(data, role);
@@ -411,7 +424,9 @@ export const ProfilePage = () => {
   const [isSaving, setIsSaving] = useState(false);
   const [loadError, setLoadError] = useState("");
   const fileInputRef = useRef(null);
+  const orgFileInputRef = useRef(null);
   const [selectedFile, setSelectedFile] = useState(null);
+  const [selectedOrgFile, setSelectedOrgFile] = useState(null);
   const [formData, setFormData] = useState(emptyForm);
 
   useEffect(() => {
@@ -463,20 +478,59 @@ export const ProfilePage = () => {
     }
   };
 
+  const handleOrgImageClick = () => {
+    if (isEditing && (normalizedRole === "district" || normalizedRole === "club")) {
+      orgFileInputRef.current?.click();
+    }
+  };
+
+  const handleOrgFileChange = (e) => {
+    const file = e.target.files?.[0];
+    if (!file?.type?.startsWith("image/")) return;
+
+    setSelectedOrgFile(file);
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setFormData((prev) => ({ ...prev, orgImg: reader.result }));
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleToggleEdit = () => {
+    if (isEditing) {
+      setSelectedFile(null);
+      setSelectedOrgFile(null);
+      setFormData(mapProfileToForm(user, role));
+    }
+    setIsEditing(!isEditing);
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setIsSaving(true);
     try {
       const data = buildProfileUpdateFormData(formData, selectedFile, role);
-      const updated = await updateProfile(data);
+      await updateProfile(data);
+
+      if (
+        normalizedRole === "district" &&
+        hasOrgProfileChanges(formData, user, role, selectedOrgFile)
+      ) {
+        await districtPortalApi.updateProfile(buildOrgUpdateFormData(formData, selectedOrgFile));
+      }
+
+      if (
+        normalizedRole === "club" &&
+        hasOrgProfileChanges(formData, user, role, selectedOrgFile)
+      ) {
+        await clubPortalApi.updateProfile(buildOrgUpdateFormData(formData, selectedOrgFile));
+      }
+
       setIsEditing(false);
       setSelectedFile(null);
-      if (updated) {
-        setFormData(mapProfileToForm(updated, role));
-      } else {
-        const refreshed = await getProfile();
-        setFormData(mapProfileToForm(refreshed, role));
-      }
+      setSelectedOrgFile(null);
+      const refreshed = await getProfile();
+      setFormData(mapProfileToForm(refreshed, role));
     } catch (error) {
       console.error("Error updating profile:", error);
     } finally {
@@ -487,6 +541,11 @@ export const ProfilePage = () => {
   const normalizedRole = String(role || user?.role || "").toLowerCase();
   const orgCard = getProfileOrgCard(normalizedRole, formData, user);
   const orgDisplayName = getProfileOrgDisplayName(normalizedRole, formData, user);
+  const orgImageSrc = formData.orgImg || orgCard.image;
+  const canEditOrgImage = (normalizedRole === "district" || normalizedRole === "club") && isEditing;
+  const canEditOrgFields = canEditOrgImage;
+  const orgImageUploadLabel =
+    normalizedRole === "club" ? "Upload club image" : "Upload district image";
 
   const displayName =
     formData.fullName ||
@@ -495,14 +554,9 @@ export const ProfilePage = () => {
     user?.fullName ||
     "";
   const headline = displayName || orgDisplayName || "Profile";
-  const krsaId =
-    formData.krsaId || user?.currentMember?.krsaId || user?.krsaId || "";
+  const krsaId = formData.krsaId || user?.currentMember?.krsaId || user?.krsaId || "";
   const avatarSrc =
-    formData.img ||
-    user?.currentMember?.photo ||
-    user?.memberDetails?.photo ||
-    user?.img ||
-    "";
+    formData.img || user?.currentMember?.photo || user?.memberDetails?.photo || user?.img || "";
   const roleLabel = getProfileRoleLabel(role || user?.role, { ...user, ...formData });
 
   const getInitials = (name) => {
@@ -614,7 +668,7 @@ export const ProfilePage = () => {
       >
         <ProfilePageHeader
           isEditing={isEditing}
-          onToggleEdit={() => setIsEditing(!isEditing)}
+          onToggleEdit={handleToggleEdit}
           avatarSrc={avatarSrc}
           avatarInitials={getInitials(displayName)}
           onAvatarClick={handleImageClick}
@@ -641,26 +695,123 @@ export const ProfilePage = () => {
                 >
                   {orgCard.title}
                 </Typography>
-                <Stack spacing={2.5} sx={{ mt: 2 }}>
-                  {orgCard.items.map((item) => (
-                    <Box key={`${item.label}-${item.value}`}>
-                      <Typography sx={{ fontSize: "0.72rem", color: "#8d7f7b", fontWeight: 600 }}>
-                        {item.label}
-                      </Typography>
-                      <Typography
+                {orgImageSrc || canEditOrgImage ? (
+                  <Box sx={{ position: "relative", mt: 2 }}>
+                    {orgImageSrc ? (
+                      <Box
+                        component="img"
+                        src={orgImageSrc}
+                        alt={orgDisplayName || orgCard.title}
+                        onClick={handleOrgImageClick}
                         sx={{
-                          fontWeight: item.label === "Name" ? 800 : 600,
-                          color: "#2f2829",
-                          mt: 0.5,
-                          fontSize: item.label === "Name" ? "1.05rem" : "0.95rem",
-                          lineHeight: 1.5,
-                          wordBreak: "break-word"
+                          width: "100%",
+                          height: 160,
+                          objectFit: "cover",
+                          borderRadius: "18px",
+                          border: "1px solid rgba(246, 118, 94, 0.2)",
+                          boxShadow: "0 8px 24px rgba(246, 118, 94, 0.12)",
+                          cursor: canEditOrgImage ? "pointer" : "default",
+                          transition: "transform 0.2s ease",
+                          "&:hover": canEditOrgImage ? { transform: "scale(1.01)" } : {}
+                        }}
+                      />
+                    ) : (
+                      <Box
+                        onClick={handleOrgImageClick}
+                        sx={{
+                          width: "100%",
+                          height: 160,
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          borderRadius: "18px",
+                          border: "2px dashed rgba(246, 118, 94, 0.35)",
+                          bgcolor: "rgba(246, 118, 94, 0.04)",
+                          color: "#8d7f7b",
+                          cursor: "pointer",
+                          fontSize: "0.9rem",
+                          fontWeight: 600,
+                          "&:hover": {
+                            borderColor: "#f6765e",
+                            bgcolor: "rgba(246, 118, 94, 0.08)"
+                          }
                         }}
                       >
-                        {item.value}
-                      </Typography>
-                    </Box>
-                  ))}
+                        {orgImageUploadLabel}
+                      </Box>
+                    )}
+                    {canEditOrgImage && orgImageSrc ? (
+                      <IconButton
+                        onClick={handleOrgImageClick}
+                        sx={{
+                          position: "absolute",
+                          bottom: 10,
+                          right: 10,
+                          bgcolor: "white",
+                          color: "#f6765e",
+                          boxShadow: "0 8px 20px rgba(0,0,0,0.2)",
+                          "&:hover": { bgcolor: "#f8f9fa", transform: "scale(1.08)" },
+                          transition: "all 0.2s ease",
+                          width: 36,
+                          height: 36
+                        }}
+                      >
+                        <CameraAlt fontSize="small" />
+                      </IconButton>
+                    ) : null}
+                    <input
+                      type="file"
+                      hidden
+                      ref={orgFileInputRef}
+                      accept="image/*"
+                      onChange={handleOrgFileChange}
+                    />
+                  </Box>
+                ) : null}
+                <Stack spacing={2.5} sx={{ mt: 2 }}>
+                  {orgCard.items.map((item) => {
+                    const showEditable = canEditOrgFields && item.editable && item.field;
+                    const displayValue = item.value || "—";
+
+                    return (
+                      <Box key={item.label}>
+                        <Typography sx={{ fontSize: "0.72rem", color: "#8d7f7b", fontWeight: 600 }}>
+                          {item.label}
+                        </Typography>
+                        {showEditable ? (
+                          <TextField
+                            fullWidth
+                            name={item.field}
+                            value={formData[item.field] ?? ""}
+                            onChange={handleChange}
+                            multiline={Boolean(item.multiline)}
+                            rows={item.rows || 1}
+                            sx={{
+                              mt: 0.75,
+                              ...textFieldStyles,
+                              "& .MuiOutlinedInput-root": {
+                                ...textFieldStyles["& .MuiOutlinedInput-root"],
+                                backgroundColor: "#fff"
+                              }
+                            }}
+                          />
+                        ) : (
+                          <Typography
+                            sx={{
+                              fontWeight: item.label === "Name" ? 800 : 600,
+                              color: displayValue === "—" ? "#b19f99" : "#2f2829",
+                              mt: 0.5,
+                              fontSize: item.label === "Name" ? "1.05rem" : "0.95rem",
+                              lineHeight: 1.5,
+                              wordBreak: "break-word"
+                            }}
+                          >
+                            {displayValue}
+                          </Typography>
+                        )}
+                      </Box>
+                    );
+                  })}
                 </Stack>
               </Paper>
             </Grid>
@@ -707,7 +858,9 @@ export const ProfilePage = () => {
                             </InputAdornment>
                           ) : (
                             <Tooltip title="Verified email">
-                              <VerifiedUser sx={{ color: "#4caf50", fontSize: 22, flexShrink: 0 }} />
+                              <VerifiedUser
+                                sx={{ color: "#4caf50", fontSize: 22, flexShrink: 0 }}
+                              />
                             </Tooltip>
                           )
                         }

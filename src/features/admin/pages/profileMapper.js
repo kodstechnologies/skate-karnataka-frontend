@@ -18,11 +18,7 @@ export const getUserAvatarSrc = (user) =>
   );
 
 export const getUserDisplayName = (user) =>
-  norm(
-    user?.currentMember?.fullName ||
-      user?.memberDetails?.fullName ||
-      user?.fullName
-  );
+  norm(user?.currentMember?.fullName || user?.memberDetails?.fullName || user?.fullName);
 
 export const getUserInitials = (user, fallback = "A") => {
   const name = getUserDisplayName(user);
@@ -63,6 +59,7 @@ export const normalizeProfileResponse = (data, role) => {
       districtId: norm(data?.districtId),
       orgAddress: norm(data?.officeAddress),
       orgAbout: norm(data?.about),
+      orgImg: norm(data?.img)
     };
   }
 
@@ -83,6 +80,7 @@ export const normalizeProfileResponse = (data, role) => {
       districtName: norm(data?.districtName),
       orgAddress: norm(data?.address),
       orgAbout: norm(data?.about),
+      orgImg: norm(data?.image || data?.img)
     };
   }
 
@@ -99,9 +97,11 @@ export const normalizeProfileResponse = (data, role) => {
       gender: norm(member.gender || data?.gender),
       role: norm(member.role || data?.role) || "State",
       memberId: norm(member.userId || member._id || data?._id),
-      stateName: norm(data?.name || data?.stateDetails?.stateName || data?.stateName || "Skate Karnataka"),
+      stateName: norm(
+        data?.name || data?.stateDetails?.stateName || data?.stateName || "Skate Karnataka"
+      ),
       allowedModules,
-      orgAbout: norm(data?.about),
+      orgAbout: norm(data?.about)
     };
   }
 
@@ -116,7 +116,7 @@ export const normalizeProfileResponse = (data, role) => {
     role: norm(data?.role) || "Admin",
     memberId: norm(data?._id || data?.userId),
     orgName: "Skate Karnataka",
-    orgSubtitle: "KRSA Administration",
+    orgSubtitle: "KRSA Administration"
   };
 };
 
@@ -133,31 +133,60 @@ export const getProfileRoleLabel = (role, user) => {
 
 export const getProfileOrgCard = (role, formData = {}, user = {}) => {
   const normalizedRole = String(role || formData.role || user?.role || "").toLowerCase();
-  const withValues = (items) =>
-    items.filter((item) => item && norm(item.value));
+  const withValues = (items) => items.filter((item) => item && norm(item.value));
 
   if (normalizedRole === "district") {
     return {
       title: "District organization",
-      items: withValues([
+      image: formData.orgImg || user?.img || "",
+      items: [
         { label: "Name", value: formData.districtName || user?.districtName },
         { label: "District KRSA ID", value: formData.districtKrsaId || user?.districtKrsaId },
-        { label: "Office address", value: formData.orgAddress || user?.officeAddress },
-        { label: "Platform", value: KRSA_PLATFORM },
-      ]),
+        {
+          label: "Office address",
+          value: formData.orgAddress || user?.officeAddress || "",
+          field: "orgAddress",
+          editable: true,
+          multiline: true,
+          rows: 3
+        },
+        {
+          label: "About",
+          value: formData.orgAbout || user?.about || "",
+          field: "orgAbout",
+          editable: true,
+          multiline: true,
+          rows: 4
+        }
+      ]
     };
   }
 
   if (normalizedRole === "club") {
     return {
       title: "Club organization",
-      items: withValues([
+      image: formData.orgImg || user?.image || user?.img || "",
+      items: [
         { label: "Name", value: formData.clubName || user?.name },
         { label: "Club ID", value: formData.clubId || user?.clubId },
         { label: "District", value: formData.districtName || user?.districtName },
-        { label: "Office address", value: formData.orgAddress || user?.address },
-        { label: "Platform", value: KRSA_PLATFORM },
-      ]),
+        {
+          label: "Office address",
+          value: formData.orgAddress || user?.address || "",
+          field: "orgAddress",
+          editable: true,
+          multiline: true,
+          rows: 3
+        },
+        {
+          label: "About",
+          value: formData.orgAbout || user?.about || "",
+          field: "orgAbout",
+          editable: true,
+          multiline: true,
+          rows: 4
+        }
+      ]
     };
   }
 
@@ -173,12 +202,12 @@ export const getProfileOrgCard = (role, formData = {}, user = {}) => {
         { label: "Name", value: formData.stateName || user?.name || "Skate Karnataka" },
         {
           label: "Account type",
-          value: isSubAdmin ? "Sub Administrator" : "State Official",
+          value: isSubAdmin ? "Sub Administrator" : "State Official"
         },
         isSubAdmin ? { label: "Assigned modules", value: modules.join(", ") } : null,
         { label: "About", value: formData.orgAbout || user?.about },
-        { label: "Platform", value: KRSA_PLATFORM },
-      ]),
+        { label: "Platform", value: KRSA_PLATFORM }
+      ])
     };
   }
 
@@ -187,8 +216,8 @@ export const getProfileOrgCard = (role, formData = {}, user = {}) => {
     items: withValues([
       { label: "Name", value: formData.orgName || "Skate Karnataka" },
       { label: "Account type", value: formData.orgSubtitle || "Administrator" },
-      { label: "Platform", value: KRSA_PLATFORM },
-    ]),
+      { label: "Platform", value: KRSA_PLATFORM }
+    ])
   };
 };
 
@@ -222,4 +251,35 @@ export const buildProfileUpdateFormData = (formData, selectedFile, role) => {
   }
 
   return payload;
+};
+
+export const buildDistrictOrgUpdateFormData = (formData, selectedOrgFile) =>
+  buildOrgUpdateFormData(formData, selectedOrgFile);
+
+export const buildClubOrgUpdateFormData = (formData, selectedOrgFile) =>
+  buildOrgUpdateFormData(formData, selectedOrgFile);
+
+export const buildOrgUpdateFormData = (formData, selectedOrgFile) => {
+  const payload = new FormData();
+  payload.append("officeAddress", formData.orgAddress || "");
+  payload.append("about", formData.orgAbout || "");
+  if (selectedOrgFile) {
+    payload.append("img", selectedOrgFile);
+  }
+  return payload;
+};
+
+export const hasDistrictOrgChanges = (formData, user, role, selectedOrgFile) =>
+  hasOrgProfileChanges(formData, user, role, selectedOrgFile);
+
+export const hasClubOrgChanges = (formData, user, role, selectedOrgFile) =>
+  hasOrgProfileChanges(formData, user, role, selectedOrgFile);
+
+export const hasOrgProfileChanges = (formData, user, role, selectedOrgFile) => {
+  if (selectedOrgFile) return true;
+  const original = normalizeProfileResponse(user, role);
+  return (
+    (formData.orgAddress || "") !== (original.orgAddress || "") ||
+    (formData.orgAbout || "") !== (original.orgAbout || "")
+  );
 };
