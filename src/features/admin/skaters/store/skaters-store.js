@@ -54,8 +54,7 @@ export const useSkatersStore = create((set) => ({
 
       set((state) => ({
         isSaving: false,
-        selectedSkater:
-          state.selectedSkater?._id === id ? updated : state.selectedSkater,
+        selectedSkater: state.selectedSkater?._id === id ? updated : state.selectedSkater,
         skaters: state.skaters.map((skater) =>
           skater._id === id
             ? {
@@ -103,6 +102,27 @@ export const useSkatersStore = create((set) => ({
     } catch (error) {
       console.error("Failed to update skater block status:", error);
       toast.error(error.response?.data?.message || "Failed to update skater block status");
+      return false;
+    }
+  },
+
+  createSkater: async (payload) => {
+    set({ isSaving: true });
+    try {
+      const response = await skaterApi.create(payload);
+      const created = response?.data ?? response;
+
+      set((state) => ({
+        isSaving: false,
+        skaters: created?._id ? [created, ...state.skaters] : state.skaters
+      }));
+
+      toast.success(response?.message || "Skater created successfully");
+      return true;
+    } catch (error) {
+      console.error("Failed to create skater:", error);
+      set({ isSaving: false });
+      toast.error(error.response?.data?.message || "Failed to create skater");
       return false;
     }
   }

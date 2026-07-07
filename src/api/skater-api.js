@@ -7,6 +7,9 @@ export const skaterApi = {
   getById: async (id) => {
     return api.get(`/admin/v1/skater/${id}`);
   },
+  create: async (data) => {
+    return api.post("/admin/v1/skater", data);
+  },
   update: async (id, data) => {
     return api.patch(`/admin/v1/skater/${id}`, data);
   },

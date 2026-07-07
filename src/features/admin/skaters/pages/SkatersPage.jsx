@@ -29,8 +29,10 @@ import { ChevronRight, Search, ShieldCheck, Trophy } from "lucide-react";
 import { Link as RouterLink, useNavigate } from "react-router-dom";
 import skatersHero from "@/assets/Skating_header.jpg";
 import { ConfirmDeleteModal } from "@/components/ui/ConfirmDeleteModal";
+import { MemberAddMenuButton } from "@/components/members/MemberAddMenuButton";
 import { useSkatersStore } from "@/features/admin/skaters/store/skaters-store";
 import { getSkaterDistrictName } from "@/features/admin/skaters/utils/skater-display";
+import { formatGenderLabel } from "@/utils/validationHelper";
 
 // Custom useDebounce hook
 function useDebounce(value, delay) {
@@ -46,12 +48,7 @@ function useDebounce(value, delay) {
   return debouncedValue;
 }
 
-const formatGender = (gender) => {
-  if (!gender) {
-    return "-";
-  }
-  return gender.charAt(0).toUpperCase() + gender.slice(1);
-};
+const formatGender = formatGenderLabel;
 
 const getStatusChipSx = (isBlocked) =>
   isBlocked
@@ -241,7 +238,25 @@ export const SkatersPage = () => {
             </Typography>
           </Box>
 
-          <Stack direction={{ xs: "column", sm: "row" }} spacing={1.5}>
+          <Stack
+            direction={{ xs: "column", sm: "row" }}
+            spacing={1.5}
+            sx={{ alignItems: { sm: "center" } }}
+          >
+            <MemberAddMenuButton
+              label="Add skater"
+              singleLabel="Add skater"
+              singleDescription="Single registration form"
+              bulkLabel="Bulk upload (Excel)"
+              bulkDescription="Upload .xlsx / .xls / .csv"
+              singleTo="/skaters/create"
+              bulkTo="/skaters/bulk"
+              sx={{
+                backgroundColor: "#f6765e",
+                "&:hover": { backgroundColor: "#ea6b54" },
+                whiteSpace: "nowrap"
+              }}
+            />
             <TextField
               value={searchTerm}
               onChange={handleSearchChange}

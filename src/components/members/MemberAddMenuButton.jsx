@@ -1,11 +1,5 @@
 import { useState } from "react";
-import {
-  Button,
-  ListItemIcon,
-  ListItemText,
-  Menu,
-  MenuItem
-} from "@mui/material";
+import { Button, ListItemIcon, ListItemText, Menu, MenuItem } from "@mui/material";
 import { ChevronDown, FileSpreadsheet, Plus, UserPlus } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
@@ -13,6 +7,10 @@ export const MemberAddMenuButton = ({
   singleTo,
   bulkTo,
   label = "Add member",
+  singleLabel = "Add member",
+  singleDescription = "Single registration form",
+  bulkLabel = "Mass add (Excel)",
+  bulkDescription = "Upload .xlsx / .xls / .csv",
   variant = "contained",
   size = "medium",
   startIcon = <Plus size={16} />,
@@ -56,8 +54,8 @@ export const MemberAddMenuButton = ({
             <UserPlus size={18} />
           </ListItemIcon>
           <ListItemText
-            primary="Add member"
-            secondary="Single registration form"
+            primary={singleLabel}
+            secondary={singleDescription}
             secondaryTypographyProps={{ fontSize: 12 }}
           />
         </MenuItem>
@@ -71,8 +69,8 @@ export const MemberAddMenuButton = ({
             <FileSpreadsheet size={18} />
           </ListItemIcon>
           <ListItemText
-            primary="Mass add (Excel)"
-            secondary="Upload .xlsx / .xls / .csv"
+            primary={bulkLabel}
+            secondary={bulkDescription}
             secondaryTypographyProps={{ fontSize: 12 }}
           />
         </MenuItem>

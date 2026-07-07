@@ -24,3 +24,23 @@ export const validatePhone = (phone, isRequired = true) => {
   }
   return "";
 };
+
+export const normalizeGender = (value, defaultValue = "male") => {
+  const v = String(value || "")
+    .trim()
+    .toLowerCase();
+  if (!v) return defaultValue;
+  if (v === "m" || v === "male" || v === "man") return "male";
+  if (v === "f" || v === "female" || v === "woman") return "female";
+  if (v === "o" || v === "other") return "other";
+  return v;
+};
+
+export const isValidGender = (value) =>
+  ["male", "female", "other"].includes(normalizeGender(value, ""));
+
+export const formatGenderLabel = (gender) => {
+  const normalized = normalizeGender(gender, "");
+  if (!normalized) return "-";
+  return normalized.charAt(0).toUpperCase() + normalized.slice(1);
+};

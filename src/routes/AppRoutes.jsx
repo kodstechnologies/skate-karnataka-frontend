@@ -36,6 +36,8 @@ import { SchoolRequestDetailsPage } from "@/features/admin/requests/pages/School
 import { SchoolRequestsPage } from "@/features/admin/requests/pages/SchoolRequestsPage";
 import { SkaterDetailsPage } from "@/features/admin/skaters/pages/SkaterDetailsPage";
 import { SkaterFormPage } from "@/features/admin/skaters/pages/SkaterFormPage";
+import { SkaterCreatePage } from "@/features/admin/skaters/pages/SkaterCreatePage";
+import { SkaterBulkImportPage } from "@/features/admin/skaters/pages/SkaterBulkImportPage";
 import { SkatersPage } from "@/features/admin/skaters/pages/SkatersPage";
 import { ClubMediaPage } from "@/features/admin/media/pages/ClubMediaPage";
 import { ClubPortalMediaPage } from "@/features/admin/media/pages/ClubPortalMediaPage";
@@ -215,6 +217,8 @@ export const AppRoutes = () => {
         />
         <Route path="/officials/:officialId/edit" element={<OfficialFormPage />} />
         <Route path="/skaters" element={<SkatersPage />} />
+        <Route path="/skaters/create" element={<SkaterCreatePage />} />
+        <Route path="/skaters/bulk" element={<SkaterBulkImportPage />} />
         <Route path="/skaters/:skaterId/edit" element={<SkaterFormPage />} />
         <Route path="/skaters/:skaterId" element={<SkaterDetailsPage />} />
         <Route path="/clubs" element={<ClubsPage />} />
