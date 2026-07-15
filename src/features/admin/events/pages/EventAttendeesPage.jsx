@@ -17,11 +17,12 @@ import {
   Typography,
   Button
 } from "@mui/material";
-import { ChevronRight, Search } from "lucide-react";
+import { ChevronRight, Download, Search } from "lucide-react";
 import { Link as RouterLink, useLocation, useNavigate, useParams } from "react-router-dom";
 import toast from "react-hot-toast";
 import { competitionApi } from "@/api/competition-api";
 import { resolveAttendeesPortalContext } from "@/features/admin/events/utils/eventAttendeesNavigation";
+import { downloadAttendeesExcel } from "@/features/admin/events/utils/downloadAttendeesExcel";
 
 function useDebounce(value, delay) {
   const [debouncedValue, setDebouncedValue] = useState(value);
@@ -53,6 +54,7 @@ export const EventAttendeesPage = () => {
   const [discipline, setDiscipline] = useState("");
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
+  const [downloading, setDownloading] = useState(false);
 
   const debouncedSearch = useDebounce(search, 400);
 
@@ -93,6 +95,7 @@ export const EventAttendeesPage = () => {
   }, [eventId, page, rowsPerPage, debouncedSearch, ageGroup, lap, discipline]);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     loadAttendees();
   }, [loadAttendees]);
 
@@ -103,6 +106,64 @@ export const EventAttendeesPage = () => {
   const attendees = summary.attendees || [];
   const pagination = summary.pagination || emptySummary.pagination;
   const filterOptions = summary.filters || emptySummary.filters;
+  const canDownloadExcel = (summary.totalWithChestNo ?? 0) > 0;
+
+  const parseSummaryPayload = (response) => {
+    const payload = response?.data ?? response;
+    return payload?.data ?? payload;
+  };
+
+  const fetchAllMatchingAttendees = async () => {
+    const pageLimit = 100;
+    const firstResponse = await competitionApi.getChestNumberSummary(eventId, {
+      page: 1,
+      limit: pageLimit,
+      search: debouncedSearch,
+      ageGroup,
+      lap,
+      discipline
+    });
+    const firstData = parseSummaryPayload(firstResponse);
+    const total = firstData?.pagination?.total ?? 0;
+    const collected = Array.isArray(firstData?.attendees) ? [...firstData.attendees] : [];
+    const totalPages = Math.max(1, Math.ceil(total / pageLimit));
+
+    for (let nextPage = 2; nextPage <= totalPages; nextPage += 1) {
+      const response = await competitionApi.getChestNumberSummary(eventId, {
+        page: nextPage,
+        limit: pageLimit,
+        search: debouncedSearch,
+        ageGroup,
+        lap,
+        discipline
+      });
+      const data = parseSummaryPayload(response);
+      if (Array.isArray(data?.attendees)) {
+        collected.push(...data.attendees);
+      }
+    }
+
+    return collected;
+  };
+
+  const handleDownloadExcel = async () => {
+    if (!canDownloadExcel || downloading) return;
+
+    setDownloading(true);
+    try {
+      const rows = await fetchAllMatchingAttendees();
+      if (rows.length === 0) {
+        toast.error("No attendees to download for the selected filters");
+        return;
+      }
+      await downloadAttendeesExcel({ attendees: rows, eventName });
+      toast.success("Excel downloaded");
+    } catch (err) {
+      toast.error(err?.response?.data?.message || "Failed to download Excel");
+    } finally {
+      setDownloading(false);
+    }
+  };
 
   return (
     <Box className="space-y-5">
@@ -118,10 +179,18 @@ export const EventAttendeesPage = () => {
         }}
       >
         <Breadcrumbs separator={<ChevronRight size={14} />} sx={{ mb: 2 }}>
-          <Typography component={RouterLink} to={dashboardPath} sx={{ textDecoration: "none", color: "inherit" }}>
+          <Typography
+            component={RouterLink}
+            to={dashboardPath}
+            sx={{ textDecoration: "none", color: "inherit" }}
+          >
             {dashboardLabel}
           </Typography>
-          <Typography component={RouterLink} to={returnTo} sx={{ textDecoration: "none", color: "inherit" }}>
+          <Typography
+            component={RouterLink}
+            to={returnTo}
+            sx={{ textDecoration: "none", color: "inherit" }}
+          >
             {returnLabel}
           </Typography>
           <Typography sx={{ color: "#2f2829", fontWeight: 700 }}>Attendees</Typography>
@@ -136,17 +205,33 @@ export const EventAttendeesPage = () => {
             <Typography variant="h5" sx={{ fontWeight: 700, letterSpacing: "-0.03em" }}>
               Who will attend
             </Typography>
-            <Typography sx={{ mt: 0.75, color: "#8d7f7b" }}>
-              {eventName}
-            </Typography>
+            <Typography sx={{ mt: 0.75, color: "#8d7f7b" }}>{eventName}</Typography>
           </Box>
-          <Button variant="outlined" onClick={() => navigate(returnTo)}>
-            Back to {returnLabel.toLowerCase()}
-          </Button>
+          <Stack direction="row" spacing={1.5} sx={{ flexWrap: "wrap" }}>
+            <Button
+              variant="contained"
+              startIcon={<Download size={16} />}
+              onClick={handleDownloadExcel}
+              disabled={!canDownloadExcel || downloading}
+              sx={{
+                bgcolor: "#f6765e",
+                "&:hover": { bgcolor: "#e45f47" },
+                "&.Mui-disabled": { bgcolor: "#f3e8e4", color: "#b19f99" }
+              }}
+            >
+              {downloading ? "Downloading..." : "Download Excel"}
+            </Button>
+            <Button variant="outlined" onClick={() => navigate(returnTo)}>
+              Back to {returnLabel.toLowerCase()}
+            </Button>
+          </Stack>
         </Stack>
 
         <Stack direction="row" spacing={1} useFlexGap sx={{ mt: 2, flexWrap: "wrap" }}>
-          <Chip label={`${summary.totalRegistered ?? 0} total registered`} sx={{ fontWeight: 700 }} />
+          <Chip
+            label={`${summary.totalRegistered ?? 0} total registered`}
+            sx={{ fontWeight: 700 }}
+          />
           <Chip
             label={`${summary.totalWithChestNo ?? 0} with chest no`}
             sx={{ fontWeight: 700, bgcolor: "#dbeafe", color: "#1d4ed8" }}
@@ -167,7 +252,11 @@ export const EventAttendeesPage = () => {
           background: "#fff"
         }}
       >
-        <Stack direction={{ xs: "column", md: "row" }} spacing={2} sx={{ p: 2.5, flexWrap: "wrap" }}>
+        <Stack
+          direction={{ xs: "column", md: "row" }}
+          spacing={2}
+          sx={{ p: 2.5, flexWrap: "wrap" }}
+        >
           <TextField
             value={search}
             onChange={(e) => {
@@ -247,19 +336,21 @@ export const EventAttendeesPage = () => {
                 <TableCell sx={{ fontWeight: 700 }}>KRSA ID</TableCell>
                 <TableCell sx={{ fontWeight: 700 }}>RSFI ID</TableCell>
                 <TableCell sx={{ fontWeight: 700 }}>Gender</TableCell>
+                <TableCell sx={{ fontWeight: 700 }}>Email</TableCell>
+                <TableCell sx={{ fontWeight: 700 }}>Phone no</TableCell>
                 <TableCell sx={{ fontWeight: 700 }}>Discipline</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
               {loading && attendees.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={8} align="center" sx={{ color: "#8d7f7b", py: 5 }}>
+                  <TableCell colSpan={10} align="center" sx={{ color: "#8d7f7b", py: 5 }}>
                     Loading attendees...
                   </TableCell>
                 </TableRow>
               ) : attendees.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={8} align="center" sx={{ color: "#8d7f7b", py: 5 }}>
+                  <TableCell colSpan={10} align="center" sx={{ color: "#8d7f7b", py: 5 }}>
                     No attendees found for selected filters.
                   </TableCell>
                 </TableRow>
@@ -275,6 +366,8 @@ export const EventAttendeesPage = () => {
                     <TableCell>{row.krsaId || "-"}</TableCell>
                     <TableCell>{row.rsfiId || "-"}</TableCell>
                     <TableCell>{row.gender || "-"}</TableCell>
+                    <TableCell>{row.email || "-"}</TableCell>
+                    <TableCell>{row.phone || "-"}</TableCell>
                     <TableCell>{row.discipline || "-"}</TableCell>
                   </TableRow>
                 ))
