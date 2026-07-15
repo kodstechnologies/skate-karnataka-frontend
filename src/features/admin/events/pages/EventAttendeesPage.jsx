@@ -263,7 +263,7 @@ export const EventAttendeesPage = () => {
               setSearch(e.target.value);
               setPage(0);
             }}
-            placeholder="Search name, chest no, KRSA ID, RSFI ID"
+            placeholder="Search name, chest no, KRSA ID, RSFI ID, email, phone"
             fullWidth
             sx={{ minWidth: { xs: "100%", md: 260 }, flex: 1 }}
             slotProps={{
