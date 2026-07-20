@@ -33,8 +33,11 @@ export const useDisciplinesStore = create((set, get) => ({
     set({ isLoading: true, error: null });
     try {
       const response = await disciplineApi.getAll(params);
-      const payloadData = response.data?.data || [];
-      const paginationData = response.data?.pagination || null;
+      const payload = response?.data ?? response;
+      const payloadData = Array.isArray(payload) ? payload : (payload?.data ?? []);
+      const paginationData = Array.isArray(payload)
+        ? null
+        : (payload?.pagination ?? response?.pagination ?? null);
 
       const mapped = Array.isArray(payloadData) ? payloadData.map(mapToFrontend) : [];
       set({ disciplines: mapped, pagination: paginationData, isLoading: false });

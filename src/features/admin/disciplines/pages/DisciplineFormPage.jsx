@@ -105,7 +105,7 @@ export const DisciplineFormPage = () => {
     setIsSubmitting(false);
 
     if (success) {
-      navigate("/disciplines");
+      navigate("/about-us-discipline");
     }
   };
 
@@ -119,8 +119,8 @@ export const DisciplineFormPage = () => {
         <Typography sx={{ mt: 1.5, color: "#8d7f7b" }}>
           The discipline you are trying to edit is not available.
         </Typography>
-        <Button sx={{ mt: 3 }} variant="contained" onClick={() => navigate("/disciplines")}>
-          Back to disciplines
+        <Button sx={{ mt: 3 }} variant="contained" onClick={() => navigate("/about-us-discipline")}>
+          Back to About us Discipline
         </Button>
       </Paper>
     );
@@ -201,7 +201,7 @@ export const DisciplineFormPage = () => {
               </Typography>
               <Typography
                 component={RouterLink}
-                to="/disciplines"
+                to="/about-us-discipline"
                 sx={{
                   color: "inherit",
                   textDecoration: "none",
@@ -209,7 +209,7 @@ export const DisciplineFormPage = () => {
                   "&:hover": { color: "white" }
                 }}
               >
-                Disciplines
+                About us Discipline
               </Typography>
               <Typography sx={{ color: "white", fontWeight: 700 }}>
                 {isEditing ? "Edit" : "Create"}
@@ -302,7 +302,7 @@ export const DisciplineFormPage = () => {
         >
           <Button
             variant="outlined"
-            onClick={() => navigate("/disciplines")}
+            onClick={() => navigate("/about-us-discipline")}
             disabled={isSubmitting}
           >
             Cancel

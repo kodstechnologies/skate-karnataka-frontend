@@ -185,6 +185,7 @@ export const AppRoutes = () => {
         <Route path="/complains" element={<ComplainsPage />} />
         <Route path="/complains/:complainId" element={<ComplainDetailsPage />} />
         <Route path="/discipline" element={<DisciplineRegistryPage />} />
+        <Route path="/about-us-discipline" element={<DisciplinesPage />} />
         <Route path="/disciplines" element={<DisciplinesPage />} />
         <Route path="/disciplines/create" element={<DisciplineFormPage />} />
         <Route path="/disciplines/:disciplineId" element={<DisciplineDetailPage />} />

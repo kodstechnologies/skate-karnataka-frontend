@@ -55,6 +55,12 @@ export const navigationGroups = [
       { slug: "clubs", to: "/clubs", label: "Clubs", icon: Groups2Icon },
       { slug: "discipline", to: "/discipline", label: "Discipline", icon: Layers },
       { slug: "about", to: "/about", label: "About Us", icon: Info },
+      {
+        slug: "about-us-discipline",
+        to: "/about-us-discipline",
+        label: "About us Discipline",
+        icon: Layers
+      },
       { slug: "about-us-card", to: "/about-us-card", label: "About usCard", icon: CreditCard },
       { slug: "onboarding", to: "/onboarding", label: "Onboarding", icon: Smartphone },
       { slug: "circulars", to: "/circulars", label: "Circulars & Guidelines", icon: FileText },

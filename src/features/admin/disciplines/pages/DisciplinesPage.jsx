@@ -21,28 +21,11 @@ import {
   TextField,
   Typography
 } from "@mui/material";
-import {
-  CalendarDays,
-  ChevronRight,
-  Eye,
-  Layers,
-  PencilLine,
-  Plus,
-  Search,
-  Trash2
-} from "lucide-react";
+import { ChevronRight, Eye, Layers, PencilLine, Plus, Search, Trash2 } from "lucide-react";
 import { Link as RouterLink, useNavigate } from "react-router-dom";
 import disciplinesHero from "@/assets/Disciplines_header.png";
 import { ConfirmDeleteModal } from "@/components/ui/ConfirmDeleteModal";
 import { useDisciplinesStore } from "@/features/admin/disciplines/store/disciplines-store";
-
-const formatDate = (dateStr) => {
-  if (!dateStr) return "—";
-  return new Date(dateStr).toLocaleString("en-IN", {
-    dateStyle: "medium",
-    timeStyle: "short"
-  });
-};
 
 const DetailItem = ({ label, value }) => (
   <div>
@@ -150,21 +133,21 @@ export const DisciplinesPage = () => {
               >
                 Dashboard
               </Typography>
-              <Typography sx={{ color: "white", fontWeight: 700 }}>Disciplines</Typography>
+              <Typography sx={{ color: "white", fontWeight: 700 }}>About us Discipline</Typography>
             </Breadcrumbs>
 
             <Typography variant="h3" sx={{ fontWeight: 700, letterSpacing: "-0.05em", mb: 1.5 }}>
-              Discipline Hub
+              About us Discipline
             </Typography>
             <Typography sx={{ color: "rgba(255,255,255,0.86)", maxWidth: 620, lineHeight: 1.7 }}>
-              Manage all skating disciplines — title, description, and imagery — from a single clean
-              workspace.
+              Manage public discipline profiles — image, title, text, and about — for the About Us
+              experience.
             </Typography>
 
             <Stack direction="row" spacing={1.25} useFlexGap sx={{ mt: 3, flexWrap: "wrap" }}>
               <Chip
                 icon={<Layers size={16} />}
-                label="Skating disciplines registry"
+                label="Discipline profiles"
                 sx={{ color: "white", backgroundColor: "rgba(255,255,255,0.14)" }}
               />
             </Stack>
@@ -189,10 +172,10 @@ export const DisciplinesPage = () => {
         >
           <Box>
             <Typography variant="h5" sx={{ fontWeight: 700, letterSpacing: "-0.04em" }}>
-              Disciplines Registry
+              Discipline profiles
             </Typography>
             <Typography sx={{ mt: 0.75, color: "#8d7f7b" }}>
-              Create, edit, and delete skating disciplines from one organised registry.
+              Public cards with image, title, text, and about.
             </Typography>
           </Box>
 
@@ -203,7 +186,7 @@ export const DisciplinesPage = () => {
                 setSearchTerm(e.target.value);
                 setPage(0);
               }}
-              placeholder="Search by title, text, about…"
+              placeholder="Search title..."
               slotProps={{
                 input: {
                   startAdornment: (
@@ -226,7 +209,7 @@ export const DisciplinesPage = () => {
                 "&:hover": { backgroundColor: "#ea6b54", boxShadow: "none" }
               }}
             >
-              Add Discipline
+              Add profile
             </Button>
           </Stack>
         </Stack>
@@ -332,7 +315,7 @@ export const DisciplinesPage = () => {
           <Table sx={{ minWidth: 800 }}>
             <TableHead>
               <TableRow sx={{ backgroundColor: "#fdf7f3" }}>
-                {["Image", "Title", "Text", "About", "Updated At", "Actions"].map((col) => (
+                {["Image", "Title", "Text", "About", "Actions"].map((col) => (
                   <TableCell
                     key={col}
                     sx={{
@@ -353,7 +336,7 @@ export const DisciplinesPage = () => {
               {isLoading ? (
                 Array.from({ length: 5 }).map((_, i) => (
                   <TableRow key={i}>
-                    {Array.from({ length: 6 }).map((__, j) => (
+                    {Array.from({ length: 5 }).map((__, j) => (
                       <TableCell key={j}>
                         <Skeleton variant="text" />
                       </TableCell>
@@ -423,26 +406,9 @@ export const DisciplinesPage = () => {
                       </Typography>
                     </TableCell>
 
-                    {/* Updated At */}
-                    <TableCell sx={{ fontSize: 13, color: "#8d7f7b", whiteSpace: "nowrap" }}>
-                      {formatDate(item.updatedAt)}
-                    </TableCell>
-
                     {/* Actions */}
                     <TableCell>
                       <Stack direction="row" spacing={0.75}>
-                        <IconButton
-                          onClick={() => navigate(`/disciplines/${item.id}/events`)}
-                          sx={{
-                            border: "1px solid #efe2dc",
-                            color: "#f6765e",
-                            backgroundColor: "#fff8f4"
-                          }}
-                          aria-label={`View events for ${item.title}`}
-                          title="Events"
-                        >
-                          <CalendarDays size={16} />
-                        </IconButton>
                         <IconButton
                           onClick={() => navigate(`/disciplines/${item.id}`)}
                           sx={{
@@ -481,7 +447,7 @@ export const DisciplinesPage = () => {
                 ))
               ) : (
                 <TableRow>
-                  <TableCell colSpan={6} sx={{ py: 8, textAlign: "center", color: "#978a86" }}>
+                  <TableCell colSpan={5} sx={{ py: 8, textAlign: "center", color: "#978a86" }}>
                     No disciplines found for the current search.
                   </TableCell>
                 </TableRow>

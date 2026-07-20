@@ -47,6 +47,8 @@ const PATH_PREFIX_TO_SLUG = [
   ["/state/media", "gallery"],
   ["/districts", "districts"],
   ["/discipline", "discipline"],
+  ["/about-us-discipline", "about-us-discipline"],
+  ["/disciplines", "about-us-discipline"],
   ["/reports", "reports"],
   ["/complains", "complains"]
 ];

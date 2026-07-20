@@ -16,14 +16,6 @@ import { Link as RouterLink, useNavigate, useParams } from "react-router-dom";
 import disciplinesHero from "@/assets/Disciplines_header.png";
 import { useDisciplinesStore } from "@/features/admin/disciplines/store/disciplines-store";
 
-const formatDate = (dateStr) => {
-  if (!dateStr) return "—";
-  return new Date(dateStr).toLocaleString("en-IN", {
-    dateStyle: "long",
-    timeStyle: "short"
-  });
-};
-
 const DetailField = ({ label, value, fullWidth = false }) => (
   <Box sx={{ gridColumn: fullWidth ? { md: "span 2" } : undefined }}>
     <Typography
@@ -100,7 +92,7 @@ export const DisciplineDetailPage = () => {
             boxShadow: "none",
             "&:hover": { backgroundColor: "#ea6b54", boxShadow: "none" }
           }}
-          onClick={() => navigate("/disciplines")}
+          onClick={() => navigate("/about-us-discipline")}
         >
           Back to Disciplines
         </Button>
@@ -182,7 +174,7 @@ export const DisciplineDetailPage = () => {
               </Typography>
               <Typography
                 component={RouterLink}
-                to="/disciplines"
+                to="/about-us-discipline"
                 sx={{
                   color: "inherit",
                   textDecoration: "none",
@@ -190,7 +182,7 @@ export const DisciplineDetailPage = () => {
                   "&:hover": { color: "white" }
                 }}
               >
-                Disciplines
+                About us Discipline
               </Typography>
               <Typography sx={{ color: "white", fontWeight: 700 }}>
                 {discipline?.title || "View"}
@@ -275,18 +267,6 @@ export const DisciplineDetailPage = () => {
               <Typography sx={{ mt: 1, color: "#7a6a65", lineHeight: 1.7 }}>
                 {discipline?.text}
               </Typography>
-              <Stack direction="row" spacing={1} sx={{ mt: 2, flexWrap: "wrap" }}>
-                <Chip
-                  label={`Updated: ${formatDate(discipline?.updatedAt)}`}
-                  size="small"
-                  sx={{ backgroundColor: "#fdf0eb", color: "#c56b53", fontWeight: 600 }}
-                />
-                <Chip
-                  label={`Created: ${formatDate(discipline?.createdAt)}`}
-                  size="small"
-                  sx={{ backgroundColor: "#f0f4ff", color: "#4b72c2", fontWeight: 600 }}
-                />
-              </Stack>
             </Box>
           </Stack>
         </Box>
@@ -330,7 +310,7 @@ export const DisciplineDetailPage = () => {
         >
           <Button
             variant="outlined"
-            onClick={() => navigate("/disciplines")}
+            onClick={() => navigate("/about-us-discipline")}
             sx={{ borderRadius: "14px", textTransform: "none" }}
           >
             Back to list
