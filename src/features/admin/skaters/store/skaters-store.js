@@ -106,6 +106,28 @@ export const useSkatersStore = create((set) => ({
     }
   },
 
+  deleteSkater: async (id) => {
+    try {
+      const response = await skaterApi.delete(id);
+      set((state) => ({
+        skaters: state.skaters.filter((skater) => skater._id !== id),
+        selectedSkater: state.selectedSkater?._id === id ? null : state.selectedSkater,
+        pagination: state.pagination
+          ? {
+              ...state.pagination,
+              total: Math.max(0, (state.pagination.total || 0) - 1)
+            }
+          : state.pagination
+      }));
+      toast.success(response?.message || "Skater deleted successfully");
+      return true;
+    } catch (error) {
+      console.error("Failed to delete skater:", error);
+      toast.error(error.response?.data?.message || "Failed to delete skater");
+      return false;
+    }
+  },
+
   createSkater: async (payload) => {
     set({ isSaving: true });
     try {

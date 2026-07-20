@@ -1,6 +1,6 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import { Link as RouterLink, useNavigate } from "react-router-dom";
-import { Award, Plus, ChevronRight, FileText, CheckCircle, RefreshCw, Search } from "lucide-react";
+import { Award, Plus, ChevronRight, FileText, CheckCircle, Search, Trash2 } from "lucide-react";
 import {
   Box,
   Breadcrumbs,
@@ -16,25 +16,29 @@ import {
 import api from "@/lib/axios";
 import toast from "react-hot-toast";
 import eventsHero from "@/assets/Events_header.jpg";
+import { ConfirmDeleteModal } from "@/components/ui/ConfirmDeleteModal";
 
 function CertificateManagement() {
   const navigate = useNavigate();
   const [templates, setTemplates] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
+  const [pendingDelete, setPendingDelete] = useState(null);
+  const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
     let isMount = true;
-    if (!isMount) return;
     async function fetchTemplates() {
       setLoading(true);
       try {
         const { data } = await api.get("/certificate/v1/templates");
-        setTemplates(data || []);
+        if (isMount) setTemplates(Array.isArray(data) ? data : []);
       } catch (err) {
-        toast.error(err?.response?.data?.message || "Failed to load template list");
+        if (isMount) {
+          toast.error(err?.response?.data?.message || "Failed to load template list");
+        }
       } finally {
-        setLoading(false);
+        if (isMount) setLoading(false);
       }
     }
     fetchTemplates();
@@ -45,8 +49,30 @@ function CertificateManagement() {
   }, []);
 
   const filteredTemplates = templates.filter((tpl) =>
-    tpl.name.toLowerCase().includes(searchTerm.toLowerCase())
+    String(tpl.name || "")
+      .toLowerCase()
+      .includes(searchTerm.toLowerCase())
   );
+
+  const handleDelete = async () => {
+    if (!pendingDelete || deleting) return;
+    if (pendingDelete.isActive) {
+      toast.error("Active template cannot be deleted");
+      setPendingDelete(null);
+      return;
+    }
+    setDeleting(true);
+    try {
+      await api.delete(`/certificate/v1/template/${pendingDelete._id}`);
+      setTemplates((prev) => prev.filter((tpl) => tpl._id !== pendingDelete._id));
+      toast.success("Template deleted successfully");
+      setPendingDelete(null);
+    } catch (err) {
+      toast.error(err?.response?.data?.message || "Failed to delete template");
+    } finally {
+      setDeleting(false);
+    }
+  };
 
   return (
     <Box className="space-y-5">
@@ -204,7 +230,10 @@ function CertificateManagement() {
                       </Box>
                     </Stack>
                     <Divider sx={{ borderColor: "rgba(0,0,0,0.05)" }} />
-                    <Stack sx={{ alignItems: "center", justifyContent: "space-between" }} direction="row">
+                    <Stack
+                      sx={{ alignItems: "center", justifyContent: "space-between" }}
+                      direction="row"
+                    >
                       <Skeleton
                         variant="rounded"
                         width={60}
@@ -247,7 +276,6 @@ function CertificateManagement() {
                   variant="contained"
                   startIcon={<Plus size={16} />}
                   onClick={() => navigate("/certification/create")}
-                  // sx={{ backgroundColor: "#f6965e", "&:hover": { backgroundColor: "#ea8b54" } }}
                 >
                   Create Template
                 </Button>
@@ -352,7 +380,10 @@ function CertificateManagement() {
 
                     <Divider sx={{ borderColor: "rgba(0,0,0,0.05)" }} />
 
-                    <Stack sx={{ alignItems: "center", justifyContent: "space-between" }} direction="row">
+                    <Stack
+                      sx={{ alignItems: "center", justifyContent: "space-between" }}
+                      direction="row"
+                    >
                       <Box>
                         {tpl.isActive && (
                           <Chip
@@ -369,17 +400,37 @@ function CertificateManagement() {
                           />
                         )}
                       </Box>
-                      <Button
-                        variant="text"
-                        size="small"
-                        sx={{
-                          color: "#f6965e",
-                          fontWeight: 700,
-                          "&:hover": { backgroundColor: "rgba(246, 150, 94, 0.08)" }
-                        }}
-                      >
-                        Edit Details
-                      </Button>
+                      <Stack direction="row" spacing={0.5}>
+                        <Button
+                          variant="text"
+                          size="small"
+                          sx={{
+                            color: "#f6965e",
+                            fontWeight: 700,
+                            "&:hover": { backgroundColor: "rgba(246, 150, 94, 0.08)" }
+                          }}
+                        >
+                          Edit Details
+                        </Button>
+                        {!tpl.isActive && (
+                          <Button
+                            variant="text"
+                            size="small"
+                            startIcon={<Trash2 size={14} />}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setPendingDelete(tpl);
+                            }}
+                            sx={{
+                              color: "#dc2626",
+                              fontWeight: 700,
+                              "&:hover": { backgroundColor: "rgba(220, 38, 38, 0.08)" }
+                            }}
+                          >
+                            Delete
+                          </Button>
+                        )}
+                      </Stack>
                     </Stack>
                   </Stack>
                 </Paper>
@@ -388,6 +439,18 @@ function CertificateManagement() {
           )}
         </Box>
       </Paper>
+
+      <ConfirmDeleteModal
+        open={Boolean(pendingDelete)}
+        title="Delete template"
+        itemLabel={pendingDelete?.name}
+        description="This will permanently remove the certificate template. This action cannot be undone."
+        confirmLabel={deleting ? "Deleting..." : "Delete"}
+        onClose={() => {
+          if (!deleting) setPendingDelete(null);
+        }}
+        onConfirm={handleDelete}
+      />
     </Box>
   );
 }

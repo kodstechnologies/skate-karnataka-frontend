@@ -25,6 +25,7 @@ import VisibilityOutlinedIcon from "@mui/icons-material/VisibilityOutlined";
 import EditOutlinedIcon from "@mui/icons-material/EditOutlined";
 import BlockOutlinedIcon from "@mui/icons-material/BlockOutlined";
 import LockOpenOutlinedIcon from "@mui/icons-material/LockOpenOutlined";
+import DeleteOutlineOutlinedIcon from "@mui/icons-material/DeleteOutlineOutlined";
 import { ChevronRight, Search, ShieldCheck, Trophy } from "lucide-react";
 import { Link as RouterLink, useNavigate } from "react-router-dom";
 import skatersHero from "@/assets/Skating_header.jpg";
@@ -76,13 +77,15 @@ const DetailItem = ({ label, value }) => (
 
 export const SkatersPage = () => {
   const navigate = useNavigate();
-  const { skaters, fetchSkaters, pagination, isLoading, toggleSkaterBlock } = useSkatersStore();
+  const { skaters, fetchSkaters, pagination, isLoading, toggleSkaterBlock, deleteSkater } =
+    useSkatersStore();
 
   const [searchTerm, setSearchTerm] = useState("");
   const debouncedSearchTerm = useDebounce(searchTerm, 500);
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [pendingBlockSkater, setPendingBlockSkater] = useState(null);
+  const [pendingDeleteSkater, setPendingDeleteSkater] = useState(null);
 
   const loadSkaters = useCallback(() => {
     fetchSkaters({
@@ -128,12 +131,23 @@ export const SkatersPage = () => {
   };
 
   const closeBlockDialog = () => setPendingBlockSkater(null);
+  const closeDeleteDialog = () => setPendingDeleteSkater(null);
 
   const handleConfirmBlockToggle = async () => {
     if (!pendingBlockSkater) return;
     const nextBlocked = !pendingBlockSkater.isBlocked;
     const success = await toggleSkaterBlock(pendingBlockSkater._id, nextBlocked);
     if (success) closeBlockDialog();
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!pendingDeleteSkater) return;
+    if (!pendingDeleteSkater.isBlocked) {
+      closeDeleteDialog();
+      return;
+    }
+    const success = await deleteSkater(pendingDeleteSkater._id);
+    if (success) closeDeleteDialog();
   };
 
   return (
@@ -351,6 +365,17 @@ export const SkatersPage = () => {
                     >
                       {skater.isBlocked ? "Unblock" : "Block"}
                     </Button>
+                    {skater.isBlocked && (
+                      <Button
+                        variant="outlined"
+                        color="error"
+                        startIcon={<DeleteOutlineOutlinedIcon sx={{ fontSize: 18 }} />}
+                        onClick={() => setPendingDeleteSkater(skater)}
+                        fullWidth
+                      >
+                        Delete
+                      </Button>
+                    )}
                   </Stack>
                 </Stack>
               </Paper>
@@ -477,6 +502,21 @@ export const SkatersPage = () => {
                             )}
                           </IconButton>
                         </Tooltip>
+                        {skater.isBlocked && (
+                          <Tooltip title="Delete skater">
+                            <IconButton
+                              onClick={() => setPendingDeleteSkater(skater)}
+                              sx={{
+                                border: "1px solid #efe2dc",
+                                backgroundColor: "#fff1f0",
+                                color: "#c62828"
+                              }}
+                              aria-label={`Delete ${skater.fullName}`}
+                            >
+                              <DeleteOutlineOutlinedIcon sx={{ fontSize: 18 }} />
+                            </IconButton>
+                          </Tooltip>
+                        )}
                       </Stack>
                     </TableCell>
                   </TableRow>
@@ -526,6 +566,16 @@ export const SkatersPage = () => {
         confirmLabel={pendingBlockSkater?.isBlocked ? "Unblock" : "Block"}
         onClose={closeBlockDialog}
         onConfirm={handleConfirmBlockToggle}
+      />
+
+      <ConfirmDeleteModal
+        open={Boolean(pendingDeleteSkater)}
+        title="Delete skater"
+        description="This will permanently remove the skater account. This action cannot be undone."
+        itemLabel={pendingDeleteSkater?.fullName}
+        confirmLabel="Delete"
+        onClose={closeDeleteDialog}
+        onConfirm={handleConfirmDelete}
       />
     </Box>
   );

@@ -15,5 +15,8 @@ export const skaterApi = {
   },
   toggleBlock: async (userId, isBlocked) => {
     return api.patch(`/auth/v1/toggle-block/${userId}`, { isBlocked });
+  },
+  delete: async (id) => {
+    return api.delete(`/admin/v1/skater/${id}`);
   }
 };
