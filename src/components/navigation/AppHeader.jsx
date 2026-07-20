@@ -4,7 +4,7 @@ import { useMemo, useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { useUiStore } from "@/store/ui-store";
 import { useAuthStore } from "@/features/auth/store/auth-store";
-import { useSubAdminNavigation } from "@/hooks/useSubAdminNavigation";
+import { useAppNavigation } from "@/hooks/useAppNavigation";
 import { Avatar, Skeleton, Menu as MuiMenu, MenuItem, ListItemIcon, Divider } from "@mui/material";
 import { Logout, Person } from "@mui/icons-material";
 import {
@@ -25,7 +25,7 @@ export const AppHeader = () => {
   const [query, setQuery] = useState("");
   const [anchorEl, setAnchorEl] = useState(null);
   const open = Boolean(anchorEl);
-  const { navigationItems } = useSubAdminNavigation();
+  const { navigationItems } = useAppNavigation();
 
   useEffect(() => {
     if (!user) {

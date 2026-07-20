@@ -1,10 +1,26 @@
-import { ChevronRight, LogOut, X } from "lucide-react";
-import { useEffect, useState } from "react";
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors
+} from "@dnd-kit/core";
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  useSortable,
+  verticalListSortingStrategy
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
+import { ChevronRight, GripVertical, LogOut, X } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
 import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import logo from "@/assets/karnataka-roller-skating-logo.png";
 import { useUiStore } from "@/store/ui-store";
 import { useAuthStore } from "@/features/auth/store/auth-store";
-import { useSubAdminNavigation } from "@/hooks/useSubAdminNavigation";
+import { useAppNavigation } from "@/hooks/useAppNavigation";
 import { isNavChildActive } from "@/lib/role-navigation";
 import {
   Avatar,
@@ -22,25 +38,244 @@ import {
   getUserInitials
 } from "@/features/admin/pages/profileMapper";
 
+const SortableNavItem = ({ id, disabled, children }) => {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
+    id,
+    disabled
+  });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    zIndex: isDragging ? 20 : undefined
+  };
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      className={`${
+        isDragging
+          ? "scale-[1.02] shadow-[0_12px_28px_rgba(47,40,41,0.18)] rounded-2xl bg-[#fbf6f4]"
+          : ""
+      }`}
+    >
+      {children({ dragHandleProps: { ...attributes, ...listeners }, isDragging })}
+    </div>
+  );
+};
+
+const DragHandle = ({ label, dragHandleProps, isDragging, visible }) => {
+  if (!visible) return null;
+  return (
+    <button
+      type="button"
+      className={`shrink-0 rounded-lg p-1 text-[#b5a7a2] transition hover:bg-white hover:text-[#2f2829] ${
+        isDragging ? "cursor-grabbing" : "cursor-grab"
+      }`}
+      aria-label={`Reorder ${label}`}
+      {...dragHandleProps}
+    >
+      <GripVertical size={16} />
+    </button>
+  );
+};
+
+const NavItemContent = ({
+  item,
+  sidebarOpen,
+  locationPathname,
+  expandedParentItems,
+  toggleParentItem,
+  reorderable,
+  dragHandleProps,
+  isDragging
+}) => {
+  const Icon = item.icon;
+  const hasChildren = Array.isArray(item.children) && item.children.length > 0;
+  const isChildActive = hasChildren
+    ? item.children.some((child) => isNavChildActive(child.to, locationPathname))
+    : false;
+  const isExpanded = Boolean(expandedParentItems[item.slug]);
+  const showHandle = reorderable && sidebarOpen;
+
+  if (hasChildren) {
+    return (
+      <div className="group relative">
+        <div
+          className={`flex w-full items-center rounded-2xl px-3 py-2.5 text-sm transition ${
+            sidebarOpen ? "justify-between gap-1" : "lg:justify-center"
+          } ${
+            isChildActive
+              ? "bg-[#fef0ea] text-[#f6765e] shadow-[0_8px_24px_rgba(246,118,94,0.12)]"
+              : "text-[#7f7270] hover:bg-white hover:text-[#2f2829]"
+          }`}
+        >
+          <div className={`flex min-w-0 flex-1 items-center ${sidebarOpen ? "gap-2" : ""}`}>
+            <DragHandle
+              label={item.label}
+              dragHandleProps={dragHandleProps}
+              isDragging={isDragging}
+              visible={showHandle}
+            />
+            <button
+              type="button"
+              onClick={() => toggleParentItem(item.slug)}
+              className={`flex min-w-0 flex-1 items-center ${
+                sidebarOpen ? "justify-between gap-3" : "lg:justify-center"
+              }`}
+            >
+              <div className={`flex items-center ${sidebarOpen ? "gap-3" : "lg:justify-center"}`}>
+                <span
+                  className={`flex h-10 w-10 items-center justify-center rounded-2xl ${
+                    isChildActive ? "bg-[#f6765e] text-white" : "bg-white text-[#8f817e]"
+                  }`}
+                >
+                  <Icon className="h-[18px] w-[18px]" />
+                </span>
+                <span className={`${sidebarOpen ? "block" : "lg:hidden"} font-medium`}>
+                  {item.label}
+                </span>
+              </div>
+
+              {sidebarOpen && (
+                <ChevronRight
+                  size={16}
+                  className={`shrink-0 text-[#d59583] transition-transform ${
+                    isExpanded ? "rotate-90" : ""
+                  }`}
+                />
+              )}
+            </button>
+          </div>
+        </div>
+
+        {isExpanded && sidebarOpen && (
+          <div className="mt-1 ml-12 space-y-1">
+            {item.children.map((child) => {
+              const ChildIcon = child.icon;
+              return (
+                <NavLink
+                  key={child.to}
+                  to={child.to}
+                  end={child.to === "/club/members" || child.to === "/district/members"}
+                  className={() =>
+                    `flex items-center gap-2 rounded-xl px-2.5 py-2 text-sm transition ${
+                      isNavChildActive(child.to, locationPathname)
+                        ? "bg-[#fff1eb] text-[#f6765e] font-semibold"
+                        : "text-[#8a7d7a] hover:bg-white hover:text-[#2f2829]"
+                    }`
+                  }
+                >
+                  <ChildIcon className="h-4 w-4" />
+                  <span>{child.label}</span>
+                </NavLink>
+              );
+            })}
+          </div>
+        )}
+
+        {!sidebarOpen && (
+          <div className="pointer-events-none absolute left-full top-1/2 z-50 ml-3 hidden -translate-y-1/2 rounded-xl bg-[#2f2829] px-3 py-2 text-xs font-medium text-white opacity-0 shadow-lg transition group-hover:opacity-100 lg:block">
+            {item.label}
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  return (
+    <div className="group relative">
+      <div
+        className={`flex items-center rounded-2xl px-3 py-2.5 text-sm transition ${
+          sidebarOpen ? "gap-1" : "lg:justify-center"
+        } ${
+          isNavChildActive(item.to, locationPathname)
+            ? "bg-[#fef0ea] text-[#f6765e] shadow-[0_8px_24px_rgba(246,118,94,0.12)]"
+            : "text-[#7f7270] hover:bg-white hover:text-[#2f2829]"
+        }`}
+      >
+        <DragHandle
+          label={item.label}
+          dragHandleProps={dragHandleProps}
+          isDragging={isDragging}
+          visible={showHandle}
+        />
+        <NavLink to={item.to} className="flex min-w-0 flex-1 items-center justify-between">
+          {({ isActive }) => {
+            const activeState = isActive || isChildActive;
+            return (
+              <>
+                <div className={`flex items-center ${sidebarOpen ? "gap-3" : "lg:justify-center"}`}>
+                  <span
+                    className={`flex h-10 w-10 items-center justify-center rounded-2xl ${
+                      activeState ? "bg-[#f6765e] text-white" : "bg-white text-[#8f817e]"
+                    }`}
+                  >
+                    <Icon className="h-[18px] w-[18px]" />
+                  </span>
+                  <span className={`${sidebarOpen ? "block" : "lg:hidden"} font-medium`}>
+                    {item.label}
+                  </span>
+                </div>
+
+                {sidebarOpen && activeState && (
+                  <ChevronRight size={16} className="text-[#d59583]" />
+                )}
+              </>
+            );
+          }}
+        </NavLink>
+      </div>
+
+      {!sidebarOpen && (
+        <div className="pointer-events-none absolute left-full top-1/2 z-50 ml-3 hidden -translate-y-1/2 rounded-xl bg-[#2f2829] px-3 py-2 text-xs font-medium text-white opacity-0 shadow-lg transition group-hover:opacity-100 lg:block">
+          {item.label}
+        </div>
+      )}
+    </div>
+  );
+};
+
 export const AppSidebar = () => {
   const navigate = useNavigate();
   const logout = useAuthStore((state) => state.logout);
   const role = useAuthStore((state) => state.role);
   const user = useAuthStore((state) => state.user);
   const isLoading = useAuthStore((state) => state.isLoading);
-  const { navigationGroups } = useSubAdminNavigation();
+  const {
+    navigationGroups,
+    reorderable,
+    hasOrderChanged,
+    isSavingOrder,
+    handleDragEndReorder,
+    saveOrder,
+    discardOrder,
+    isLoading: isSidebarLoading
+  } = useAppNavigation();
   const sidebarOpen = useUiStore((state) => state.sidebarOpen);
   const mobileSidebarOpen = useUiStore((state) => state.mobileSidebarOpen);
   const closeMobileSidebar = useUiStore((state) => state.closeMobileSidebar);
   const location = useLocation();
-  const [expandedParentItems, setExpandedParentItems] = useState({});
+  const [manualExpanded, setManualExpanded] = useState({});
   const [logoutDialogOpen, setLogoutDialogOpen] = useState(false);
 
-  useEffect(() => {
-    closeMobileSidebar();
-  }, [closeMobileSidebar, location.pathname]);
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
+  );
 
-  useEffect(() => {
+  const flatTopLevelItems = useMemo(
+    () => navigationGroups.flatMap((group) => group.items),
+    [navigationGroups]
+  );
+
+  const sortableIds = useMemo(
+    () => flatTopLevelItems.map((item) => String(item._id || item.slug || item.to)),
+    [flatTopLevelItems]
+  );
+
+  const pathAutoExpanded = useMemo(() => {
     const path = location.pathname.split("?")[0];
     const nextExpanded = {};
     navigationGroups.forEach((group) => {
@@ -53,22 +288,44 @@ export const AppSidebar = () => {
         }
       });
     });
-    if (Object.keys(nextExpanded).length > 0) {
-      setExpandedParentItems((previous) => ({ ...previous, ...nextExpanded }));
-    }
+    return nextExpanded;
   }, [location.pathname, navigationGroups]);
 
+  const expandedParentItems = useMemo(
+    () => ({ ...manualExpanded, ...pathAutoExpanded }),
+    [manualExpanded, pathAutoExpanded]
+  );
+
+  useEffect(() => {
+    closeMobileSidebar();
+  }, [closeMobileSidebar, location.pathname]);
+
   const toggleParentItem = (itemSlug) => {
-    setExpandedParentItems((previous) => ({
-      ...previous,
-      [itemSlug]: !previous[itemSlug]
-    }));
+    setManualExpanded((previous) => {
+      const currentlyOpen = Boolean(pathAutoExpanded[itemSlug] || previous[itemSlug]);
+      return {
+        ...previous,
+        [itemSlug]: !currentlyOpen
+      };
+    });
   };
 
   const handleLogoutConfirm = () => {
     setLogoutDialogOpen(false);
     logout();
     navigate("/login");
+  };
+
+  const onDragEnd = (event) => {
+    const { active, over } = event;
+    if (!reorderable || !over || active.id === over.id) return;
+
+    const oldIndex = sortableIds.indexOf(String(active.id));
+    const newIndex = sortableIds.indexOf(String(over.id));
+    if (oldIndex < 0 || newIndex < 0) return;
+
+    const reordered = arrayMove(flatTopLevelItems, oldIndex, newIndex);
+    handleDragEndReorder(reordered.map((item) => String(item._id)));
   };
 
   const displayName = getUserDisplayName(user);
@@ -116,162 +373,61 @@ export const AppSidebar = () => {
           </button>
         </div>
 
+        {reorderable && hasOrderChanged && sidebarOpen && (
+          <div className="flex items-center gap-2 border-b border-[#efe2dc] px-4 py-2">
+            <button
+              type="button"
+              onClick={saveOrder}
+              disabled={isSavingOrder}
+              className="flex-1 rounded-xl bg-[#f6765e] px-3 py-2 text-xs font-semibold text-white transition hover:bg-[#e8654d] disabled:opacity-60"
+            >
+              {isSavingOrder ? "Saving…" : "Save Order"}
+            </button>
+            <button
+              type="button"
+              onClick={discardOrder}
+              disabled={isSavingOrder}
+              className="rounded-xl px-3 py-2 text-xs font-medium text-[#8d7f7b] transition hover:bg-white disabled:opacity-60"
+            >
+              Reset A–Z
+            </button>
+          </div>
+        )}
+
         <nav className="custom-scrollbar min-h-0 flex-1 overflow-x-hidden overflow-y-auto overscroll-contain px-4 py-3">
-          {navigationGroups.map((group) => {
-            const filteredItems = group.items;
-
-            if (filteredItems.length === 0) return null;
-
-            return (
-              <div key={group.label} className="mb-2 last:mb-0">
-                <div className="space-y-0.5">
-                  {filteredItems.map((item) => {
-                    const Icon = item.icon;
-                    const hasChildren = Array.isArray(item.children) && item.children.length > 0;
-                    const isChildActive = hasChildren
-                      ? item.children.some((child) =>
-                          isNavChildActive(child.to, location.pathname)
-                        )
-                      : false;
-                    const isExpanded = Boolean(expandedParentItems[item.slug]);
-
-                    if (hasChildren) {
-                      return (
-                        <div key={item.slug} className="group relative">
-                          <button
-                            type="button"
-                            onClick={() => toggleParentItem(item.slug)}
-                            className={`flex w-full items-center rounded-2xl px-3 py-2.5 text-sm transition ${
-                              sidebarOpen ? "justify-between" : "lg:justify-center"
-                            } ${
-                              isChildActive
-                                ? "bg-[#fef0ea] text-[#f6765e] shadow-[0_8px_24px_rgba(246,118,94,0.12)]"
-                                : "text-[#7f7270] hover:bg-white hover:text-[#2f2829]"
-                            }`}
-                          >
-                            <div
-                              className={`flex items-center ${
-                                sidebarOpen ? "gap-3" : "lg:justify-center"
-                              }`}
-                            >
-                              <span
-                                className={`flex h-10 w-10 items-center justify-center rounded-2xl ${
-                                  isChildActive
-                                    ? "bg-[#f6765e] text-white"
-                                    : "bg-white text-[#8f817e]"
-                                }`}
-                              >
-                                <Icon className="h-[18px] w-[18px]" />
-                              </span>
-                              <span
-                                className={`${sidebarOpen ? "block" : "lg:hidden"} font-medium`}
-                              >
-                                {item.label}
-                              </span>
-                            </div>
-
-                            {sidebarOpen && (
-                              <ChevronRight
-                                size={16}
-                                className={`text-[#d59583] transition-transform ${isExpanded ? "rotate-90" : ""}`}
-                              />
-                            )}
-                          </button>
-
-                          {isExpanded && sidebarOpen && (
-                            <div className="mt-1 ml-12 space-y-1">
-                              {item.children.map((child) => {
-                                const ChildIcon = child.icon;
-                                return (
-                                  <NavLink
-                                    key={child.to}
-                                    to={child.to}
-                                    end={child.to === "/club/members" || child.to === "/district/members"}
-                                    className={() =>
-                                      `flex items-center gap-2 rounded-xl px-2.5 py-2 text-sm transition ${
-                                        isNavChildActive(child.to, location.pathname)
-                                          ? "bg-[#fff1eb] text-[#f6765e] font-semibold"
-                                          : "text-[#8a7d7a] hover:bg-white hover:text-[#2f2829]"
-                                      }`
-                                    }
-                                  >
-                                    <ChildIcon className="h-4 w-4" />
-                                    <span>{child.label}</span>
-                                  </NavLink>
-                                );
-                              })}
-                            </div>
-                          )}
-
-                          {!sidebarOpen && (
-                            <div className="pointer-events-none absolute left-full top-1/2 z-50 ml-3 hidden -translate-y-1/2 rounded-xl bg-[#2f2829] px-3 py-2 text-xs font-medium text-white opacity-0 shadow-lg transition group-hover:opacity-100 lg:block">
-                              {item.label}
-                            </div>
-                          )}
-                        </div>
-                      );
-                    }
-
+          {isSidebarLoading && flatTopLevelItems.length === 0 ? (
+            <div className="space-y-2 px-1 py-2">
+              {Array.from({ length: 6 }).map((_, index) => (
+                <Skeleton key={index} variant="rounded" height={44} sx={{ borderRadius: "16px" }} />
+              ))}
+            </div>
+          ) : (
+            <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
+              <SortableContext items={sortableIds} strategy={verticalListSortingStrategy}>
+                <div className="mb-2 space-y-0.5 last:mb-0">
+                  {flatTopLevelItems.map((item) => {
+                    const sortableId = String(item._id || item.slug || item.to);
                     return (
-                      <div key={item.to} className="group relative">
-                        <NavLink
-                          to={item.to}
-                          className={({ isActive }) => {
-                            const activeState = isActive || isChildActive;
-                            return `flex items-center rounded-2xl px-3 py-2.5 text-sm transition ${
-                              sidebarOpen ? "justify-between" : "lg:justify-center"
-                            } ${
-                              activeState
-                                ? "bg-[#fef0ea] text-[#f6765e] shadow-[0_8px_24px_rgba(246,118,94,0.12)]"
-                                : "text-[#7f7270] hover:bg-white hover:text-[#2f2829]"
-                            }`;
-                          }}
-                        >
-                          {({ isActive }) => {
-                            const activeState = isActive || isChildActive;
-                            return (
-                              <>
-                                <div
-                                  className={`flex items-center ${
-                                    sidebarOpen ? "gap-3" : "lg:justify-center"
-                                  }`}
-                                >
-                                  <span
-                                    className={`flex h-10 w-10 items-center justify-center rounded-2xl ${
-                                      activeState
-                                        ? "bg-[#f6765e] text-white"
-                                        : "bg-white text-[#8f817e]"
-                                    }`}
-                                  >
-                                    <Icon className="h-[18px] w-[18px]" />
-                                  </span>
-                                  <span
-                                    className={`${sidebarOpen ? "block" : "lg:hidden"} font-medium`}
-                                  >
-                                    {item.label}
-                                  </span>
-                                </div>
-
-                                {sidebarOpen && activeState && (
-                                  <ChevronRight size={16} className="text-[#d59583]" />
-                                )}
-                              </>
-                            );
-                          }}
-                        </NavLink>
-
-                        {!sidebarOpen && (
-                          <div className="pointer-events-none absolute left-full top-1/2 z-50 ml-3 hidden -translate-y-1/2 rounded-xl bg-[#2f2829] px-3 py-2 text-xs font-medium text-white opacity-0 shadow-lg transition group-hover:opacity-100 lg:block">
-                            {item.label}
-                          </div>
+                      <SortableNavItem key={sortableId} id={sortableId} disabled={!reorderable}>
+                        {({ dragHandleProps, isDragging }) => (
+                          <NavItemContent
+                            item={item}
+                            sidebarOpen={sidebarOpen}
+                            locationPathname={location.pathname}
+                            expandedParentItems={expandedParentItems}
+                            toggleParentItem={toggleParentItem}
+                            reorderable={reorderable}
+                            dragHandleProps={dragHandleProps}
+                            isDragging={isDragging}
+                          />
                         )}
-                      </div>
+                      </SortableNavItem>
                     );
                   })}
                 </div>
-              </div>
-            );
-          })}
+              </SortableContext>
+            </DndContext>
+          )}
         </nav>
 
         <div className="shrink-0 border-t border-[#efe2dc] px-4 py-4">

@@ -4,7 +4,7 @@ import { HeaderLayout } from "@/layouts/HeaderLayout";
 import { SidebarLayout } from "@/layouts/SidebarLayout";
 import { useAuthStore } from "@/features/auth/store/auth-store";
 import { useFirebaseMessaging } from "@/hooks/useFirebaseMessaging";
-import { useSubAdminNavigation } from "@/hooks/useSubAdminNavigation";
+import { useAppNavigation } from "@/hooks/useAppNavigation";
 import { isPathAllowedForModules } from "@/lib/navigation-modules";
 
 export const MainLayout = () => {
@@ -13,7 +13,7 @@ export const MainLayout = () => {
   const user = useAuthStore((state) => state.user);
   const getProfile = useAuthStore((state) => state.getProfile);
   const location = useLocation();
-  const { allowedSlugs } = useSubAdminNavigation();
+  const { allowedSlugs } = useAppNavigation();
 
   useEffect(() => {
     if (isAuthenticated && !user) {
