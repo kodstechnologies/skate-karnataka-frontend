@@ -9,6 +9,7 @@ const mapToFrontend = (d) => ({
   phone: d.phone || "",
   email: d.email || "",
   address: d.address || "",
+  designation: d.designation || "",
   gender: d.gender || "",
   countryCode: d.countryCode || "+91",
   isActive: d.isActive ?? true,

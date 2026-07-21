@@ -18,7 +18,16 @@ import {
   Skeleton,
   CircularProgress
 } from "@mui/material";
-import { ChevronRight, Save, User, Mail, Phone, ShieldCheck, Users } from "lucide-react";
+import {
+  ChevronRight,
+  Save,
+  User,
+  Mail,
+  Phone,
+  ShieldCheck,
+  Users,
+  BadgeCheck
+} from "lucide-react";
 import { Link as RouterLink, useNavigate, useParams } from "react-router-dom";
 import { UploadProgressBanner } from "@/components/ui/UploadProgressBanner";
 import officialHero from "@/assets/State_official_header.jpg";
@@ -55,6 +64,7 @@ export const OfficialFormPage = () => {
     fullName: "",
     email: "",
     phone: "",
+    designation: "",
     gender: "male",
     status: true,
     allowedModule: []
@@ -73,6 +83,7 @@ export const OfficialFormPage = () => {
       fullName: existingOfficial?.fullName || "",
       email: existingOfficial?.email || "",
       phone: existingOfficial?.phone || "",
+      designation: existingOfficial?.designation || "",
       gender: existingOfficial?.gender || "male",
       status: existingOfficial?.status ?? true,
       allowedModule: Array.isArray(existingOfficial?.allowedModule)
@@ -131,6 +142,7 @@ export const OfficialFormPage = () => {
     data.append("fullName", formData.fullName);
     data.append("email", formData.email);
     data.append("phone", formData.phone);
+    data.append("designation", formData.designation.trim());
     data.append("gender", formData.gender);
     data.append("status", formData.status.toString());
     data.append("allowedModule", JSON.stringify(formData.allowedModule));
@@ -354,6 +366,23 @@ export const OfficialFormPage = () => {
                 spacing={3}
                 sx={{ alignItems: { md: "center" } }}
               >
+                <Box sx={{ flex: { xs: "1 1 auto", md: "1 1 0" } }}>
+                  <TextField
+                    fullWidth
+                    label="Designation"
+                    value={formData.designation}
+                    onChange={handleFieldChange("designation")}
+                    slotProps={{
+                      input: {
+                        startAdornment: (
+                          <InputAdornment position="start">
+                            <BadgeCheck size={18} style={{ color: "#b19f99" }} />
+                          </InputAdornment>
+                        )
+                      }
+                    }}
+                  />
+                </Box>
                 <Box sx={{ flex: { xs: "1 1 auto", md: "0 0 300px" } }}>
                   <TextField
                     select

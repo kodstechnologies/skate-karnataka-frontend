@@ -77,7 +77,7 @@ export const MemberBulkImportPage = ({ orgType = "club" }) => {
     if (!file) return;
 
     try {
-        const parsed = await parseMemberSpreadsheet(file);
+      const parsed = await parseMemberSpreadsheet(file);
       if (parsed.length === 0) {
         toast.error("No member rows found in the file");
         return;
@@ -123,9 +123,7 @@ export const MemberBulkImportPage = ({ orgType = "club" }) => {
         const message = err?.response?.data?.message || "Failed to create member";
         setRows((prev) =>
           prev.map((item) =>
-            item._rowKey === row._rowKey
-              ? { ...item, errors: [...item.errors, message] }
-              : item
+            item._rowKey === row._rowKey ? { ...item, errors: [...item.errors, message] } : item
           )
         );
       }
@@ -186,8 +184,8 @@ export const MemberBulkImportPage = ({ orgType = "club" }) => {
         </Typography>
         <Typography sx={{ color: "#8d7f7b", mb: 2.5, maxWidth: 720, lineHeight: 1.7 }}>
           Upload an Excel or CSV file for <strong>{orgName}</strong>. Preview shows full name,
-          email, phone, address, and gender before you import. Uses your login token for{" "}
-          {isClub ? "club" : "district"} permissions.
+          email, phone, address, designation, and gender before you import. Uses your login token
+          for {isClub ? "club" : "district"} permissions.
         </Typography>
 
         <Stack sx={{ flexWrap: "wrap" }} direction={{ xs: "column", sm: "row" }} spacing={1.5}>
@@ -220,9 +218,19 @@ export const MemberBulkImportPage = ({ orgType = "club" }) => {
         {rows.length > 0 && (
           <Stack direction="row" spacing={1} sx={{ mt: 2, flexWrap: "wrap" }}>
             <Chip label={`${rows.length} rows`} size="small" />
-            <Chip label={`${validRows.length} ready`} color="success" size="small" variant="outlined" />
+            <Chip
+              label={`${validRows.length} ready`}
+              color="success"
+              size="small"
+              variant="outlined"
+            />
             {invalidCount > 0 ? (
-              <Chip label={`${invalidCount} with errors`} color="error" size="small" variant="outlined" />
+              <Chip
+                label={`${invalidCount} with errors`}
+                color="error"
+                size="small"
+                variant="outlined"
+              />
             ) : null}
           </Stack>
         )}
@@ -234,11 +242,7 @@ export const MemberBulkImportPage = ({ orgType = "club" }) => {
             </Typography>
             <LinearProgress
               variant="determinate"
-              value={
-                importProgress.total
-                  ? (importProgress.done / importProgress.total) * 100
-                  : 0
-              }
+              value={importProgress.total ? (importProgress.done / importProgress.total) * 100 : 0}
             />
           </Box>
         )}
@@ -262,6 +266,7 @@ export const MemberBulkImportPage = ({ orgType = "club" }) => {
                   <TableCell sx={{ fontWeight: 700 }}>Email</TableCell>
                   <TableCell sx={{ fontWeight: 700 }}>Phone</TableCell>
                   <TableCell sx={{ fontWeight: 700 }}>Address</TableCell>
+                  <TableCell sx={{ fontWeight: 700 }}>Designation</TableCell>
                   <TableCell sx={{ fontWeight: 700 }}>Gender</TableCell>
                   <TableCell sx={{ fontWeight: 700 }}>Status</TableCell>
                 </TableRow>
@@ -279,7 +284,10 @@ export const MemberBulkImportPage = ({ orgType = "club" }) => {
                       <TableCell>{row.email || "—"}</TableCell>
                       <TableCell>{row.phone || "—"}</TableCell>
                       <TableCell>{row.address || "—"}</TableCell>
-                      <TableCell sx={{ textTransform: "capitalize" }}>{row.gender || "—"}</TableCell>
+                      <TableCell>{row.designation || "—"}</TableCell>
+                      <TableCell sx={{ textTransform: "capitalize" }}>
+                        {row.gender || "—"}
+                      </TableCell>
                       <TableCell>
                         {hasError ? (
                           <Typography variant="caption" color="error">

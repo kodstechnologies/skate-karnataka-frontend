@@ -6,10 +6,14 @@ const HEADER_ALIASES = {
   email: ["email", "e-mail", "mail"],
   phone: ["phone", "mobile", "contact", "phone number", "mobilenumber"],
   address: ["address", "location", "addr"],
+  designation: ["designation", "title", "role", "position"],
   gender: ["gender", "sex"]
 };
 
-const normalizeHeader = (key) => String(key || "").trim().toLowerCase();
+const normalizeHeader = (key) =>
+  String(key || "")
+    .trim()
+    .toLowerCase();
 
 const pickField = (row, field) => {
   const aliases = HEADER_ALIASES[field] || [];
@@ -68,6 +72,7 @@ export const mapSpreadsheetRowToMember = (row) => {
   const email = pickField(row, "email");
   const phone = normalizePhoneDigits(pickField(row, "phone"));
   const address = pickField(row, "address");
+  const designation = pickField(row, "designation");
   const gender = normalizeGender(pickField(row, "gender"));
 
   const member = {
@@ -75,6 +80,7 @@ export const mapSpreadsheetRowToMember = (row) => {
     email,
     phone,
     address,
+    designation,
     gender
   };
 
@@ -112,8 +118,8 @@ export const parseMemberSpreadsheet = (file) =>
 
 export const downloadMemberImportTemplate = (filename = "member-import-template.xlsx") => {
   const worksheet = XLSX.utils.aoa_to_sheet([
-    ["Full Name", "Email", "Phone", "Address", "Gender"],
-    ["Ravi Kumar", "ravi@example.com", "9876543210", "Bengaluru, Karnataka", "male"]
+    ["Full Name", "Email", "Phone", "Address", "Designation", "Gender"],
+    ["Ravi Kumar", "ravi@example.com", "9876543210", "Bengaluru, Karnataka", "Secretary", "male"]
   ]);
   const workbook = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(workbook, worksheet, "Members");
@@ -126,6 +132,7 @@ export const buildMemberFormData = (row) => {
   fd.append("phone", row.phone.trim());
   if (row.email?.trim()) fd.append("email", row.email.trim());
   if (row.address?.trim()) fd.append("address", row.address.trim());
+  fd.append("designation", String(row.designation || "").trim());
   fd.append("gender", normalizeGender(row.gender));
   return fd;
 };

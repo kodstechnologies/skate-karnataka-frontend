@@ -15,7 +15,7 @@ import {
   TextField,
   Typography
 } from "@mui/material";
-import { ChevronRight, Mail, MapPin, Phone, Save, User, Users } from "lucide-react";
+import { BadgeCheck, ChevronRight, Mail, MapPin, Phone, Save, User, Users } from "lucide-react";
 import { Link as RouterLink, useNavigate, useParams, useLocation } from "react-router-dom";
 import districtHero from "@/assets/District_header.jpg";
 import { useAuthStore } from "@/features/auth/store/auth-store";
@@ -38,6 +38,7 @@ const initialForm = {
   email: "",
   phone: "",
   address: "",
+  designation: "",
   gender: "male",
   isActive: true
 };
@@ -62,8 +63,7 @@ export const DistrictMemberFormPage = () => {
   const role = useAuthStore((s) => s.role);
   const authUser = useAuthStore((s) => s.user);
   const isDistrictPortal = String(role || "").toLowerCase() === "district";
-  const districtId =
-    districtIdParam || (isDistrictPortal ? authUser?.districtId : null);
+  const districtId = districtIdParam || (isDistrictPortal ? authUser?.districtId : null);
   const returnTo =
     location.state?.returnTo ||
     (isDistrictPortal ? "/district/members" : `/districts/${districtId}/members`);
@@ -73,9 +73,7 @@ export const DistrictMemberFormPage = () => {
   const district = useMemo(
     () =>
       districts.find((d) => d.id === districtId) ??
-      (isDistrictPortal
-        ? { id: districtId, name: authUser?.districtName }
-        : null),
+      (isDistrictPortal ? { id: districtId, name: authUser?.districtName } : null),
     [districts, districtId, isDistrictPortal, authUser?.districtName]
   );
 
@@ -106,6 +104,7 @@ export const DistrictMemberFormPage = () => {
         email: existing.email || "",
         phone: existing.phone || "",
         address: existing.address || "",
+        designation: existing.designation || "",
         gender: existing.gender || "male",
         isActive: existing.isActive ?? true
       });
@@ -140,6 +139,7 @@ export const DistrictMemberFormPage = () => {
     if (formData.email.trim()) fd.append("email", formData.email.trim());
     fd.append("phone", formData.phone.trim());
     if (formData.address.trim()) fd.append("address", formData.address.trim());
+    fd.append("designation", formData.designation.trim());
     fd.append("gender", formData.gender);
     fd.append("isActive", String(formData.isActive));
     if (!isEditing) fd.append("district", districtId);
@@ -169,11 +169,7 @@ export const DistrictMemberFormPage = () => {
         <Typography variant="h5" sx={{ fontWeight: 700, color: "#2f2829" }}>
           Member not found
         </Typography>
-        <Button
-          sx={{ mt: 3 }}
-          variant="contained"
-          onClick={() => navigate(returnTo)}
-        >
+        <Button sx={{ mt: 3 }} variant="contained" onClick={() => navigate(returnTo)}>
           Back to members
         </Button>
       </Paper>
@@ -308,7 +304,8 @@ export const DistrictMemberFormPage = () => {
             </Typography>
 
             {/* Profile Photo + Full Name */}
-            <Stack sx={{ alignItems: { md: "center" } }}
+            <Stack
+              sx={{ alignItems: { md: "center" } }}
               direction={{ xs: "column", md: "row" }}
               spacing={2}
             >
@@ -430,11 +427,28 @@ export const DistrictMemberFormPage = () => {
               }}
             />
 
-            {/* Gender + Status */}
-            <Stack sx={{ alignItems: { md: "center" } }}
+            {/* Designation + Gender */}
+            <Stack
+              sx={{ alignItems: { md: "center" } }}
               direction={{ xs: "column", md: "row" }}
               spacing={2}
             >
+              <TextField
+                fullWidth
+                label="Designation"
+                value={formData.designation}
+                onChange={handleField("designation")}
+                sx={inputStyles}
+                slotProps={{
+                  input: {
+                    startAdornment: (
+                      <InputAdornment position="start">
+                        <BadgeCheck size={17} style={{ color: "#b19f99" }} />
+                      </InputAdornment>
+                    )
+                  }
+                }}
+              />
               <TextField
                 select
                 fullWidth
@@ -462,11 +476,12 @@ export const DistrictMemberFormPage = () => {
 
             <Divider sx={{ my: 1 }} />
 
-            <Stack sx={{ justifyContent: "flex-end" }} direction={{ xs: "column", sm: "row" }} spacing={1.5}>
-              <Button
-                variant="outlined"
-                onClick={() => navigate(returnTo)}
-              >
+            <Stack
+              sx={{ justifyContent: "flex-end" }}
+              direction={{ xs: "column", sm: "row" }}
+              spacing={1.5}
+            >
+              <Button variant="outlined" onClick={() => navigate(returnTo)}>
                 Cancel
               </Button>
               <Button

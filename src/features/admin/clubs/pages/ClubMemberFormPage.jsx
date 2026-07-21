@@ -15,7 +15,7 @@ import {
   TextField,
   Typography
 } from "@mui/material";
-import { ChevronRight, Mail, MapPin, Phone, Save, User, Users } from "lucide-react";
+import { BadgeCheck, ChevronRight, Mail, MapPin, Phone, Save, User, Users } from "lucide-react";
 import { Link as RouterLink, useNavigate, useParams, useLocation } from "react-router-dom";
 import clubHero from "@/assets/Club_header.jpg";
 import { useAuthStore } from "@/features/auth/store/auth-store";
@@ -38,6 +38,7 @@ const initialForm = {
   email: "",
   phone: "",
   address: "",
+  designation: "",
   gender: "male",
   isActive: true
 };
@@ -64,13 +65,14 @@ export const ClubMemberFormPage = () => {
   const isClubPortal = String(role || "").toLowerCase() === "club";
   const clubId = clubIdParam || (isClubPortal ? authUser?.id : null);
   const returnTo =
-    location.state?.returnTo ||
-    (isClubPortal ? "/club/members" : `/clubs/${clubId}/members`);
+    location.state?.returnTo || (isClubPortal ? "/club/members" : `/clubs/${clubId}/members`);
   const isEditing = Boolean(memberId);
 
   const clubs = useClubsStore((s) => s.clubs);
   const club = useMemo(
-    () => clubs.find((c) => c.id === clubId) ?? (isClubPortal ? { id: clubId, name: authUser?.name } : null),
+    () =>
+      clubs.find((c) => c.id === clubId) ??
+      (isClubPortal ? { id: clubId, name: authUser?.name } : null),
     [clubs, clubId, isClubPortal, authUser?.name]
   );
 
@@ -101,6 +103,7 @@ export const ClubMemberFormPage = () => {
         email: existing.email || "",
         phone: existing.phone || "",
         address: existing.address || "",
+        designation: existing.designation || "",
         gender: existing.gender || "male",
         isActive: existing.isActive ?? true
       });
@@ -135,6 +138,7 @@ export const ClubMemberFormPage = () => {
     if (formData.email.trim()) fd.append("email", formData.email.trim());
     fd.append("phone", formData.phone.trim());
     if (formData.address.trim()) fd.append("address", formData.address.trim());
+    fd.append("designation", formData.designation.trim());
     fd.append("gender", formData.gender);
     fd.append("isActive", String(formData.isActive));
     if (!isEditing) fd.append("clubId", clubId);
@@ -298,7 +302,8 @@ export const ClubMemberFormPage = () => {
             </Typography>
 
             {/* Profile Photo + Full Name */}
-            <Stack sx={{ alignItems: { md: "center" } }}
+            <Stack
+              sx={{ alignItems: { md: "center" } }}
               direction={{ xs: "column", md: "row" }}
               spacing={2}
             >
@@ -420,11 +425,28 @@ export const ClubMemberFormPage = () => {
               }}
             />
 
-            {/* Gender + Status */}
-            <Stack sx={{ alignItems: { md: "center" } }}
+            {/* Designation + Gender */}
+            <Stack
+              sx={{ alignItems: { md: "center" } }}
               direction={{ xs: "column", md: "row" }}
               spacing={2}
             >
+              <TextField
+                fullWidth
+                label="Designation"
+                value={formData.designation}
+                onChange={handleField("designation")}
+                sx={inputStyles}
+                slotProps={{
+                  input: {
+                    startAdornment: (
+                      <InputAdornment position="start">
+                        <BadgeCheck size={17} style={{ color: "#b19f99" }} />
+                      </InputAdornment>
+                    )
+                  }
+                }}
+              />
               <TextField
                 select
                 fullWidth
@@ -452,7 +474,11 @@ export const ClubMemberFormPage = () => {
 
             <Divider sx={{ my: 1 }} />
 
-            <Stack sx={{ justifyContent: "flex-end" }} direction={{ xs: "column", sm: "row" }} spacing={1.5}>
+            <Stack
+              sx={{ justifyContent: "flex-end" }}
+              direction={{ xs: "column", sm: "row" }}
+              spacing={1.5}
+            >
               <Button variant="outlined" onClick={() => navigate(returnTo)}>
                 Cancel
               </Button>
