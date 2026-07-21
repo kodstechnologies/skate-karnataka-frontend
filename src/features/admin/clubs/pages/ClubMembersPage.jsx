@@ -301,7 +301,8 @@ export const ClubMembersPage = () => {
                 }}
               >
                 <Stack spacing={1.5}>
-                  <Stack sx={{ alignItems: "center", justifyContent: "space-between" }}
+                  <Stack
+                    sx={{ alignItems: "center", justifyContent: "space-between" }}
                     direction="row"
                     spacing={1.5}
                   >
@@ -353,7 +354,10 @@ export const ClubMembersPage = () => {
                         onClick={() => approveMember(member.id)}
                         fullWidth
                         size="small"
-                        sx={{ backgroundColor: "#2e7d32", "&:hover": { backgroundColor: "#1b5e20" } }}
+                        sx={{
+                          backgroundColor: "#2e7d32",
+                          "&:hover": { backgroundColor: "#1b5e20" }
+                        }}
                       >
                         Approve
                       </Button>
@@ -397,7 +401,7 @@ export const ClubMembersPage = () => {
                         {member.isBlocked ? "Unblock" : "Block"}
                       </Button>
                     )}
-                    {!isClubPortal && !member.isMain && (
+                    {!isClubPortal && (
                       <Button
                         variant="contained"
                         startIcon={<Trash2 size={15} />}
@@ -599,7 +603,7 @@ export const ClubMembersPage = () => {
                             </IconButton>
                           </Tooltip>
                         )}
-                        {!isClubPortal && !member.isMain && (
+                        {!isClubPortal && (
                           <Tooltip title="Delete member">
                             <IconButton
                               onClick={() => setPendingDelete(member)}
@@ -658,7 +662,11 @@ export const ClubMembersPage = () => {
         open={Boolean(pendingDelete)}
         title="Delete member"
         itemLabel={pendingDelete?.fullName}
-        description="This member will be permanently removed from the club."
+        description={
+          pendingDelete?.isMain
+            ? "This is the main member. Deleting will remove them from the club and clear the main member."
+            : "This member will be permanently removed from the club."
+        }
         onClose={() => setPendingDelete(null)}
         onConfirm={handleDelete}
       />

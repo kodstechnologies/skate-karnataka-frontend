@@ -3,10 +3,8 @@ export const validateEmail = (email, isRequired = true) => {
     return isRequired ? "Email is required" : "";
   }
   const trimmed = email.trim();
-  if (!trimmed.includes("@") || !trimmed.includes(".com")) {
-    return "Email must contain '@' and '.com'";
-  }
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  // Accept any standard email (gmail, yahoo, mailinator, .in, .org, etc.)
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/i;
   if (!emailRegex.test(trimmed)) {
     return "Provide a valid email";
   }

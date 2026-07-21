@@ -41,8 +41,7 @@ export const DistrictMembersPage = () => {
   const authUser = useAuthStore((s) => s.user);
   const isDistrictPortal = String(role || "").toLowerCase() === "district";
   const canApprove = canApproveMembers(role);
-  const districtId =
-    districtIdParam || (isDistrictPortal ? authUser?.districtId : null);
+  const districtId = districtIdParam || (isDistrictPortal ? authUser?.districtId : null);
 
   const districts = useDistrictsStore((s) => s.districts);
   const district = useMemo(() => {
@@ -53,9 +52,18 @@ export const DistrictMembersPage = () => {
       return { id: districtId, name: authUser?.districtName || authUser?.name || "District" };
     }
     return null;
-  }, [districts, districtIdParam, isDistrictPortal, districtId, authUser?.districtName, authUser?.name]);
+  }, [
+    districts,
+    districtIdParam,
+    isDistrictPortal,
+    districtId,
+    authUser?.districtName,
+    authUser?.name
+  ]);
 
-  const membersBasePath = isDistrictPortal ? "/district/members" : `/districts/${districtId}/members`;
+  const membersBasePath = isDistrictPortal
+    ? "/district/members"
+    : `/districts/${districtId}/members`;
   const createMemberPath = `${membersBasePath}/create`;
   const bulkMemberPath = `${membersBasePath}/bulk`;
   const editMemberPath = (memberId) => `${membersBasePath}/${memberId}/edit`;
@@ -302,7 +310,8 @@ export const DistrictMembersPage = () => {
                 }}
               >
                 <Stack spacing={1.5}>
-                  <Stack sx={{ alignItems: "center", justifyContent: "space-between" }}
+                  <Stack
+                    sx={{ alignItems: "center", justifyContent: "space-between" }}
                     direction="row"
                     spacing={1.5}
                   >
@@ -354,7 +363,10 @@ export const DistrictMembersPage = () => {
                         onClick={() => approveMember(member.id)}
                         fullWidth
                         size="small"
-                        sx={{ backgroundColor: "#2e7d32", "&:hover": { backgroundColor: "#1b5e20" } }}
+                        sx={{
+                          backgroundColor: "#2e7d32",
+                          "&:hover": { backgroundColor: "#1b5e20" }
+                        }}
                       >
                         Approve
                       </Button>
@@ -398,7 +410,7 @@ export const DistrictMembersPage = () => {
                         {member.isBlocked ? "Unblock" : "Block"}
                       </Button>
                     )}
-                    {!isDistrictPortal && !member.isMain && (
+                    {!isDistrictPortal && (
                       <Button
                         variant="contained"
                         startIcon={<Trash2 size={15} />}
@@ -555,9 +567,7 @@ export const DistrictMembersPage = () => {
                         )}
                         <Tooltip title="Edit member">
                           <IconButton
-                            onClick={() =>
-                              navigate(editMemberPath(member.id))
-                            }
+                            onClick={() => navigate(editMemberPath(member.id))}
                             sx={{ border: "1px solid #efe2dc", backgroundColor: "#fff8f4" }}
                             aria-label={`Edit ${member.fullName}`}
                           >
@@ -602,7 +612,7 @@ export const DistrictMembersPage = () => {
                             </IconButton>
                           </Tooltip>
                         )}
-                        {!isDistrictPortal && !member.isMain && (
+                        {!isDistrictPortal && (
                           <Tooltip title="Delete member">
                             <IconButton
                               onClick={() => setPendingDelete(member)}
@@ -661,7 +671,11 @@ export const DistrictMembersPage = () => {
         open={Boolean(pendingDelete)}
         title="Delete member"
         itemLabel={pendingDelete?.fullName}
-        description="This member will be permanently removed from the district."
+        description={
+          pendingDelete?.isMain
+            ? "This is the main member. Deleting will remove them from the district and clear the main member."
+            : "This member will be permanently removed from the district."
+        }
         onClose={() => setPendingDelete(null)}
         onConfirm={handleDelete}
       />
