@@ -7,6 +7,8 @@ export const schoolRequestConfig = {
   label: "School",
   basePath: "/reports/school",
   heroImage: schoolHero,
+  canDelete: true,
+  onDelete: (id) => useRequestsStore.getState().deleteSchool(id),
   useRequests: () => useRequestsStore((state) => state.schoolRequests),
   onSearch: (value) => {
     const params = {};
@@ -49,6 +51,8 @@ export const officialRequestConfig = {
   label: "Official",
   basePath: "/reports/official",
   heroImage: officialHero,
+  canDelete: true,
+  onDelete: (id) => useRequestsStore.getState().deleteOfficial(id),
   useRequests: () => useRequestsStore((state) => state.officialRequests),
   onSearch: (value) => {
     const params = {};
@@ -92,6 +96,8 @@ export const parentRequestConfig = {
   label: "Parent",
   basePath: "/reports/parent",
   heroImage: officialHero,
+  canDelete: true,
+  onDelete: (id) => useRequestsStore.getState().deleteParent(id),
   useRequests: () => useRequestsStore((state) => state.parentRequests),
   onSearch: (value) => {
     const params = {};
@@ -132,6 +138,8 @@ export const guestRequestConfig = {
   label: "Guest",
   basePath: "/reports/guest",
   heroImage: officialHero,
+  canDelete: true,
+  onDelete: (id) => useRequestsStore.getState().deleteGuest(id),
   useRequests: () => useRequestsStore((state) => state.guestRequests),
   onSearch: (value) => {
     const params = {};
@@ -174,6 +182,8 @@ export const academyRequestConfig = {
   label: "Academy",
   basePath: "/reports/academy",
   heroImage: academyHero,
+  canDelete: true,
+  onDelete: (id) => useRequestsStore.getState().deleteAcademy(id),
   useRequests: () => useRequestsStore((state) => state.academyRequests),
   onSearch: (value) => {
     const params = {};

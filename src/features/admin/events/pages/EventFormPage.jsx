@@ -1,13 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import {
-  Box,
-  Breadcrumbs,
-  Button,
-  Chip,
-  Paper,
-  Stack,
-  Typography
-} from "@mui/material";
+import { Box, Breadcrumbs, Button, Chip, Paper, Stack, Typography } from "@mui/material";
 import { CheckCircle2, ChevronRight, Save, XCircle } from "lucide-react";
 import { Link as RouterLink, useLocation, useNavigate, useParams } from "react-router-dom";
 import eventsHero from "@/assets/Events_header.jpg";
@@ -24,6 +16,7 @@ import {
   unwrapSkatingCategories
 } from "@/features/admin/events/utils/parseEventApi";
 import { eventsApi } from "@/api/events-api";
+import { stateApi } from "@/api/state-api";
 import { canApproveEvents, getEventApprovalChipProps } from "@/utils/eventApprovalStatus";
 import { useAuthStore } from "@/features/auth/store/auth-store";
 import toast from "react-hot-toast";
@@ -34,6 +27,22 @@ const updateEventAsAdmin = async (event, payload) => {
   return eventsApi.update(id, payload);
 };
 
+/** Admin create must attach a State org id (eventFor). */
+const resolveStateIdForAdminCreate = async () => {
+  const response = await stateApi.getAll();
+  const payload = response?.data ?? response;
+  const inner = payload?.data ?? payload;
+  const states = Array.isArray(inner)
+    ? inner
+    : Array.isArray(inner?.states)
+      ? inner.states
+      : Array.isArray(inner?.data)
+        ? inner.data
+        : [];
+  const first = states[0];
+  return first?._id || first?.id || null;
+};
+
 export const EventFormPage = () => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -41,11 +50,12 @@ export const EventFormPage = () => {
   const role = useAuthStore((s) => s.role);
   const canApprove = canApproveEvents(role);
   const isEditing = Boolean(eventId);
+  const isAdmin = String(role || "").toLowerCase() === "admin";
 
   const stateEventPreview = location.state?.event ?? null;
 
   const [existingEvent, setExistingEvent] = useState(() => stateEventPreview);
-  const [loading, setLoading] = useState(isEditing);
+  const [fetchDoneForId, setFetchDoneForId] = useState(null);
   const [saving, setSaving] = useState(false);
   const [eventCategories, setEventCategories] = useState([]);
 
@@ -54,8 +64,12 @@ export const EventFormPage = () => {
   );
   const [errors, setErrors] = useState({});
 
+  const loading = Boolean(isEditing && eventId && fetchDoneForId !== eventId);
+
   const backPath = useMemo(() => {
-    const type = String(existingEvent?.eventType || stateEventPreview?.eventType || "").toLowerCase();
+    const type = String(
+      existingEvent?.eventType || stateEventPreview?.eventType || ""
+    ).toLowerCase();
     if (type === "club" && location.state?.fromClubId) {
       return `/clubs/${location.state.fromClubId}/events`;
     }
@@ -66,10 +80,10 @@ export const EventFormPage = () => {
   }, [existingEvent, stateEventPreview, location.state]);
 
   useEffect(() => {
-    if (!isEditing || !eventId) return;
+    if (!isEditing || !eventId) return undefined;
 
     let cancelled = false;
-    setLoading(true);
+    const hasPreview = Boolean(location.state?.event);
 
     eventsApi
       .getById(eventId)
@@ -77,7 +91,7 @@ export const EventFormPage = () => {
         if (cancelled) return;
         const ev = unwrapEventPayload(response);
         if (!ev) {
-          if (!location.state?.event) {
+          if (!hasPreview) {
             toast.error("Could not load event details");
           }
           return;
@@ -103,18 +117,18 @@ export const EventFormPage = () => {
       })
       .catch((err) => {
         if (cancelled) return;
-        if (!location.state?.event) {
+        if (!hasPreview) {
           toast.error(err?.response?.data?.message || err?.message || "Failed to load event");
         }
       })
       .finally(() => {
-        if (!cancelled) setLoading(false);
+        if (!cancelled) setFetchDoneForId(eventId);
       });
 
     return () => {
       cancelled = true;
     };
-  }, [isEditing, eventId]);
+  }, [isEditing, eventId, location.state?.event]);
 
   useEffect(() => {
     eventsApi
@@ -156,13 +170,21 @@ export const EventFormPage = () => {
       if (isEditing && existingEvent) {
         const response = await updateEventAsAdmin(existingEvent, payload);
         const message =
-          unwrapApiMessage(response) ||
-          response?.message ||
-          "Event updated successfully";
+          unwrapApiMessage(response) || response?.message || "Event updated successfully";
         toast.success(message);
       } else {
+        if (isAdmin) {
+          const stateId = await resolveStateIdForAdminCreate();
+          if (!stateId) {
+            toast.error("No state found. Create a State account before adding a state event.");
+            return;
+          }
+          payload.stateId = stateId;
+        }
         const response = await eventsApi.create(payload);
-        toast.success(unwrapApiMessage(response) || response?.message || "Event created successfully");
+        toast.success(
+          unwrapApiMessage(response) || response?.message || "Event created successfully"
+        );
       }
       navigate(backPath);
     } catch (err) {

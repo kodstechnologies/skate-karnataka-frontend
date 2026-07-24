@@ -142,10 +142,6 @@ export const SkatersPage = () => {
 
   const handleConfirmDelete = async () => {
     if (!pendingDeleteSkater) return;
-    if (!pendingDeleteSkater.isBlocked) {
-      closeDeleteDialog();
-      return;
-    }
     const success = await deleteSkater(pendingDeleteSkater._id);
     if (success) closeDeleteDialog();
   };
@@ -365,17 +361,15 @@ export const SkatersPage = () => {
                     >
                       {skater.isBlocked ? "Unblock" : "Block"}
                     </Button>
-                    {skater.isBlocked && (
-                      <Button
-                        variant="outlined"
-                        color="error"
-                        startIcon={<DeleteOutlineOutlinedIcon sx={{ fontSize: 18 }} />}
-                        onClick={() => setPendingDeleteSkater(skater)}
-                        fullWidth
-                      >
-                        Delete
-                      </Button>
-                    )}
+                    <Button
+                      variant="outlined"
+                      color="error"
+                      startIcon={<DeleteOutlineOutlinedIcon sx={{ fontSize: 18 }} />}
+                      onClick={() => setPendingDeleteSkater(skater)}
+                      fullWidth
+                    >
+                      Delete
+                    </Button>
                   </Stack>
                 </Stack>
               </Paper>
@@ -502,21 +496,19 @@ export const SkatersPage = () => {
                             )}
                           </IconButton>
                         </Tooltip>
-                        {skater.isBlocked && (
-                          <Tooltip title="Delete skater">
-                            <IconButton
-                              onClick={() => setPendingDeleteSkater(skater)}
-                              sx={{
-                                border: "1px solid #efe2dc",
-                                backgroundColor: "#fff1f0",
-                                color: "#c62828"
-                              }}
-                              aria-label={`Delete ${skater.fullName}`}
-                            >
-                              <DeleteOutlineOutlinedIcon sx={{ fontSize: 18 }} />
-                            </IconButton>
-                          </Tooltip>
-                        )}
+                        <Tooltip title="Delete skater">
+                          <IconButton
+                            onClick={() => setPendingDeleteSkater(skater)}
+                            sx={{
+                              border: "1px solid #efe2dc",
+                              backgroundColor: "#fff1f0",
+                              color: "#c62828"
+                            }}
+                            aria-label={`Delete ${skater.fullName}`}
+                          >
+                            <DeleteOutlineOutlinedIcon sx={{ fontSize: 18 }} />
+                          </IconButton>
+                        </Tooltip>
                       </Stack>
                     </TableCell>
                   </TableRow>

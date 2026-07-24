@@ -51,6 +51,22 @@ export const useRequestsStore = create((set) => ({
       set({ loading: false });
     }
   },
+  deleteSchool: async (id) => {
+    try {
+      const response = await schoolApi.delete(id);
+      set((state) => ({
+        schoolRequests: state.schoolRequests.filter((school) => school.id !== id),
+        selectedSchool: state.selectedSchool?.id === id ? null : state.selectedSchool
+      }));
+      toast.success(response?.message || "School deleted successfully");
+      return true;
+    } catch (error) {
+      const errorMessage = error?.response?.data?.message || "Failed to delete school";
+      console.error(errorMessage, error);
+      toast.error(errorMessage);
+      return false;
+    }
+  },
   fetchOfficialRequests: async (params) => {
     try {
       set({ loading: true });
@@ -77,6 +93,22 @@ export const useRequestsStore = create((set) => ({
       toast.error(errorMessage);
     } finally {
       set({ loading: false });
+    }
+  },
+  deleteOfficial: async (id) => {
+    try {
+      const response = await officialApi.delete(id);
+      set((state) => ({
+        officialRequests: state.officialRequests.filter((official) => official.id !== id),
+        selectedOfficial: state.selectedOfficial?.id === id ? null : state.selectedOfficial
+      }));
+      toast.success(response?.message || "Official deleted successfully");
+      return true;
+    } catch (error) {
+      const errorMessage = error?.response?.data?.message || "Failed to delete official";
+      console.error(errorMessage, error);
+      toast.error(errorMessage);
+      return false;
     }
   },
   fetchParentRequests: async (params) => {
@@ -107,6 +139,22 @@ export const useRequestsStore = create((set) => ({
       set({ loading: false });
     }
   },
+  deleteParent: async (id) => {
+    try {
+      const response = await parentApi.delete(id);
+      set((state) => ({
+        parentRequests: state.parentRequests.filter((parent) => parent.id !== id),
+        selectedParent: state.selectedParent?.id === id ? null : state.selectedParent
+      }));
+      toast.success(response?.message || "Parent deleted successfully");
+      return true;
+    } catch (error) {
+      const errorMessage = error?.response?.data?.message || "Failed to delete parent";
+      console.error(errorMessage, error);
+      toast.error(errorMessage);
+      return false;
+    }
+  },
   fetchAcademyRequests: async (params) => {
     try {
       set({ loading: true });
@@ -135,6 +183,22 @@ export const useRequestsStore = create((set) => ({
       set({ loading: false });
     }
   },
+  deleteAcademy: async (id) => {
+    try {
+      const response = await academyApi.delete(id);
+      set((state) => ({
+        academyRequests: state.academyRequests.filter((academy) => academy.id !== id),
+        selectedAcademy: state.selectedAcademy?.id === id ? null : state.selectedAcademy
+      }));
+      toast.success(response?.message || "Academy deleted successfully");
+      return true;
+    } catch (error) {
+      const errorMessage = error?.response?.data?.message || "Failed to delete academy";
+      console.error(errorMessage, error);
+      toast.error(errorMessage);
+      return false;
+    }
+  },
   fetchGuestRequests: async (params) => {
     try {
       set({ loading: true });
@@ -161,6 +225,22 @@ export const useRequestsStore = create((set) => ({
       toast.error(errorMessage);
     } finally {
       set({ loading: false });
+    }
+  },
+  deleteGuest: async (id) => {
+    try {
+      const response = await guestApi.delete(id);
+      set((state) => ({
+        guestRequests: state.guestRequests.filter((guest) => guest.id !== id),
+        selectedGuest: state.selectedGuest?.id === id ? null : state.selectedGuest
+      }));
+      toast.success(response?.message || "Guest deleted successfully");
+      return true;
+    } catch (error) {
+      const errorMessage = error?.response?.data?.message || "Failed to delete guest";
+      console.error(errorMessage, error);
+      toast.error(errorMessage);
+      return false;
     }
   }
 }));

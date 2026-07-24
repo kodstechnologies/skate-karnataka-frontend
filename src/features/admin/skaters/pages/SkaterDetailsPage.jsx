@@ -12,6 +12,7 @@ import {
 } from "@mui/material";
 import BadgeOutlinedIcon from "@mui/icons-material/BadgeOutlined";
 import BlockOutlinedIcon from "@mui/icons-material/BlockOutlined";
+import DeleteOutlineOutlinedIcon from "@mui/icons-material/DeleteOutlineOutlined";
 import EditOutlinedIcon from "@mui/icons-material/EditOutlined";
 import LockOpenOutlinedIcon from "@mui/icons-material/LockOpenOutlined";
 import LocationOnOutlinedIcon from "@mui/icons-material/LocationOnOutlined";
@@ -155,9 +156,11 @@ export const SkaterDetailsPage = () => {
     selectedSkater: skater,
     isLoadingDetail,
     fetchSkaterById,
-    toggleSkaterBlock
+    toggleSkaterBlock,
+    deleteSkater
   } = useSkatersStore();
   const [showBlockDialog, setShowBlockDialog] = useState(false);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
 
   useEffect(() => {
     if (skaterId) {
@@ -170,6 +173,15 @@ export const SkaterDetailsPage = () => {
     const nextBlocked = !skater.isBlocked;
     const success = await toggleSkaterBlock(skater._id, nextBlocked);
     if (success) setShowBlockDialog(false);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!skater) return;
+    const success = await deleteSkater(skater._id);
+    if (success) {
+      setShowDeleteDialog(false);
+      navigate("/skaters");
+    }
   };
 
   if (isLoadingDetail) {
@@ -372,14 +384,19 @@ export const SkaterDetailsPage = () => {
             >
               {skater.isBlocked ? "Unblock skater" : "Block skater"}
             </Button>
+            <Button
+              variant="outlined"
+              color="error"
+              startIcon={<DeleteOutlineOutlinedIcon sx={{ fontSize: 18 }} />}
+              onClick={() => setShowDeleteDialog(true)}
+            >
+              Delete skater
+            </Button>
           </Stack>
         </Stack>
 
         <Stack spacing={2.5}>
-          <SectionCard
-            title="Profile Photo"
-            description="Registered athlete profile image."
-          >
+          <SectionCard title="Profile Photo" description="Registered athlete profile image.">
             <Stack
               direction={{ xs: "column", sm: "row" }}
               spacing={2.5}
@@ -622,6 +639,16 @@ export const SkaterDetailsPage = () => {
         confirmLabel={skater.isBlocked ? "Unblock" : "Block"}
         onClose={() => setShowBlockDialog(false)}
         onConfirm={handleConfirmBlockToggle}
+      />
+
+      <ConfirmDeleteModal
+        open={showDeleteDialog}
+        title="Delete skater"
+        description="This will permanently remove the skater account. This action cannot be undone."
+        itemLabel={skater.fullName}
+        confirmLabel="Delete"
+        onClose={() => setShowDeleteDialog(false)}
+        onConfirm={handleConfirmDelete}
       />
     </Box>
   );

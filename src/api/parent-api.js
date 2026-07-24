@@ -6,5 +6,8 @@ export const parentApi = {
   },
   getDetails: async (id) => {
     return api.get(`/parent/v1/full-details/${id}`);
+  },
+  delete: async (id) => {
+    return api.delete(`/parent/v1/${id}`);
   }
 };

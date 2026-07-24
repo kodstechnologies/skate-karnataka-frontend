@@ -6,5 +6,8 @@ export const schoolApi = {
   },
   getDetails: async (id) => {
     return api.get(`/school/v1/full-details/${id}`);
+  },
+  delete: async (id) => {
+    return api.delete(`/school/v1/${id}`);
   }
 };

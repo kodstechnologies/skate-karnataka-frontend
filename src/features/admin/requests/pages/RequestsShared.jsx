@@ -1,4 +1,5 @@
 import VisibilityOutlinedIcon from "@mui/icons-material/VisibilityOutlined";
+import DeleteOutlineOutlinedIcon from "@mui/icons-material/DeleteOutlineOutlined";
 import {
   Box,
   Breadcrumbs,
@@ -17,6 +18,7 @@ import {
   TablePagination,
   TableRow,
   TextField,
+  Tooltip,
   Typography,
   Skeleton
 } from "@mui/material";
@@ -24,6 +26,7 @@ import { ChevronRight, Search } from "lucide-react";
 import { useMemo, useState, useEffect, useRef } from "react";
 import { Link as RouterLink, useNavigate, useParams } from "react-router-dom";
 import circularHero from "@/assets/Circular_header.jpg";
+import { ConfirmDeleteModal } from "@/components/ui/ConfirmDeleteModal";
 import { useDebounce } from "@/hooks/useDebounce";
 import { useRequestsStore } from "@/features/admin/requests/store/requests-store";
 
@@ -72,6 +75,7 @@ export const RequestListPage = ({ config }) => {
   const [searchTerm, setSearchTerm] = useState("");
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(5);
+  const [pendingDelete, setPendingDelete] = useState(null);
   const isFirstRender = useRef(true);
 
   const debouncedSearchTerm = useDebounce(searchTerm, 500);
@@ -92,6 +96,7 @@ export const RequestListPage = ({ config }) => {
 
   const requests = config.useRequests();
   const loading = useRequestsStore((state) => state.loading);
+  const canDelete = Boolean(config.canDelete && config.onDelete);
 
   const filteredRequests = useMemo(() => {
     const normalizedSearch = searchTerm.trim().toLowerCase();
@@ -109,6 +114,17 @@ export const RequestListPage = ({ config }) => {
   }, [filteredRequests, page, rowsPerPage]);
 
   const heroImage = config.heroImage ?? circularHero;
+
+  const handleConfirmDelete = async () => {
+    if (!pendingDelete || !config.onDelete) return;
+    const success = await config.onDelete(pendingDelete.id);
+    if (success) {
+      setPendingDelete(null);
+      if (paginatedRequests.length <= 1 && page > 0) {
+        setPage((current) => Math.max(0, current - 1));
+      }
+    }
+  };
 
   return (
     <Box className="space-y-5">
@@ -231,12 +247,30 @@ export const RequestListPage = ({ config }) => {
                     ))}
                     <TableCell>
                       <Stack direction="row" spacing={1}>
-                        <IconButton
-                          onClick={() => navigate(`${config.basePath}/${item.id}`)}
-                          sx={{ border: "1px solid #efe2dc", backgroundColor: "#fff8f4" }}
-                        >
-                          <VisibilityOutlinedIcon sx={{ fontSize: 18 }} />
-                        </IconButton>
+                        <Tooltip title="View details">
+                          <IconButton
+                            onClick={() => navigate(`${config.basePath}/${item.id}`)}
+                            sx={{ border: "1px solid #efe2dc", backgroundColor: "#fff8f4" }}
+                            aria-label={`View ${item.fullName || "report"}`}
+                          >
+                            <VisibilityOutlinedIcon sx={{ fontSize: 18 }} />
+                          </IconButton>
+                        </Tooltip>
+                        {canDelete ? (
+                          <Tooltip title={`Delete ${config.label.toLowerCase()}`}>
+                            <IconButton
+                              onClick={() => setPendingDelete(item)}
+                              sx={{
+                                border: "1px solid #efe2dc",
+                                backgroundColor: "#fff1f0",
+                                color: "#c62828"
+                              }}
+                              aria-label={`Delete ${item.fullName || "report"}`}
+                            >
+                              <DeleteOutlineOutlinedIcon sx={{ fontSize: 18 }} />
+                            </IconButton>
+                          </Tooltip>
+                        ) : null}
                       </Stack>
                     </TableCell>
                   </TableRow>
@@ -278,6 +312,18 @@ export const RequestListPage = ({ config }) => {
           }}
         />
       </Paper>
+
+      {canDelete ? (
+        <ConfirmDeleteModal
+          open={Boolean(pendingDelete)}
+          title={`Delete ${config.label.toLowerCase()}`}
+          description={`This will permanently remove this ${config.label.toLowerCase()} account. This action cannot be undone.`}
+          itemLabel={pendingDelete?.fullName || pendingDelete?.schoolName}
+          confirmLabel="Delete"
+          onClose={() => setPendingDelete(null)}
+          onConfirm={handleConfirmDelete}
+        />
+      ) : null}
     </Box>
   );
 };

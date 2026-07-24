@@ -6,5 +6,8 @@ export const officialApi = {
   },
   getDetails: async (id) => {
     return api.get(`/official/v1/full-details/${id}`);
+  },
+  delete: async (id) => {
+    return api.delete(`/official/v1/${id}`);
   }
 };

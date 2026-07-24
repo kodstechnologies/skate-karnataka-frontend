@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { Box, Breadcrumbs, Button, Paper, Stack, Typography } from "@mui/material";
 import { ChevronRight, Save } from "lucide-react";
 import { Link as RouterLink, useNavigate, useParams } from "react-router-dom";
@@ -23,7 +23,7 @@ export const DistrictEventFormPage = () => {
   const user = useAuthStore((s) => s.user);
   const isEditing = Boolean(eventId);
   const [existingEvent, setExistingEvent] = useState(null);
-  const [loading, setLoading] = useState(isEditing);
+  const [fetchDoneForId, setFetchDoneForId] = useState(null);
   const [saving, setSaving] = useState(false);
   const [eventCategories, setEventCategories] = useState([]);
   const [categoryFormat, setCategoryFormat] = useState("standard");
@@ -33,12 +33,12 @@ export const DistrictEventFormPage = () => {
   const [errors, setErrors] = useState({});
 
   const districtName = user?.districtName || user?.name || "District";
+  const loading = Boolean(isEditing && eventId && fetchDoneForId !== eventId);
 
   useEffect(() => {
-    if (!isEditing || !eventId) return;
+    if (!isEditing || !eventId) return undefined;
 
     let cancelled = false;
-    setLoading(true);
 
     eventsApi
       .getDistrictEventById(eventId)
@@ -53,7 +53,7 @@ export const DistrictEventFormPage = () => {
         toast.error(err?.response?.data?.message || "Failed to load event");
       })
       .finally(() => {
-        if (!cancelled) setLoading(false);
+        if (!cancelled) setFetchDoneForId(eventId);
       });
 
     return () => {
@@ -61,31 +61,38 @@ export const DistrictEventFormPage = () => {
     };
   }, [isEditing, eventId]);
 
-  const loadCategories = useCallback(async (format) => {
-    try {
-      const [catRes, ctxRes] = await Promise.all([
-        eventsApi.getSkatingCategories({ source: format }),
-        format === "custom" ? eventCategoriesApi.getOrgContext() : Promise.resolve(null)
-      ]);
-
-      setEventCategories(unwrapSkatingCategories(catRes));
-
-      if (format === "custom" && ctxRes) {
-        const ctx = unwrapOrgCategoryContext(ctxRes);
-        setCategorySourceUsesStandardFallback(ctx.usesStandardFallbackForCustom);
-      } else {
-        setCategorySourceUsesStandardFallback(false);
-      }
-    } catch {
-      setEventCategories([]);
-      setCategorySourceUsesStandardFallback(false);
-      toast.error("Failed to load event categories");
-    }
-  }, []);
-
   useEffect(() => {
-    loadCategories(categoryFormat);
-  }, [categoryFormat, loadCategories]);
+    let cancelled = false;
+
+    (async () => {
+      try {
+        const [catRes, ctxRes] = await Promise.all([
+          eventsApi.getSkatingCategories({ source: categoryFormat }),
+          categoryFormat === "custom" ? eventCategoriesApi.getOrgContext() : Promise.resolve(null)
+        ]);
+
+        if (cancelled) return;
+
+        setEventCategories(unwrapSkatingCategories(catRes));
+
+        if (categoryFormat === "custom" && ctxRes) {
+          const ctx = unwrapOrgCategoryContext(ctxRes);
+          setCategorySourceUsesStandardFallback(ctx.usesStandardFallbackForCustom);
+        } else {
+          setCategorySourceUsesStandardFallback(false);
+        }
+      } catch {
+        if (cancelled) return;
+        setEventCategories([]);
+        setCategorySourceUsesStandardFallback(false);
+        toast.error("Failed to load event categories");
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [categoryFormat]);
 
   const handleCategoryFormatChange = (format) => {
     setCategoryFormat(format);
@@ -216,7 +223,12 @@ export const DistrictEventFormPage = () => {
         <Stack
           direction={{ xs: "column", sm: "row" }}
           spacing={1.5}
-          sx={{ mt: 3, pt: 3, borderTop: "1px solid rgba(200, 230, 228, 0.9)", justifyContent: "flex-end" }}
+          sx={{
+            mt: 3,
+            pt: 3,
+            borderTop: "1px solid rgba(200, 230, 228, 0.9)",
+            justifyContent: "flex-end"
+          }}
         >
           <Button variant="outlined" onClick={() => navigate("/district/events")} disabled={saving}>
             Cancel
