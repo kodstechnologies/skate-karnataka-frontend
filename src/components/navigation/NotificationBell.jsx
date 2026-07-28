@@ -163,69 +163,103 @@ export const NotificationBell = () => {
             <Stack sx={{ py: 4, alignItems: "center" }}>
               <CircularProgress size={28} sx={{ color: "#f6765e" }} />
             </Stack>
-          ) : error ? (
-            <Typography sx={{ px: 2.5, py: 3, color: "#b19f99", fontSize: "0.875rem" }}>
-              {error}
-            </Typography>
-          ) : notifications.length === 0 ? (
-            <Typography sx={{ px: 2.5, py: 3, color: "#b19f99", fontSize: "0.875rem" }}>
-              No notifications yet.
-            </Typography>
           ) : (
-            notifications.map((item, index) => (
-              <Box key={item._id || index}>
-                {index > 0 && <Divider sx={{ borderColor: "#f5ebe6" }} />}
-                <Box
-                  onClick={() => handleNotificationClick(item)}
+            <>
+              {error && (
+                <Stack
+                  direction="row"
                   sx={{
                     px: 2.5,
-                    py: 2,
-                    bgcolor: item.isRead ? "transparent" : "#fffaf7",
-                    cursor: item.link ? "pointer" : "default",
-                    transition: "background-color 0.2s",
-                    "&:hover": item.link ? { bgcolor: "#fff3ee" } : undefined
+                    py: 1.5,
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    gap: 1,
+                    bgcolor: "#fff5f4",
+                    borderBottom: notifications.length > 0 ? "1px solid #f5ebe6" : "none"
                   }}
                 >
-                  <Stack
-                    sx={{ alignItems: "flex-start", justifyContent: "space-between" }}
-                    direction="row"
-                    gap={1}
-                  >
-                    <Typography
-                      sx={{
-                        fontWeight: item.isRead ? 500 : 600,
-                        color: "#2f2829",
-                        fontSize: "0.875rem",
-                        lineHeight: 1.35,
-                        flex: 1
-                      }}
-                    >
-                      {item.title}
-                    </Typography>
-                    <Typography sx={{ color: "#b19f99", fontSize: "0.7rem", whiteSpace: "nowrap" }}>
-                      {formatWhen(item.createdAt)}
-                    </Typography>
-                  </Stack>
-
-                  <Typography
+                  <Typography sx={{ color: "#b42318", fontSize: "0.8rem", flex: 1 }}>
+                    {notifications.length > 0 ? `Couldn’t refresh: ${error}` : error}
+                  </Typography>
+                  <Button
+                    size="small"
+                    onClick={refresh}
+                    disabled={isLoading}
                     sx={{
-                      mt: 0.75,
-                      color: "#756968",
-                      fontSize: "0.8rem",
-                      lineHeight: 1.45
+                      textTransform: "none",
+                      minWidth: 0,
+                      fontWeight: 700,
+                      color: "#f6765e"
                     }}
                   >
-                    {item.body}
-                  </Typography>
+                    Retry
+                  </Button>
+                </Stack>
+              )}
 
-                  {item.senderRole && (
-                    <Stack direction="row" gap={0.75} sx={{ mt: 1, flexWrap: "wrap" }}>
-                      <RoleBadge role={item.senderRole} prefix="From" />
-                    </Stack>
-                  )}
-                </Box>
-              </Box>
-            ))
+              {notifications.length === 0 && !error ? (
+                <Typography sx={{ px: 2.5, py: 3, color: "#b19f99", fontSize: "0.875rem" }}>
+                  No notifications yet.
+                </Typography>
+              ) : (
+                notifications.map((item, index) => (
+                  <Box key={item._id || index}>
+                    {index > 0 && <Divider sx={{ borderColor: "#f5ebe6" }} />}
+                    <Box
+                      onClick={() => handleNotificationClick(item)}
+                      sx={{
+                        px: 2.5,
+                        py: 2,
+                        bgcolor: item.isRead ? "transparent" : "#fffaf7",
+                        cursor: item.link ? "pointer" : "default",
+                        transition: "background-color 0.2s",
+                        "&:hover": item.link ? { bgcolor: "#fff3ee" } : undefined
+                      }}
+                    >
+                      <Stack
+                        sx={{ alignItems: "flex-start", justifyContent: "space-between" }}
+                        direction="row"
+                        gap={1}
+                      >
+                        <Typography
+                          sx={{
+                            fontWeight: item.isRead ? 500 : 600,
+                            color: "#2f2829",
+                            fontSize: "0.875rem",
+                            lineHeight: 1.35,
+                            flex: 1
+                          }}
+                        >
+                          {item.title}
+                        </Typography>
+                        <Typography
+                          sx={{ color: "#b19f99", fontSize: "0.7rem", whiteSpace: "nowrap" }}
+                        >
+                          {formatWhen(item.createdAt)}
+                        </Typography>
+                      </Stack>
+
+                      <Typography
+                        sx={{
+                          mt: 0.75,
+                          color: "#756968",
+                          fontSize: "0.8rem",
+                          lineHeight: 1.45
+                        }}
+                      >
+                        {item.body}
+                      </Typography>
+
+                      {item.senderRole && (
+                        <Stack direction="row" gap={0.75} sx={{ mt: 1, flexWrap: "wrap" }}>
+                          <RoleBadge role={item.senderRole} prefix="From" />
+                        </Stack>
+                      )}
+                    </Box>
+                  </Box>
+                ))
+              )}
+            </>
           )}
 
           {hasMore && (

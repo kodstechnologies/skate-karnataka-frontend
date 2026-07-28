@@ -3,18 +3,22 @@ import {
   Breadcrumbs,
   Button,
   Chip,
+  IconButton,
   Paper,
   Skeleton,
   Stack,
   TablePagination,
   TextField,
+  Tooltip,
   Typography
 } from "@mui/material";
 import {
   CalendarDays,
   CheckCircle2,
   ChevronRight,
+  Hand,
   PencilLine,
+  RefreshCw,
   Search,
   Trash2,
   XCircle
@@ -257,6 +261,7 @@ export const DistrictEventsPage = () => {
   const [totalCount, setTotalCount] = useState(0);
   const [pendingDeleteEvent, setPendingDeleteEvent] = useState(null);
   const [deleting, setDeleting] = useState(false);
+  const [togglingModeId, setTogglingModeId] = useState(null);
 
   const searchDebounceRef = useRef(null);
 
@@ -374,6 +379,34 @@ export const DistrictEventsPage = () => {
       fetchEvents(searchTerm, page + 1, rowsPerPage);
     } catch (err) {
       toast.error(err?.response?.data?.message || "Failed to reject delete");
+    }
+  };
+
+  const handleToggleChestNumberMode = async (event) => {
+    const id = event._id || event.id;
+    if (!id || togglingModeId) return;
+
+    const nextIsAutomated = event.isAutomated === false;
+
+    setTogglingModeId(id);
+    try {
+      const response = await eventsApi.updateDistrictChestNumberMode(id, nextIsAutomated);
+      const payload = response?.data?.data ?? response?.data ?? response;
+      const savedIsAutomated =
+        typeof payload?.isAutomated === "boolean" ? payload.isAutomated : nextIsAutomated;
+
+      setEvents((prev) =>
+        prev.map((item) =>
+          (item._id || item.id) === id ? { ...item, isAutomated: savedIsAutomated } : item
+        )
+      );
+      toast.success(
+        payload?.message || (savedIsAutomated ? "Switched to automatic" : "Switched to manual")
+      );
+    } catch (err) {
+      toast.error(err?.response?.data?.message || "Failed to update mode");
+    } finally {
+      setTogglingModeId(null);
     }
   };
 
@@ -572,12 +605,15 @@ export const DistrictEventsPage = () => {
                 const displayStatus = resolveEventDisplayStatus(event);
                 const isDeletePending = event.deleteApprovalStatus === "pending";
                 const isApprovalPending = event.adminApprovalStatus === "pending";
+                const isAutomated = event.isAutomated !== false;
+                const isTogglingMode = togglingModeId === eventId;
 
                 return (
                   <Paper
                     key={eventId}
                     elevation={0}
                     sx={{
+                      position: "relative",
                       borderRadius: "24px",
                       border: "1px solid rgba(255,255,255,0.08)",
                       overflow: "hidden",
@@ -590,9 +626,102 @@ export const DistrictEventsPage = () => {
                       "&:hover": {
                         transform: "translateY(-4px)",
                         boxShadow: "0 28px 65px rgba(0, 0, 0, 0.24)"
+                      },
+                      "@keyframes chestModePulse": {
+                        "0%, 100%": {
+                          boxShadow: "0 0 0 0 rgba(34,197,94,0.5), 0 8px 24px rgba(0,0,0,0.25)"
+                        },
+                        "50%": {
+                          boxShadow: "0 0 0 12px rgba(34,197,94,0), 0 8px 24px rgba(0,0,0,0.25)"
+                        }
+                      },
+                      "@keyframes chestModeSpin": {
+                        from: { transform: "rotate(0deg)" },
+                        to: { transform: "rotate(360deg)" }
                       }
                     }}
                   >
+                    <Tooltip
+                      title={
+                        isAutomated
+                          ? "Automatic chest numbers — click for Manual"
+                          : "Manual chest numbers — click for Automatic"
+                      }
+                      arrow
+                      placement="left"
+                    >
+                      <IconButton
+                        disabled={isTogglingMode}
+                        onClick={() => handleToggleChestNumberMode(event)}
+                        aria-label={
+                          isAutomated
+                            ? "Switch to manual chest numbers"
+                            : "Switch to automatic chest numbers"
+                        }
+                        sx={{
+                          position: "absolute",
+                          right: 10,
+                          top: "52%",
+                          transform: "translateY(-50%)",
+                          zIndex: 3,
+                          width: 78,
+                          height: 78,
+                          border: "2px solid",
+                          borderColor: isAutomated
+                            ? "rgba(134,239,172,0.85)"
+                            : "rgba(255,255,255,0.55)",
+                          color: isAutomated ? "#86efac" : palette.text,
+                          background: isAutomated
+                            ? "linear-gradient(145deg, rgba(34,197,94,0.45), rgba(22,163,74,0.25))"
+                            : "linear-gradient(145deg, rgba(255,255,255,0.22), rgba(255,255,255,0.08))",
+                          backdropFilter: "blur(8px)",
+                          animation:
+                            !isTogglingMode && isAutomated
+                              ? "chestModePulse 2.2s ease-in-out infinite"
+                              : "none",
+                          transition:
+                            "border-color 0.2s ease, background 0.2s ease, color 0.2s ease",
+                          flexDirection: "column",
+                          gap: 0.35,
+                          borderRadius: "50%",
+                          "&:hover": {
+                            background: isAutomated
+                              ? "linear-gradient(145deg, rgba(34,197,94,0.55), rgba(22,163,74,0.35))"
+                              : "linear-gradient(145deg, rgba(255,255,255,0.3), rgba(255,255,255,0.12))",
+                            borderColor: isAutomated ? "#bbf7d0" : "rgba(255,255,255,0.8)"
+                          },
+                          "&.Mui-disabled": {
+                            color: isAutomated ? "#86efac" : palette.text,
+                            opacity: 0.85
+                          }
+                        }}
+                      >
+                        <Box
+                          component="span"
+                          sx={{
+                            display: "inline-flex",
+                            animation: isTogglingMode
+                              ? "chestModeSpin 0.75s linear infinite"
+                              : "none"
+                          }}
+                        >
+                          {isAutomated ? <RefreshCw size={18} /> : <Hand size={18} />}
+                        </Box>
+                        <Typography
+                          component="span"
+                          sx={{
+                            fontSize: "0.58rem",
+                            fontWeight: 800,
+                            letterSpacing: 0.2,
+                            lineHeight: 1.1,
+                            textTransform: "uppercase"
+                          }}
+                        >
+                          {isAutomated ? "Automatic" : "Manual"}
+                        </Typography>
+                      </IconButton>
+                    </Tooltip>
+
                     <Stack
                       direction="row"
                       spacing={1}

@@ -1,4 +1,5 @@
 import ExcelJS from "exceljs";
+import { formatGenderLabel } from "@/utils/validationHelper";
 
 const HEADERS = [
   "Skater name",
@@ -57,6 +58,7 @@ export const downloadAttendeesExcel = async ({ attendees = [], eventName = "Even
   });
 
   for (const row of attendees) {
+    const genderLabel = formatGenderLabel(row.gender);
     const excelRow = sheet.addRow([
       cell(row.fullName),
       cell(row.chestNo),
@@ -64,7 +66,7 @@ export const downloadAttendeesExcel = async ({ attendees = [], eventName = "Even
       cell(row.lap),
       cell(row.krsaId),
       cell(row.rsfiId),
-      cell(row.gender),
+      genderLabel === "-" ? "" : genderLabel,
       cell(row.email),
       cell(row.phone),
       cell(row.discipline)

@@ -1,7 +1,7 @@
 import { useCallback } from "react";
 
 /** Mirrors backend AGE_GROUPS */
-export const AGE_GROUP_LABELS = ["6-8", "8-10", "10-12", "12-15", "15-18", "18+", "35+"];
+export const AGE_GROUP_LABELS = ["Below 6", "6-8", "8-10", "10-12", "12-15", "15-18", "18+", "35+"];
 
 export const EMPTY_CATEGORY_ROW = { name: "", formula: "" };
 
@@ -48,7 +48,10 @@ const rowToPayload = (row, { requireFormula = false } = {}) => {
 };
 
 /** @returns errors object; empty categoryRows means no row errors */
-export const validateCategoryForm = (form, { requireFormula = false, requireTypeName = false } = {}) => {
+export const validateCategoryForm = (
+  form,
+  { requireFormula = false, requireTypeName = false } = {}
+) => {
   const errors = {};
 
   if (requireTypeName && !form.typeName?.trim()) {
@@ -168,9 +171,7 @@ export function useCategoryFormActions(setForm, setErrors) {
       setForm((f) => ({
         ...f,
         ageGroups: f.ageGroups.map((ag, ai) =>
-          ai === ageIdx
-            ? { ...ag, categories: [...ag.categories, { ...EMPTY_CATEGORY_ROW }] }
-            : ag
+          ai === ageIdx ? { ...ag, categories: [...ag.categories, { ...EMPTY_CATEGORY_ROW }] } : ag
         )
       }));
     },

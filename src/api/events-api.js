@@ -60,6 +60,11 @@ export const eventsApi = {
     return api.patch(`/event/v1/state/${id}`, formData);
   },
 
+  /** Toggle chest-number automation: true = scheduler, false = manual */
+  updateStateChestNumberMode: async (id, isAutomated) => {
+    return api.patch(`/event/v1/state/${id}/chest-number-mode`, { isAutomated });
+  },
+
   /**
    * Delete an event by ID.
    * DELETE /event/v1/state/:id
@@ -112,6 +117,11 @@ export const eventsApi = {
     return api.patch(`/event/v1/club/${id}`, payload);
   },
 
+  /** Toggle chest-number automation: true = scheduler, false = manual */
+  updateClubChestNumberMode: async (id, isAutomated) => {
+    return api.patch(`/event/v1/club/${id}/chest-number-mode`, { isAutomated });
+  },
+
   deleteClubEvent: async (id) => {
     return api.delete(`/event/v1/club/${id}`);
   },
@@ -137,6 +147,11 @@ export const eventsApi = {
     return api.patch(`/event/v1/district/${id}`, payload);
   },
 
+  /** Toggle chest-number automation: true = scheduler, false = manual */
+  updateDistrictChestNumberMode: async (id, isAutomated) => {
+    return api.patch(`/event/v1/district/${id}/chest-number-mode`, { isAutomated });
+  },
+
   deleteDistrictEvent: async (id) => {
     return api.delete(`/event/v1/district/${id}`);
   },
@@ -144,5 +159,5 @@ export const eventsApi = {
   approveEvent: (eventId) => api.patch(`/event/v1/admin/event/${eventId}/approve`),
   rejectEvent: (eventId) => api.patch(`/event/v1/admin/event/${eventId}/reject`),
   approveEventDelete: (eventId) => api.patch(`/event/v1/admin/event/${eventId}/approve-delete`),
-  rejectEventDelete: (eventId) => api.patch(`/event/v1/admin/event/${eventId}/reject-delete`),
+  rejectEventDelete: (eventId) => api.patch(`/event/v1/admin/event/${eventId}/reject-delete`)
 };

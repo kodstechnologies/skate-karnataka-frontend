@@ -65,11 +65,15 @@ export const useNotifications = ({ pageSize = DEFAULT_PAGE_SIZE, enabled = true 
           setUnreadCount(0);
         }
       } catch (err) {
-        const message =
-          err?.response?.data?.message || err?.message || "Failed to load notifications";
+        const isNetwork =
+          !err?.response &&
+          (err?.code === "ERR_NETWORK" || /network error/i.test(String(err?.message || "")));
+        const message = isNetwork
+          ? "Can't reach the server. Check that the backend is running."
+          : err?.response?.data?.message || err?.message || "Failed to load notifications";
 
         setError(message);
-        console.error("[Notifications]", message);
+        console.error("[Notifications]", message, err);
       } finally {
         setIsLoading(false);
         setIsLoadingMore(false);
@@ -78,7 +82,10 @@ export const useNotifications = ({ pageSize = DEFAULT_PAGE_SIZE, enabled = true 
     [applyResponse, enabled, isAuthenticated, pageSize]
   );
 
-  const refresh = useCallback(() => fetchNotifications({ page: 1, append: false }), [fetchNotifications]);
+  const refresh = useCallback(
+    () => fetchNotifications({ page: 1, append: false }),
+    [fetchNotifications]
+  );
 
   const openPanel = useCallback(
     () => fetchNotifications({ page: 1, append: false, markRead: true }),
@@ -95,6 +102,7 @@ export const useNotifications = ({ pageSize = DEFAULT_PAGE_SIZE, enabled = true 
 
   useEffect(() => {
     if (!enabled || !isAuthenticated) return;
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     refresh();
   }, [enabled, isAuthenticated, refresh]);
 
@@ -109,8 +117,7 @@ export const useNotifications = ({ pageSize = DEFAULT_PAGE_SIZE, enabled = true 
     return () => window.removeEventListener(FCM_RECEIVED_EVENT, onPush);
   }, [enabled, isAuthenticated, refresh]);
 
-  const hasMore =
-    pagination != null && (pagination.page ?? 1) < (pagination.totalPages ?? 1);
+  const hasMore = pagination != null && (pagination.page ?? 1) < (pagination.totalPages ?? 1);
 
   return {
     notifications,

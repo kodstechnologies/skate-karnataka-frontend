@@ -28,8 +28,12 @@ export const normalizeGender = (value, defaultValue = "male") => {
     .trim()
     .toLowerCase();
   if (!v) return defaultValue;
-  if (v === "m" || v === "male" || v === "man") return "male";
-  if (v === "f" || v === "female" || v === "woman") return "female";
+  if (v === "m" || v === "male" || v === "man" || v === "boy" || v === "boys") {
+    return "male";
+  }
+  if (v === "f" || v === "female" || v === "woman" || v === "girl" || v === "girls") {
+    return "female";
+  }
   if (v === "o" || v === "other") return "other";
   return v;
 };
@@ -37,8 +41,11 @@ export const normalizeGender = (value, defaultValue = "male") => {
 export const isValidGender = (value) =>
   ["male", "female", "other"].includes(normalizeGender(value, ""));
 
+/** Display label for skating contexts: male → Boys, female → Girls. */
 export const formatGenderLabel = (gender) => {
   const normalized = normalizeGender(gender, "");
   if (!normalized) return "-";
+  if (normalized === "male") return "Boys";
+  if (normalized === "female") return "Girls";
   return normalized.charAt(0).toUpperCase() + normalized.slice(1);
 };

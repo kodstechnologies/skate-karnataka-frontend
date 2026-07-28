@@ -23,6 +23,7 @@ import toast from "react-hot-toast";
 import { competitionApi } from "@/api/competition-api";
 import { resolveAttendeesPortalContext } from "@/features/admin/events/utils/eventAttendeesNavigation";
 import { downloadAttendeesExcel } from "@/features/admin/events/utils/downloadAttendeesExcel";
+import { formatGenderLabel } from "@/utils/validationHelper";
 
 function useDebounce(value, delay) {
   const [debouncedValue, setDebouncedValue] = useState(value);
@@ -37,7 +38,7 @@ const emptySummary = {
   eventName: "",
   totalRegistered: 0,
   totalWithChestNo: 0,
-  filters: { ageGroups: [], laps: [], disciplines: [] },
+  filters: { ageGroups: [], laps: [], disciplines: [], genders: [] },
   attendees: [],
   pagination: { total: 0, page: 1, limit: 10, totalPages: 1 }
 };
@@ -52,6 +53,7 @@ export const EventAttendeesPage = () => {
   const [ageGroup, setAgeGroup] = useState("");
   const [lap, setLap] = useState("");
   const [discipline, setDiscipline] = useState("");
+  const [gender, setGender] = useState("");
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [downloading, setDownloading] = useState(false);
@@ -72,7 +74,8 @@ export const EventAttendeesPage = () => {
         search: debouncedSearch,
         ageGroup,
         lap,
-        discipline
+        discipline,
+        gender
       });
       const payload = response?.data ?? response;
       const data = payload?.data ?? payload;
@@ -82,7 +85,8 @@ export const EventAttendeesPage = () => {
         filters: {
           ageGroups: data?.filters?.ageGroups || [],
           laps: data?.filters?.laps || [],
-          disciplines: data?.filters?.disciplines || []
+          disciplines: data?.filters?.disciplines || [],
+          genders: data?.filters?.genders || []
         },
         attendees: Array.isArray(data?.attendees) ? data.attendees : [],
         pagination: data?.pagination || emptySummary.pagination
@@ -92,7 +96,7 @@ export const EventAttendeesPage = () => {
     } finally {
       setLoading(false);
     }
-  }, [eventId, page, rowsPerPage, debouncedSearch, ageGroup, lap, discipline]);
+  }, [eventId, page, rowsPerPage, debouncedSearch, ageGroup, lap, discipline, gender]);
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
@@ -121,7 +125,8 @@ export const EventAttendeesPage = () => {
       search: debouncedSearch,
       ageGroup,
       lap,
-      discipline
+      discipline,
+      gender
     });
     const firstData = parseSummaryPayload(firstResponse);
     const total = firstData?.pagination?.total ?? 0;
@@ -135,7 +140,8 @@ export const EventAttendeesPage = () => {
         search: debouncedSearch,
         ageGroup,
         lap,
-        discipline
+        discipline,
+        gender
       });
       const data = parseSummaryPayload(response);
       if (Array.isArray(data?.attendees)) {
@@ -323,6 +329,23 @@ export const EventAttendeesPage = () => {
               </MenuItem>
             ))}
           </TextField>
+          <TextField
+            select
+            label="Gender"
+            value={gender}
+            onChange={(e) => {
+              setGender(e.target.value);
+              setPage(0);
+            }}
+            sx={{ minWidth: { xs: "100%", md: 140 } }}
+          >
+            <MenuItem value="">All</MenuItem>
+            {(filterOptions.genders || []).map((option) => (
+              <MenuItem key={option} value={option}>
+                {formatGenderLabel(option)}
+              </MenuItem>
+            ))}
+          </TextField>
         </Stack>
 
         <TableContainer sx={{ opacity: loading ? 0.55 : 1, transition: "opacity 0.2s ease" }}>
@@ -365,7 +388,7 @@ export const EventAttendeesPage = () => {
                     <TableCell>{row.lap || "-"}</TableCell>
                     <TableCell>{row.krsaId || "-"}</TableCell>
                     <TableCell>{row.rsfiId || "-"}</TableCell>
-                    <TableCell>{row.gender || "-"}</TableCell>
+                    <TableCell>{formatGenderLabel(row.gender)}</TableCell>
                     <TableCell>{row.email || "-"}</TableCell>
                     <TableCell>{row.phone || "-"}</TableCell>
                     <TableCell>{row.discipline || "-"}</TableCell>
