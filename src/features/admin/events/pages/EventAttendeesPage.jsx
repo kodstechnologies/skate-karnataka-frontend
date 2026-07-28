@@ -36,10 +36,15 @@ function useDebounce(value, delay) {
 
 const emptySummary = {
   eventName: "",
+  eventAddress: "",
+  eventStartDate: null,
+  eventEndDate: null,
+  hostedBy: "",
   totalRegistered: 0,
   totalWithChestNo: 0,
   filters: { ageGroups: [], laps: [], disciplines: [], genders: [] },
   attendees: [],
+  skatingCategories: [],
   pagination: { total: 0, page: 1, limit: 10, totalPages: 1 }
 };
 
@@ -89,6 +94,7 @@ export const EventAttendeesPage = () => {
           genders: data?.filters?.genders || []
         },
         attendees: Array.isArray(data?.attendees) ? data.attendees : [],
+        skatingCategories: Array.isArray(data?.skatingCategories) ? data.skatingCategories : [],
         pagination: data?.pagination || emptySummary.pagination
       });
     } catch (err) {
@@ -132,6 +138,16 @@ export const EventAttendeesPage = () => {
     const total = firstData?.pagination?.total ?? 0;
     const collected = Array.isArray(firstData?.attendees) ? [...firstData.attendees] : [];
     const totalPages = Math.max(1, Math.ceil(total / pageLimit));
+    const meta = {
+      eventName: firstData?.eventName || eventName,
+      eventAddress: firstData?.eventAddress || summary.eventAddress || "",
+      eventStartDate: firstData?.eventStartDate || summary.eventStartDate || null,
+      eventEndDate: firstData?.eventEndDate || summary.eventEndDate || null,
+      hostedBy: firstData?.hostedBy || summary.hostedBy || "",
+      skatingCategories: Array.isArray(firstData?.skatingCategories)
+        ? firstData.skatingCategories
+        : summary.skatingCategories || []
+    };
 
     for (let nextPage = 2; nextPage <= totalPages; nextPage += 1) {
       const response = await competitionApi.getChestNumberSummary(eventId, {
@@ -149,7 +165,7 @@ export const EventAttendeesPage = () => {
       }
     }
 
-    return collected;
+    return { attendees: collected, meta };
   };
 
   const handleDownloadExcel = async () => {
@@ -157,12 +173,20 @@ export const EventAttendeesPage = () => {
 
     setDownloading(true);
     try {
-      const rows = await fetchAllMatchingAttendees();
+      const { attendees: rows, meta } = await fetchAllMatchingAttendees();
       if (rows.length === 0) {
         toast.error("No attendees to download for the selected filters");
         return;
       }
-      await downloadAttendeesExcel({ attendees: rows, eventName });
+      await downloadAttendeesExcel({
+        attendees: rows,
+        eventName: meta.eventName || eventName,
+        eventAddress: meta.eventAddress,
+        eventStartDate: meta.eventStartDate,
+        eventEndDate: meta.eventEndDate,
+        hostedBy: meta.hostedBy,
+        skatingCategories: meta.skatingCategories
+      });
       toast.success("Excel downloaded");
     } catch (err) {
       toast.error(err?.response?.data?.message || "Failed to download Excel");
