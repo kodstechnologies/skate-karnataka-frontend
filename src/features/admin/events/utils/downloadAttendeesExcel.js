@@ -8,13 +8,17 @@ const KRSA_HEADERS = [
   "Race No",
   "Name",
   "Club",
+  "District",
   "Age Group",
   "Gender",
   "DOB",
   "RSFI NO",
   "Discipline"
 ];
-const KRSA_WIDTHS = [5, 9, 20, 28, 11, 9, 11, 12, 18];
+const KRSA_WIDTHS = [5, 9, 20, 28, 16, 11, 9, 11, 12, 18];
+const EXTRA_HEADERS = ["Remark", "Status"];
+const EXTRA_WIDTHS = [22, 12];
+const DOB_COL_INDEX = 7; // 0-based in values array
 const THIN_BLACK = {
   top: { style: "thin", color: { argb: "FF000000" } },
   left: { style: "thin", color: { argb: "FF000000" } },
@@ -31,6 +35,39 @@ const formatMasterEntryGender = (gender) => {
   if (["m", "male", "man", "boy", "boys"].includes(v)) return "Male";
   if (["f", "female", "woman", "girl", "girls"].includes(v)) return "Female";
   return String(gender).trim();
+};
+
+/** Attendance status only; pending/blank stay empty (not payment status). */
+const formatStatus = (row) => {
+  const value = String(row?.attendanceStatus || "")
+    .trim()
+    .toLowerCase();
+  if (!value || value === "pending") return "";
+  if (value === "attend" || value === "attended" || value === "present") return "Attend";
+  if (value === "absent") return "Absent";
+  return String(row?.attendanceStatus || "").trim();
+};
+
+const resolveRemark = (row) => cell(row?.remarks ?? row?.remark ?? "");
+
+const attendanceStatusRank = (status) => {
+  const value = String(status || "")
+    .trim()
+    .toLowerCase();
+  if (value === "attend" || value === "attended" || value === "present") return 3;
+  if (value === "absent") return 2;
+  if (value === "pending") return 1;
+  return 0;
+};
+
+const paymentStatusRank = (status) => {
+  const value = String(status || "")
+    .trim()
+    .toLowerCase();
+  if (value === "paid") return 3;
+  if (value === "pending") return 2;
+  if (value === "failed") return 1;
+  return 0;
 };
 
 const cell = (value) => {
@@ -90,7 +127,7 @@ const formatDayMonthYear = (value) => {
 const formatDatedLine = ({ eventStartDate, eventEndDate, eventAddress }) => {
   const start = eventStartDate ? formatDayMonthYear(eventStartDate) : "";
   const end = eventEndDate ? formatDayMonthYear(eventEndDate) : "";
-  let datePart = "";
+  let datePart;
   if (start && end && start !== end) {
     const startDate = new Date(eventStartDate);
     const endDate = new Date(eventEndDate);
@@ -174,13 +211,8 @@ export const buildDisciplineColumns = (skatingCategories = [], attendees = []) =
     const lap = cell(row.lap);
     if (!discipline || !lap) continue;
     if (seenDiscipline.has(discipline.toLowerCase())) {
-      const existing = groups.find(
-        (g) => g.discipline.toLowerCase() === discipline.toLowerCase()
-      );
-      if (
-        existing &&
-        !existing.laps.some((name) => name.toLowerCase() === lap.toLowerCase())
-      ) {
+      const existing = groups.find((g) => g.discipline.toLowerCase() === discipline.toLowerCase());
+      if (existing && !existing.laps.some((name) => name.toLowerCase() === lap.toLowerCase())) {
         existing.laps.push(lap);
       }
       continue;
@@ -217,9 +249,7 @@ const skaterGroupKey = (row) => {
 const resolveCategoryLabel = (marks = {}, disciplineGroups = []) => {
   const disciplinesWithYes = [];
   for (const group of disciplineGroups) {
-    const hasYes = group.laps.some(
-      (lap) => marks[lapColumnKey(group.discipline, lap)]
-    );
+    const hasYes = group.laps.some((lap) => marks[lapColumnKey(group.discipline, lap)]);
     if (hasYes) disciplinesWithYes.push(group.discipline);
   }
   if (disciplinesWithYes.length === 0) return "";
@@ -247,6 +277,10 @@ export const buildMasterEntryRows = (attendees = [], disciplineGroups = []) => {
         gender: row.gender,
         dob: row.dob,
         rsfiId: cell(row.rsfiId),
+        district: cell(row.district),
+        remarks: resolveRemark(row),
+        paymentStatus: cell(row.paymentStatus ?? row.status),
+        attendanceStatus: cell(row.attendanceStatus),
         marks
       });
     }
@@ -256,6 +290,20 @@ export const buildMasterEntryRows = (attendees = [], disciplineGroups = []) => {
     if (!group.dob && row.dob) group.dob = row.dob;
     if (!group.rsfiId && row.rsfiId) group.rsfiId = cell(row.rsfiId);
     if (!group.chestNo && row.chestNo) group.chestNo = cell(row.chestNo);
+    if (!group.district && row.district) group.district = cell(row.district);
+    const remark = resolveRemark(row);
+    if (!group.remarks && remark) group.remarks = remark;
+    if (!group.paymentStatus && (row.paymentStatus || row.status)) {
+      group.paymentStatus = cell(row.paymentStatus ?? row.status);
+    }
+    if (
+      paymentStatusRank(row.paymentStatus ?? row.status) > paymentStatusRank(group.paymentStatus)
+    ) {
+      group.paymentStatus = cell(row.paymentStatus ?? row.status);
+    }
+    if (attendanceStatusRank(row.attendanceStatus) > attendanceStatusRank(group.attendanceStatus)) {
+      group.attendanceStatus = cell(row.attendanceStatus);
+    }
 
     const discipline = cell(row.discipline);
     const lap = cell(row.lap);
@@ -324,7 +372,7 @@ export const downloadAttendeesExcel = async ({
     }))
   );
 
-  const lastCol = KRSA_HEADERS.length + Math.max(lapColumns.length, 1);
+  const lastCol = KRSA_HEADERS.length + Math.max(lapColumns.length, 1) + EXTRA_HEADERS.length;
   const workbook = new ExcelJS.Workbook();
   const sheet = workbook.addWorksheet("Master Entry", {
     views: [{ showGridLines: true }]
@@ -332,9 +380,8 @@ export const downloadAttendeesExcel = async ({
 
   const widths = [
     ...KRSA_WIDTHS,
-    ...(lapColumns.length > 0
-      ? lapColumns.map((col) => lapColumnWidth(col.lap))
-      : [10])
+    ...(lapColumns.length > 0 ? lapColumns.map((col) => lapColumnWidth(col.lap)) : [10]),
+    ...EXTRA_WIDTHS
   ];
   sheet.columns = widths.map((width) => ({ width }));
 
@@ -360,7 +407,7 @@ export const downloadAttendeesExcel = async ({
     }
   });
 
-  // Row 6: KRSA | each Discipline (one by one)
+  // Row 6: KRSA | each Discipline (one by one) | Remark/Status
   const groupRow = sheet.getRow(6);
   groupRow.height = 18;
   sheet.mergeCells(6, 1, 6, KRSA_HEADERS.length);
@@ -369,6 +416,7 @@ export const downloadAttendeesExcel = async ({
   let cursor = KRSA_HEADERS.length + 1;
   if (disciplineGroups.length === 0) {
     groupRow.getCell(cursor).value = "Discipline";
+    cursor += 1;
   } else {
     for (const group of disciplineGroups) {
       const start = cursor;
@@ -381,36 +429,50 @@ export const downloadAttendeesExcel = async ({
     }
   }
 
+  EXTRA_HEADERS.forEach((label, index) => {
+    groupRow.getCell(cursor + index).value = label;
+  });
+
   for (let col = 1; col <= lastCol; col += 1) {
     const excelCell = groupRow.getCell(col);
     const isKrsa = col <= KRSA_HEADERS.length;
-    excelCell.font = { name: "Calibri", size: isKrsa ? 11 : 8, bold: true };
+    const isExtra = col > lastCol - EXTRA_HEADERS.length;
+    excelCell.font = { name: "Calibri", size: isKrsa || isExtra ? 11 : 8, bold: true };
     excelCell.alignment = { horizontal: "center", vertical: "middle", wrapText: true };
   }
 
-  // Row 7: KRSA field headers + lap/round names under each discipline
+  // Row 7: KRSA field headers + lap/round names + Remark/Status
   const headerRow = sheet.getRow(7);
   headerRow.height = 18;
   KRSA_HEADERS.forEach((label, index) => {
     const excelCell = headerRow.getCell(index + 1);
     excelCell.value = label;
-    excelCell.font = { name: "Calibri", size: index <= 4 ? 11 : 8, bold: false };
+    excelCell.font = { name: "Calibri", size: index <= 5 ? 11 : 8, bold: false };
     excelCell.alignment = { horizontal: "center", vertical: "middle", wrapText: true };
   });
 
+  const lapStartCol = KRSA_HEADERS.length + 1;
   if (lapColumns.length === 0) {
-    const excelCell = headerRow.getCell(KRSA_HEADERS.length + 1);
+    const excelCell = headerRow.getCell(lapStartCol);
     excelCell.value = "Lap / round";
     excelCell.font = { name: "Calibri", size: 8 };
     excelCell.alignment = { horizontal: "center", vertical: "middle", wrapText: true };
   } else {
     lapColumns.forEach((col, index) => {
-      const excelCell = headerRow.getCell(KRSA_HEADERS.length + 1 + index);
+      const excelCell = headerRow.getCell(lapStartCol + index);
       excelCell.value = col.lap;
       excelCell.font = { name: "Calibri", size: 8 };
       excelCell.alignment = { horizontal: "center", vertical: "middle", wrapText: true };
     });
   }
+
+  const extraStartCol = KRSA_HEADERS.length + Math.max(lapColumns.length, 1) + 1;
+  EXTRA_HEADERS.forEach((label, index) => {
+    const excelCell = headerRow.getCell(extraStartCol + index);
+    excelCell.value = label;
+    excelCell.font = { name: "Calibri", size: 11, bold: false };
+    excelCell.alignment = { horizontal: "center", vertical: "middle", wrapText: true };
+  });
 
   const masterRows = buildMasterEntryRows(attendees, disciplineGroups);
 
@@ -424,6 +486,7 @@ export const downloadAttendeesExcel = async ({
       row.chestNo || "",
       row.fullName || "",
       row.clubName || "",
+      row.district || "",
       row.ageGroup || "",
       formatMasterEntryGender(row.gender),
       dob,
@@ -436,13 +499,15 @@ export const downloadAttendeesExcel = async ({
       values.push("");
     }
 
+    values.push(resolveRemark(row), formatStatus(row));
+
     values.forEach((value, colIndex) => {
       const excelCell = excelRow.getCell(colIndex + 1);
       excelCell.value = value;
-      const larger = colIndex <= 4;
+      const larger = colIndex <= 5 || colIndex >= values.length - EXTRA_HEADERS.length;
       excelCell.font = { name: "Calibri", size: larger ? 11 : 8 };
       excelCell.alignment = { vertical: "middle", horizontal: "left" };
-      if (colIndex === 6 && dob) {
+      if (colIndex === DOB_COL_INDEX && dob) {
         excelCell.numFmt = "mm-dd-yy";
       }
     });

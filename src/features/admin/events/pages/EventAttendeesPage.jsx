@@ -25,6 +25,16 @@ import { resolveAttendeesPortalContext } from "@/features/admin/events/utils/eve
 import { downloadAttendeesExcel } from "@/features/admin/events/utils/downloadAttendeesExcel";
 import { formatGenderLabel } from "@/utils/validationHelper";
 
+const formatAttendeeStatusLabel = (row) => {
+  const value = String(row?.attendanceStatus || "")
+    .trim()
+    .toLowerCase();
+  if (!value || value === "pending") return "-";
+  if (value === "attend" || value === "attended" || value === "present") return "Attend";
+  if (value === "absent") return "Absent";
+  return String(row.attendanceStatus).trim();
+};
+
 function useDebounce(value, delay) {
   const [debouncedValue, setDebouncedValue] = useState(value);
   useEffect(() => {
@@ -386,18 +396,21 @@ export const EventAttendeesPage = () => {
                 <TableCell sx={{ fontWeight: 700 }}>Email</TableCell>
                 <TableCell sx={{ fontWeight: 700 }}>Phone no</TableCell>
                 <TableCell sx={{ fontWeight: 700 }}>Discipline</TableCell>
+                <TableCell sx={{ fontWeight: 700 }}>Skater district</TableCell>
+                {/* <TableCell sx={{ fontWeight: 700 }}>Remark</TableCell>
+                <TableCell sx={{ fontWeight: 700 }}>Status</TableCell> */}
               </TableRow>
             </TableHead>
             <TableBody>
               {loading && attendees.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={10} align="center" sx={{ color: "#8d7f7b", py: 5 }}>
+                  <TableCell colSpan={13} align="center" sx={{ color: "#8d7f7b", py: 5 }}>
                     Loading attendees...
                   </TableCell>
                 </TableRow>
               ) : attendees.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={10} align="center" sx={{ color: "#8d7f7b", py: 5 }}>
+                  <TableCell colSpan={13} align="center" sx={{ color: "#8d7f7b", py: 5 }}>
                     No attendees found for selected filters.
                   </TableCell>
                 </TableRow>
@@ -416,6 +429,9 @@ export const EventAttendeesPage = () => {
                     <TableCell>{row.email || "-"}</TableCell>
                     <TableCell>{row.phone || "-"}</TableCell>
                     <TableCell>{row.discipline || "-"}</TableCell>
+                    <TableCell>{row.district || "-"}</TableCell>
+                    {/* <TableCell>{row.remarks || row.remark || "-"}</TableCell>
+                    <TableCell>{formatAttendeeStatusLabel(row)}</TableCell> */}
                   </TableRow>
                 ))
               )}

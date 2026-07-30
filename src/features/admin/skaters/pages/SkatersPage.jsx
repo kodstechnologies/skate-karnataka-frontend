@@ -7,6 +7,7 @@ import {
   Divider,
   IconButton,
   InputAdornment,
+  MenuItem,
   Paper,
   Stack,
   Table,
@@ -51,6 +52,18 @@ function useDebounce(value, delay) {
 
 const formatGender = formatGenderLabel;
 
+const GENDER_FILTER_OPTIONS = [
+  { value: "", label: "All" },
+  { value: "male", label: "Boys" },
+  { value: "female", label: "Girls" }
+];
+
+const STATUS_FILTER_OPTIONS = [
+  { value: "", label: "All" },
+  { value: "active", label: "Active" },
+  { value: "blocked", label: "Blocked" }
+];
+
 const getStatusChipSx = (isBlocked) =>
   isBlocked
     ? { bgcolor: "#ffebee", color: "#c62828", fontWeight: 700 }
@@ -82,6 +95,8 @@ export const SkatersPage = () => {
 
   const [searchTerm, setSearchTerm] = useState("");
   const debouncedSearchTerm = useDebounce(searchTerm, 500);
+  const [genderFilter, setGenderFilter] = useState("");
+  const [statusFilter, setStatusFilter] = useState("");
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [pendingBlockSkater, setPendingBlockSkater] = useState(null);
@@ -91,9 +106,11 @@ export const SkatersPage = () => {
     fetchSkaters({
       page: page + 1,
       limit: rowsPerPage,
-      search: debouncedSearchTerm
+      search: debouncedSearchTerm,
+      ...(genderFilter ? { gender: genderFilter } : {}),
+      ...(statusFilter ? { status: statusFilter } : {})
     });
-  }, [fetchSkaters, page, rowsPerPage, debouncedSearchTerm]);
+  }, [fetchSkaters, page, rowsPerPage, debouncedSearchTerm, genderFilter, statusFilter]);
 
   const paginatedSkaters = useMemo(() => {
     // If backend returns pagination data, assume it handles slicing
@@ -127,6 +144,16 @@ export const SkatersPage = () => {
 
   const handleSearchChange = (event) => {
     setSearchTerm(event.target.value);
+    setPage(0);
+  };
+
+  const handleGenderFilterChange = (event) => {
+    setGenderFilter(event.target.value);
+    setPage(0);
+  };
+
+  const handleStatusFilterChange = (event) => {
+    setStatusFilter(event.target.value);
     setPage(0);
   };
 
@@ -239,34 +266,52 @@ export const SkatersPage = () => {
           spacing={2}
           sx={{ p: 3, alignItems: { lg: "center" }, justifyContent: "space-between" }}
         >
-          <Box>
+          <Box sx={{ flexShrink: 0 }}>
             <Typography variant="h5" sx={{ fontWeight: 700, letterSpacing: "-0.04em" }}>
               Skaters Registry
             </Typography>
             <Typography sx={{ mt: 0.75, color: "#8d7f7b" }}>
-              Search and review registered skaters from one organized registry.
+              Search and filter registered skaters by gender or status.
             </Typography>
           </Box>
 
           <Stack
             direction={{ xs: "column", sm: "row" }}
             spacing={1.5}
-            sx={{ alignItems: { sm: "center" } }}
+            sx={{
+              alignItems: { sm: "center" },
+              flexWrap: "wrap",
+              width: { xs: "100%", lg: "auto" },
+              justifyContent: { sm: "flex-end" },
+              ml: { lg: "auto" }
+            }}
           >
-            <MemberAddMenuButton
-              label="Add skater"
-              singleLabel="Add skater"
-              singleDescription="Single registration form"
-              bulkLabel="Bulk upload (Excel)"
-              bulkDescription="Upload .xlsx / .xls / .csv"
-              singleTo="/skaters/create"
-              bulkTo="/skaters/bulk"
-              sx={{
-                backgroundColor: "#f6765e",
-                "&:hover": { backgroundColor: "#ea6b54" },
-                whiteSpace: "nowrap"
-              }}
-            />
+            <TextField
+              select
+              label="Gender"
+              value={genderFilter}
+              onChange={handleGenderFilterChange}
+              sx={{ minWidth: { xs: "100%", sm: 140 } }}
+            >
+              {GENDER_FILTER_OPTIONS.map((option) => (
+                <MenuItem key={option.value || "all"} value={option.value}>
+                  {option.label}
+                </MenuItem>
+              ))}
+            </TextField>
+            <TextField
+              select
+              label="Status"
+              value={statusFilter}
+              onChange={handleStatusFilterChange}
+              sx={{ minWidth: { xs: "100%", sm: 140 } }}
+            >
+              {STATUS_FILTER_OPTIONS.map((option) => (
+                <MenuItem key={option.value || "all"} value={option.value}>
+                  {option.label}
+                </MenuItem>
+              ))}
+            </TextField>
             <TextField
               value={searchTerm}
               onChange={handleSearchChange}
@@ -280,7 +325,22 @@ export const SkatersPage = () => {
                   )
                 }
               }}
-              sx={{ minWidth: { xs: "100%", sm: 320 } }}
+              sx={{ minWidth: { xs: "100%", sm: 280 } }}
+            />
+            <MemberAddMenuButton
+              label="Add skater"
+              singleLabel="Add skater"
+              singleDescription="Single registration form"
+              bulkLabel="Bulk upload (Excel)"
+              bulkDescription="Upload .xlsx / .xls / .csv"
+              singleTo="/skaters/create"
+              bulkTo="/skaters/bulk"
+              sx={{
+                backgroundColor: "#f6765e",
+                "&:hover": { backgroundColor: "#ea6b54" },
+                whiteSpace: "nowrap",
+                ml: { sm: 0.5 }
+              }}
             />
           </Stack>
         </Stack>
@@ -379,7 +439,7 @@ export const SkatersPage = () => {
               elevation={0}
               sx={{ p: 4, borderRadius: "22px", textAlign: "center", color: "#978a86" }}
             >
-              No skaters found for the current search.
+              No skaters found for the current search or filters.
             </Paper>
           )}
         </Stack>
@@ -516,7 +576,7 @@ export const SkatersPage = () => {
               ) : (
                 <TableRow>
                   <TableCell colSpan={8} sx={{ py: 6, textAlign: "center", color: "#978a86" }}>
-                    No skaters found for the current search.
+                    No skaters found for the current search or filters.
                   </TableCell>
                 </TableRow>
               )}
