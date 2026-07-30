@@ -277,7 +277,8 @@ export const buildMasterEntryRows = (attendees = [], disciplineGroups = []) => {
         gender: row.gender,
         dob: row.dob,
         rsfiId: cell(row.rsfiId),
-        district: cell(row.district),
+        // Master Entry District = club's district association
+        district: cell(row.clubDistrict || row.district),
         remarks: resolveRemark(row),
         paymentStatus: cell(row.paymentStatus ?? row.status),
         attendanceStatus: cell(row.attendanceStatus),
@@ -290,7 +291,8 @@ export const buildMasterEntryRows = (attendees = [], disciplineGroups = []) => {
     if (!group.dob && row.dob) group.dob = row.dob;
     if (!group.rsfiId && row.rsfiId) group.rsfiId = cell(row.rsfiId);
     if (!group.chestNo && row.chestNo) group.chestNo = cell(row.chestNo);
-    if (!group.district && row.district) group.district = cell(row.district);
+    const clubDistrict = cell(row.clubDistrict || row.district);
+    if (!group.district && clubDistrict) group.district = clubDistrict;
     const remark = resolveRemark(row);
     if (!group.remarks && remark) group.remarks = remark;
     if (!group.paymentStatus && (row.paymentStatus || row.status)) {

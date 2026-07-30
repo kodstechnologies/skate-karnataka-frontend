@@ -3,7 +3,6 @@ import {
   Breadcrumbs,
   Button,
   Chip,
-  IconButton,
   Paper,
   Stack,
   TablePagination,
@@ -12,7 +11,17 @@ import {
   Typography,
   Skeleton
 } from "@mui/material";
-import { ChevronRight, Hand, PencilLine, Plus, RefreshCw, Search, Trash2 } from "lucide-react";
+import {
+  CalendarDays,
+  ChevronRight,
+  Clock3,
+  Hand,
+  PencilLine,
+  Plus,
+  RefreshCw,
+  Search,
+  Trash2
+} from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Link as RouterLink, useNavigate } from "react-router-dom";
 import eventsHero from "@/assets/Events_header.jpg";
@@ -92,11 +101,15 @@ const getStatusColor = (status) => {
 
 const getEventCardPalette = (event) => {
   const text = event?.textColor || "#ffffff";
-  const muted = event?.textColor ? `${event.textColor}cc` : "rgba(255,255,255,0.78)";
+  const muted = event?.textColor ? `${event.textColor}b8` : "rgba(255,255,255,0.78)";
   const accent = event?.textColor || "#f6a192";
+  const colorOne = event?.colorOne || "#141012";
+  const colorTwo = event?.colorTwo || "#2a2224";
 
   return {
-    background: `linear-gradient(135deg, ${event?.colorOne || "#141012"} 0%, ${event?.colorTwo || "#2a2224"} 100%)`,
+    background: `linear-gradient(145deg, ${colorOne} 0%, ${colorTwo} 100%)`,
+    panel: "rgba(0,0,0,0.16)",
+    panelBorder: "rgba(255,255,255,0.14)",
     text,
     muted,
     accent,
@@ -379,14 +392,18 @@ export const EventsPage = () => {
                     borderRadius: "24px",
                     border: "1px solid rgba(255,255,255,0.08)",
                     overflow: "hidden",
-                    background: "linear-gradient(135deg, #141012 0%, #2a2224 100%)",
-                    boxShadow: "0 20px 50px rgba(0, 0, 0, 0.18)"
+                    background: "linear-gradient(145deg, #141012 0%, #2a2224 100%)",
+                    boxShadow: "0 18px 44px rgba(0, 0, 0, 0.16)",
+                    minHeight: 420,
+                    display: "flex",
+                    flexDirection: "column"
                   }}
                 >
                   <Box
                     sx={{
-                      px: 2,
-                      py: 1.5,
+                      px: 2.25,
+                      pt: 2,
+                      pb: 1.25,
                       display: "flex",
                       justifyContent: "space-between",
                       alignItems: "center",
@@ -415,24 +432,34 @@ export const EventsPage = () => {
                     />
                   </Box>
 
-                  <Stack spacing={1.35} sx={{ p: 2.25, pt: 0 }}>
-                    <Skeleton variant="text" width="80%" height={28} sx={{ mb: 0.5 }} />
-                    <Box sx={{ minHeight: 52 }}>
-                      <Skeleton variant="text" width="100%" />
-                      <Skeleton variant="text" width="70%" />
-                    </Box>
-
-                    <Box sx={{ mt: 1 }}>
-                      <Skeleton variant="text" width={60} height={16} sx={{ mb: 0.5 }} />
-                      <Skeleton variant="text" width="50%" height={16} />
-
-                      <Skeleton variant="text" width={60} height={16} sx={{ mt: 1, mb: 0.5 }} />
-                      <Skeleton variant="text" width="50%" height={16} />
-                    </Box>
-
-                    <Stack direction="row" spacing={1} sx={{ pt: 1 }}>
-                      <Skeleton variant="rounded" width="100%" height={40} />
-                      <Skeleton variant="rounded" width="100%" height={40} />
+                  <Stack spacing={1.5} sx={{ p: 2.25, pt: 0, flex: 1 }}>
+                    <Skeleton variant="text" width="85%" height={28} />
+                    <Skeleton variant="text" width="100%" />
+                    <Skeleton variant="text" width="70%" />
+                    <Skeleton
+                      variant="rounded"
+                      height={96}
+                      sx={{ borderRadius: "16px", bgcolor: "rgba(255,255,255,0.08)" }}
+                    />
+                    <Skeleton
+                      variant="rounded"
+                      width={148}
+                      height={34}
+                      sx={{ borderRadius: "999px", bgcolor: "rgba(255,255,255,0.1)" }}
+                    />
+                    <Stack direction="row" spacing={1} sx={{ mt: "auto", pt: 0.5 }}>
+                      <Skeleton
+                        variant="rounded"
+                        width="100%"
+                        height={42}
+                        sx={{ borderRadius: "14px" }}
+                      />
+                      <Skeleton
+                        variant="rounded"
+                        width="100%"
+                        height={42}
+                        sx={{ borderRadius: "14px" }}
+                      />
                     </Stack>
                   </Stack>
                 </Paper>
@@ -465,33 +492,30 @@ export const EventsPage = () => {
                 const eventId = event._id || event.id;
                 const isAutomated = event.isAutomated !== false;
                 const isTogglingMode = togglingModeId === eventId;
+                const eventTimeLabel =
+                  event.eventStartTime &&
+                  `${fmtTime(event.eventStartTime)}${
+                    event.eventEndTime ? ` – ${fmtTime(event.eventEndTime)}` : ""
+                  }`;
 
                 return (
                   <Paper
                     key={eventId}
                     elevation={0}
                     sx={{
-                      position: "relative",
                       borderRadius: "24px",
-                      border: "1px solid rgba(255,255,255,0.08)",
+                      border: "1px solid rgba(255,255,255,0.1)",
                       overflow: "hidden",
                       background: palette.background,
-                      boxShadow: "0 20px 50px rgba(0, 0, 0, 0.18)",
+                      boxShadow: "0 18px 44px rgba(0, 0, 0, 0.16)",
                       transition: "transform 0.25s ease, box-shadow 0.25s ease",
                       display: "flex",
                       flexDirection: "column",
+                      minHeight: 420,
                       height: "100%",
                       "&:hover": {
-                        transform: "translateY(-4px)",
-                        boxShadow: "0 28px 65px rgba(0, 0, 0, 0.24)"
-                      },
-                      "@keyframes chestModePulse": {
-                        "0%, 100%": {
-                          boxShadow: "0 0 0 0 rgba(34,197,94,0.5), 0 8px 24px rgba(0,0,0,0.25)"
-                        },
-                        "50%": {
-                          boxShadow: "0 0 0 12px rgba(34,197,94,0), 0 8px 24px rgba(0,0,0,0.25)"
-                        }
+                        transform: "translateY(-3px)",
+                        boxShadow: "0 24px 56px rgba(0, 0, 0, 0.2)"
                       },
                       "@keyframes chestModeSpin": {
                         from: { transform: "rotate(0deg)" },
@@ -499,94 +523,14 @@ export const EventsPage = () => {
                       }
                     }}
                   >
-                    <Tooltip
-                      title={
-                        isAutomated
-                          ? "Automatic chest numbers — click for Manual"
-                          : "Manual chest numbers — click for Automatic"
-                      }
-                      arrow
-                      placement="left"
-                    >
-                      <IconButton
-                        disabled={isTogglingMode}
-                        onClick={() => handleToggleChestNumberMode(event)}
-                        aria-label={
-                          isAutomated
-                            ? "Switch to manual chest numbers"
-                            : "Switch to automatic chest numbers"
-                        }
-                        sx={{
-                          position: "absolute",
-                          right: 10,
-                          top: "52%",
-                          transform: "translateY(-50%)",
-                          zIndex: 3,
-                          width: 78,
-                          height: 78,
-                          border: "2px solid",
-                          borderColor: isAutomated
-                            ? "rgba(134,239,172,0.85)"
-                            : "rgba(255,255,255,0.55)",
-                          color: isAutomated ? "#86efac" : palette.text,
-                          background: isAutomated
-                            ? "linear-gradient(145deg, rgba(34,197,94,0.45), rgba(22,163,74,0.25))"
-                            : "linear-gradient(145deg, rgba(255,255,255,0.22), rgba(255,255,255,0.08))",
-                          backdropFilter: "blur(8px)",
-                          animation:
-                            !isTogglingMode && isAutomated
-                              ? "chestModePulse 2.2s ease-in-out infinite"
-                              : "none",
-                          transition:
-                            "border-color 0.2s ease, background 0.2s ease, color 0.2s ease",
-                          flexDirection: "column",
-                          gap: 0.35,
-                          borderRadius: "50%",
-                          "&:hover": {
-                            background: isAutomated
-                              ? "linear-gradient(145deg, rgba(34,197,94,0.55), rgba(22,163,74,0.35))"
-                              : "linear-gradient(145deg, rgba(255,255,255,0.3), rgba(255,255,255,0.12))",
-                            borderColor: isAutomated ? "#bbf7d0" : "rgba(255,255,255,0.8)"
-                          },
-                          "&.Mui-disabled": {
-                            color: isAutomated ? "#86efac" : palette.text,
-                            opacity: 0.85
-                          }
-                        }}
-                      >
-                        <Box
-                          component="span"
-                          sx={{
-                            display: "inline-flex",
-                            animation: isTogglingMode
-                              ? "chestModeSpin 0.75s linear infinite"
-                              : "none"
-                          }}
-                        >
-                          {isAutomated ? <RefreshCw size={18} /> : <Hand size={18} />}
-                        </Box>
-                        <Typography
-                          component="span"
-                          sx={{
-                            fontSize: "0.58rem",
-                            fontWeight: 800,
-                            letterSpacing: 0.2,
-                            lineHeight: 1.1,
-                            textTransform: "uppercase"
-                          }}
-                        >
-                          {isAutomated ? "Automatic" : "Manual"}
-                        </Typography>
-                      </IconButton>
-                    </Tooltip>
-
                     <Stack
                       direction="row"
                       spacing={1}
                       sx={{
-                        px: 2,
-                        py: 1.5,
-                        alignItems: "center",
+                        px: 2.25,
+                        pt: 2,
+                        pb: 1.25,
+                        alignItems: "flex-start",
                         justifyContent: "space-between",
                         gap: 1
                       }}
@@ -607,73 +551,239 @@ export const EventsPage = () => {
                       <EventCardActionsMenu event={event} role={role} />
                     </Stack>
 
-                    <Stack spacing={1.35} sx={{ px: 2.25, pb: 2.25, pt: 0, flex: 1 }}>
-                      <Typography
-                        sx={{
-                          fontSize: 19,
-                          fontWeight: 800,
-                          color: palette.text,
-                          lineHeight: 1.3
-                        }}
-                      >
-                        {event.header}
-                      </Typography>
-                      <Typography
-                        sx={{
-                          color: palette.muted,
-                          lineHeight: 1.7,
-                          minHeight: 48,
-                          fontSize: 14
-                        }}
-                      >
-                        {event.about || "No description provided."}
-                      </Typography>
-
+                    <Stack spacing={1.5} sx={{ px: 2.25, pb: 2.25, pt: 0, flex: 1, minHeight: 0 }}>
                       <Box>
                         <Typography
+                          title={event.header}
                           sx={{
-                            fontSize: 11,
-                            fontWeight: 700,
-                            color: palette.label,
-                            mb: 0.5,
-                            textTransform: "uppercase",
-                            letterSpacing: "0.05em"
+                            fontSize: 18,
+                            fontWeight: 800,
+                            color: palette.text,
+                            lineHeight: 1.35,
+                            letterSpacing: "-0.02em",
+                            display: "-webkit-box",
+                            WebkitLineClamp: 2,
+                            WebkitBoxOrient: "vertical",
+                            overflow: "hidden",
+                            minHeight: "2.7em"
                           }}
                         >
-                          Registration
+                          {event.header}
                         </Typography>
-                        <Typography sx={{ fontSize: 13, color: palette.text }}>
-                          {fmtDate(event.registerStartDate)} → {fmtDate(event.registerEndDate)}
-                        </Typography>
-
                         <Typography
+                          title={event.about || "No description provided."}
                           sx={{
-                            fontSize: 11,
-                            fontWeight: 700,
-                            color: palette.label,
-                            mt: 1.25,
-                            mb: 0.5,
-                            textTransform: "uppercase",
-                            letterSpacing: "0.05em"
+                            mt: 0.75,
+                            color: palette.muted,
+                            lineHeight: 1.55,
+                            fontSize: 13.5,
+                            display: "-webkit-box",
+                            WebkitLineClamp: 3,
+                            WebkitBoxOrient: "vertical",
+                            overflow: "hidden",
+                            minHeight: "4.65em"
                           }}
                         >
-                          Event
+                          {event.about || "No description provided."}
                         </Typography>
-                        <Typography sx={{ fontSize: 13, color: palette.text }}>
-                          {fmtDate(event.eventStartDate)} → {fmtDate(event.eventEndDate)}
-                        </Typography>
-
-                        {event.eventStartTime && (
-                          <Typography sx={{ fontSize: 13, color: palette.text, mt: 0.5 }}>
-                            {fmtTime(event.eventStartTime)}
-                            {event.eventEndTime && ` – ${fmtTime(event.eventEndTime)}`}
-                          </Typography>
-                        )}
                       </Box>
+
+                      <Box
+                        sx={{
+                          p: 1.5,
+                          borderRadius: "16px",
+                          backgroundColor: palette.panel,
+                          border: `1px solid ${palette.panelBorder}`,
+                          backdropFilter: "blur(6px)"
+                        }}
+                      >
+                        <Stack spacing={1.15}>
+                          <Stack direction="row" spacing={1} sx={{ alignItems: "flex-start" }}>
+                            <Box
+                              sx={{
+                                mt: 0.15,
+                                color: palette.label,
+                                display: "inline-flex",
+                                flexShrink: 0
+                              }}
+                            >
+                              <CalendarDays size={15} />
+                            </Box>
+                            <Box sx={{ minWidth: 0 }}>
+                              <Typography
+                                sx={{
+                                  fontSize: 10.5,
+                                  fontWeight: 700,
+                                  color: palette.label,
+                                  textTransform: "uppercase",
+                                  letterSpacing: "0.06em",
+                                  mb: 0.25
+                                }}
+                              >
+                                Registration
+                              </Typography>
+                              <Typography
+                                sx={{
+                                  fontSize: 13,
+                                  color: palette.text,
+                                  fontWeight: 600,
+                                  lineHeight: 1.35
+                                }}
+                              >
+                                {fmtDate(event.registerStartDate)} →{" "}
+                                {fmtDate(event.registerEndDate)}
+                              </Typography>
+                            </Box>
+                          </Stack>
+
+                          <Stack direction="row" spacing={1} sx={{ alignItems: "flex-start" }}>
+                            <Box
+                              sx={{
+                                mt: 0.15,
+                                color: palette.label,
+                                display: "inline-flex",
+                                flexShrink: 0
+                              }}
+                            >
+                              <Clock3 size={15} />
+                            </Box>
+                            <Box sx={{ minWidth: 0 }}>
+                              <Typography
+                                sx={{
+                                  fontSize: 10.5,
+                                  fontWeight: 700,
+                                  color: palette.label,
+                                  textTransform: "uppercase",
+                                  letterSpacing: "0.06em",
+                                  mb: 0.25
+                                }}
+                              >
+                                Event
+                              </Typography>
+                              <Typography
+                                sx={{
+                                  fontSize: 13,
+                                  color: palette.text,
+                                  fontWeight: 600,
+                                  lineHeight: 1.35
+                                }}
+                              >
+                                {fmtDate(event.eventStartDate)} → {fmtDate(event.eventEndDate)}
+                              </Typography>
+                              {eventTimeLabel ? (
+                                <Typography
+                                  sx={{
+                                    fontSize: 12,
+                                    color: palette.muted,
+                                    mt: 0.25,
+                                    lineHeight: 1.35
+                                  }}
+                                >
+                                  {eventTimeLabel}
+                                </Typography>
+                              ) : null}
+                            </Box>
+                          </Stack>
+                        </Stack>
+                      </Box>
+
+                      {isAutomated ? (
+                        <Tooltip title="Click to switch to manual" arrow>
+                          <Button
+                            disabled={isTogglingMode}
+                            onClick={() => handleToggleChestNumberMode(event)}
+                            aria-label="Switch to manual chest numbers"
+                            startIcon={
+                              <Box
+                                component="span"
+                                sx={{
+                                  display: "inline-flex",
+                                  animation: isTogglingMode
+                                    ? "chestModeSpin 0.75s linear infinite"
+                                    : "none"
+                                }}
+                              >
+                                <RefreshCw size={15} />
+                              </Box>
+                            }
+                            sx={{
+                              alignSelf: "flex-start",
+                              borderRadius: "999px",
+                              textTransform: "none",
+                              fontWeight: 700,
+                              fontSize: 12.5,
+                              px: 1.5,
+                              py: 0.6,
+                              minHeight: 34,
+                              color: "#14532d",
+                              backgroundColor: "rgba(134,239,172,0.92)",
+                              border: "1px solid",
+                              borderColor: "rgba(74,222,128,0.85)",
+                              boxShadow: "none",
+                              "&:hover": {
+                                backgroundColor: "rgba(187,247,208,0.95)",
+                                boxShadow: "none"
+                              },
+                              "&.Mui-disabled": {
+                                color: "#14532d",
+                                opacity: 0.8
+                              }
+                            }}
+                          >
+                            Switch to manual
+                          </Button>
+                        </Tooltip>
+                      ) : (
+                        <Tooltip title="Click to switch to automatic" arrow>
+                          <Button
+                            disabled={isTogglingMode}
+                            onClick={() => handleToggleChestNumberMode(event)}
+                            aria-label="Switch to automatic chest numbers"
+                            startIcon={
+                              <Box
+                                component="span"
+                                sx={{
+                                  display: "inline-flex",
+                                  animation: isTogglingMode
+                                    ? "chestModeSpin 0.75s linear infinite"
+                                    : "none"
+                                }}
+                              >
+                                <Hand size={15} />
+                              </Box>
+                            }
+                            sx={{
+                              alignSelf: "flex-start",
+                              borderRadius: "999px",
+                              textTransform: "none",
+                              fontWeight: 700,
+                              fontSize: 12.5,
+                              px: 1.5,
+                              py: 0.6,
+                              minHeight: 34,
+                              color: palette.text,
+                              backgroundColor: "rgba(255,255,255,0.18)",
+                              border: "1px solid",
+                              borderColor: "rgba(255,255,255,0.35)",
+                              boxShadow: "none",
+                              "&:hover": {
+                                backgroundColor: "rgba(255,255,255,0.26)",
+                                boxShadow: "none"
+                              },
+                              "&.Mui-disabled": {
+                                color: palette.text,
+                                opacity: 0.8
+                              }
+                            }}
+                          >
+                            Switch to automatic
+                          </Button>
+                        </Tooltip>
+                      )}
 
                       {(canApprove && event.adminApprovalStatus === "pending") ||
                       (canApprove && event.deleteApprovalStatus === "pending") ? (
-                        <Stack direction="row" spacing={1} sx={{ pt: 0.5, display: "flex" }}>
+                        <Stack direction="row" spacing={1} sx={{ pt: 0.25 }}>
                           {canApprove && event.adminApprovalStatus === "pending" && (
                             <>
                               <Button
@@ -733,7 +843,7 @@ export const EventsPage = () => {
                           gap: 1,
                           width: "100%",
                           mt: "auto",
-                          pt: 1.5
+                          pt: 0.5
                         }}
                       >
                         <Button
@@ -746,13 +856,13 @@ export const EventsPage = () => {
                             borderRadius: "14px",
                             textTransform: "none",
                             fontWeight: 600,
-                            py: 1.1,
-                            borderColor: "rgba(246,118,94,0.55)",
-                            color: palette.accent,
-                            backgroundColor: "rgba(0,0,0,0.12)",
+                            py: 1.05,
+                            borderColor: "rgba(255,255,255,0.35)",
+                            color: palette.text,
+                            backgroundColor: "rgba(0,0,0,0.14)",
                             "&:hover": {
-                              borderColor: palette.accent,
-                              backgroundColor: "rgba(246,118,94,0.12)"
+                              borderColor: "rgba(255,255,255,0.55)",
+                              backgroundColor: "rgba(0,0,0,0.22)"
                             }
                           }}
                         >
@@ -768,7 +878,7 @@ export const EventsPage = () => {
                             borderRadius: "14px",
                             textTransform: "none",
                             fontWeight: 700,
-                            py: 1.1,
+                            py: 1.05,
                             color: "#2f2829",
                             backgroundColor: "#f4a598",
                             boxShadow: "none",
