@@ -7,6 +7,12 @@ export const authApi = {
   verifyLoginOtp: async ({ userId, otp, firebaseTokens }) => {
     return api.post("/auth/verify-otp", { userId, otp, firebaseTokens });
   },
+  getParentChildren: async (parentId) => {
+    return api.get(`/auth/v1/login/display-children/${parentId}`);
+  },
+  selectAccount: async ({ userId, firebaseTokens }) => {
+    return api.post("/auth/v1/login/select-account", { userId, firebaseTokens });
+  },
   logout: async (refreshTokens, firebaseTokens) => {
     return api.post("/auth/logout", { refreshTokens, firebaseTokens });
   },

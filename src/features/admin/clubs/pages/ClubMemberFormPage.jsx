@@ -50,7 +50,7 @@ const validate = (form) => {
   const phoneError = validatePhone(form.phone);
   if (phoneError) errors.phone = phoneError;
 
-  const emailError = validateEmail(form.email, false);
+  const emailError = validateEmail(form.email, true);
   if (emailError) errors.email = emailError;
 
   return errors;
@@ -135,7 +135,7 @@ export const ClubMemberFormPage = () => {
   const buildFormData = () => {
     const fd = new FormData();
     fd.append("fullName", formData.fullName.trim());
-    if (formData.email.trim()) fd.append("email", formData.email.trim());
+    fd.append("email", formData.email.trim());
     fd.append("phone", formData.phone.trim());
     if (formData.address.trim()) fd.append("address", formData.address.trim());
     fd.append("designation", formData.designation.trim());
@@ -369,7 +369,7 @@ export const ClubMemberFormPage = () => {
             <Stack direction={{ xs: "column", md: "row" }} spacing={2}>
               <TextField
                 fullWidth
-                label="Email"
+                label="Email *"
                 value={formData.email}
                 onChange={handleField("email")}
                 error={Boolean(errors.email)}

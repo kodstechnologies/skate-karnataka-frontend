@@ -13,8 +13,16 @@ const api = axios.create({
 api.interceptors.request.use(
   (config) => {
     const accessToken = localStorage.getItem("accessToken");
-    if (accessToken) {
-      config.headers.Authorization = accessToken;
+    const existingAuth =
+      (typeof config.headers?.get === "function"
+        ? config.headers.get("Authorization")
+        : config.headers?.Authorization) || "";
+    if (accessToken && !existingAuth) {
+      if (typeof config.headers?.set === "function") {
+        config.headers.set("Authorization", accessToken);
+      } else if (config.headers) {
+        config.headers.Authorization = accessToken;
+      }
     }
 
     // Let axios/browser set multipart boundary; a bare "multipart/form-data" breaks parsing.
@@ -46,7 +54,7 @@ api.interceptors.response.use(
     const isLogoutEndpoint = originalRequest?.url?.includes("/logout");
 
     // Centralized error handling for 401 Unauthorized
-    if (error.response?.status === 401 && !isLogoutEndpoint) {
+    if (error.response?.status === 401 && !isLogoutEndpoint && !originalRequest?.skipGlobalLogout) {
       const authState = useAuthStore.getState();
       if (authState.isAuthenticated && !isLoggingOut) {
         isLoggingOut = true;

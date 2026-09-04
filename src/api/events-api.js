@@ -1,5 +1,10 @@
 import api from "@/lib/axios";
 
+const skaterAuth = (token) => ({
+  headers: token ? { Authorization: token } : {},
+  skipGlobalLogout: true
+});
+
 export const eventsApi = {
   /**
    * Fetch paginated events with optional server-side search.
@@ -11,6 +16,26 @@ export const eventsApi = {
       params.search = search.trim();
     }
     return api.get("/event/v1/state", { params });
+  },
+
+  /** Skater app — events visible to the logged-in skater. */
+  getSkaterEvents: async (token, { page = 1, limit = 50 } = {}) => {
+    return api.get("/event/v1/user-all-events", {
+      params: { page, limit },
+      ...skaterAuth(token)
+    });
+  },
+
+  getSkaterEventFormDetails: async (eventId, token) => {
+    return api.get(`/event/v1/event-form-details/${eventId}`, skaterAuth(token));
+  },
+
+  registerSkaterEvent: async (payload, token) => {
+    return api.post("/event/v1/register-form", payload, skaterAuth(token));
+  },
+
+  verifySkaterPayment: async (payload, token) => {
+    return api.post("/payment/v1/verify/web", payload, skaterAuth(token));
   },
 
   /** Web dashboard — all state events (Admin / State). */

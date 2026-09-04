@@ -93,6 +93,7 @@ import { DistrictDashboard } from "@/features/district/pages/DistrictDashboard";
 import { DistrictEventFormPage } from "@/features/district/pages/DistrictEventFormPage";
 import { DistrictPortalEventsPage } from "@/features/district/pages/DistrictPortalEventsPage";
 import { getHomePathForRole } from "@/lib/role-navigation";
+import { DevTestPage } from "@/features/admin/dev-test/pages/DevTestPage";
 
 const HomeRedirect = () => {
   const role = useAuthStore((state) => state.role);
@@ -105,6 +106,7 @@ export const AppRoutes = () => {
   return (
     <Routes>
       <Route path="/login" element={<LoginPage />} />
+      <Route path="/dev/test" element={<DevTestPage />} />
       <Route path="/" element={<HomeRedirect />} />
       <Route
         element={
