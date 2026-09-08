@@ -211,6 +211,7 @@ export const ClubForm = ({
   existingImageUrl,
   errors,
   districts,
+  hideDistrict = false,
   onFieldChange,
   onFileChange
 }) => {
@@ -237,22 +238,24 @@ export const ClubForm = ({
             fullWidth
             sx={inputStyles}
           />
-          <TextField
-            select
-            label="District"
-            value={formData.district}
-            onChange={onFieldChange("district")}
-            error={Boolean(errors.district)}
-            helperText={errors.district}
-            fullWidth
-            sx={inputStyles}
-          >
-            {districts?.map((district) => (
-              <MenuItem key={district.id} value={district.id}>
-                {district.districtName}
-              </MenuItem>
-            ))}
-          </TextField>
+          {!hideDistrict && (
+            <TextField
+              select
+              label="District"
+              value={formData.district}
+              onChange={onFieldChange("district")}
+              error={Boolean(errors.district)}
+              helperText={errors.district}
+              fullWidth
+              sx={inputStyles}
+            >
+              {districts?.map((district) => (
+                <MenuItem key={district.id} value={district.id}>
+                  {district.districtName}
+                </MenuItem>
+              ))}
+            </TextField>
+          )}
           <TextField
             label="Office address"
             value={formData.officeAddress}

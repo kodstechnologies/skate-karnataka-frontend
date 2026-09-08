@@ -90,6 +90,8 @@ import { ClubDashboard } from "@/features/club/pages/ClubDashboard";
 import { ClubEventFormPage } from "@/features/club/pages/ClubEventFormPage";
 import { ClubPortalEventsPage } from "@/features/club/pages/ClubPortalEventsPage";
 import { DistrictDashboard } from "@/features/district/pages/DistrictDashboard";
+import { DistrictClubsPage } from "@/features/district/pages/DistrictClubsPage";
+import { DistrictSkatersPage } from "@/features/district/pages/DistrictSkatersPage";
 import { DistrictEventFormPage } from "@/features/district/pages/DistrictEventFormPage";
 import { DistrictPortalEventsPage } from "@/features/district/pages/DistrictPortalEventsPage";
 import { getHomePathForRole } from "@/lib/role-navigation";
@@ -170,6 +172,16 @@ export const AppRoutes = () => {
         />
         <Route path="/district/members" element={<DistrictMembersPage />} />
         <Route path="/district/dashboard" element={<DistrictDashboard />} />
+        <Route path="/district/clubs" element={<DistrictClubsPage />} />
+        <Route path="/district/skaters" element={<DistrictSkatersPage />} />
+        <Route path="/district/clubs/create" element={<ClubFormPage />} />
+        <Route path="/district/clubs/:clubId/edit" element={<ClubFormPage />} />
+        <Route path="/district/clubs/:clubId/members" element={<ClubMembersPage />} />
+        <Route path="/district/clubs/:clubId/members/create" element={<ClubMemberFormPage />} />
+        <Route
+          path="/district/clubs/:clubId/members/:memberId/edit"
+          element={<ClubMemberFormPage />}
+        />
         <Route path="/district/events" element={<DistrictPortalEventsPage />} />
         <Route path="/district/events/:eventId/attendees" element={<EventAttendeesPage />} />
         <Route path="/district/events/create" element={<DistrictEventFormPage />} />

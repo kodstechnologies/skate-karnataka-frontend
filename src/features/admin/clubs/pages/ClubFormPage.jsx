@@ -20,10 +20,13 @@ import {
 } from "@/features/admin/clubs/components/clubFormConfig";
 import { useClubsStore } from "@/features/admin/clubs/store/clubs-store";
 import { useDistrictsStore } from "@/features/admin/districts/store/districts-store";
+import { useAuthStore } from "@/features/auth/store/auth-store";
+import { districtPortalApi } from "@/api/district-portal-api";
 
-const validateClubForm = (formData) => {
+const validateClubForm = (formData, isDistrictRole) => {
   const errors = {};
-  const requiredFields = ["name", "district"];
+  // District users don't pick a district — backend injects it
+  const requiredFields = isDistrictRole ? ["name"] : ["name", "district"];
 
   requiredFields.forEach((field) => {
     if (!String(formData[field] ?? "").trim()) {
@@ -42,6 +45,12 @@ export const ClubFormPage = () => {
   const navigate = useNavigate();
   const { clubId } = useParams();
   const isEditing = Boolean(clubId);
+  const role = useAuthStore((s) => s.role);
+  const authUser = useAuthStore((s) => s.user);
+  const isDistrictRole = String(role || "").toLowerCase() === "district";
+  const returnPath = isDistrictRole ? "/district/clubs" : "/clubs";
+  const dashboardPath = isDistrictRole ? "/district/dashboard" : "/dashboard";
+
   const clubs = useClubsStore((state) => state.clubs);
   const isLoading = useClubsStore((state) => state.isLoading);
   const fetchClubs = useClubsStore((state) => state.fetchClubs);
@@ -51,33 +60,56 @@ export const ClubFormPage = () => {
   const districts = useDistrictsStore((state) => state.districts);
   const fetchDistricts = useDistrictsStore((state) => state.fetchDistricts);
 
-  useEffect(() => {
-    if (districts.length === 0) {
-      fetchDistricts({ limit: 100 });
-    }
-  }, [districts.length, fetchDistricts]);
-
-  useEffect(() => {
-    if (districts.length === 0) {
-      fetchDistricts({ limit: 100 });
-    }
-  }, [districts.length, fetchDistricts]);
-
-  useEffect(() => {
-    if (isEditing) {
-      fetchClubs({ limit: 100 });
-    }
-  }, [isEditing, fetchClubs]);
-
-  const existingClub = useMemo(
-    () => clubs.find((club) => String(club.id) === String(clubId)) ?? null,
-    [clubId, clubs]
-  );
-
   const [formData, setFormData] = useState(initialClubFormValues);
   const [imagePreview, setImagePreview] = useState(null);
   const [errors, setErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [districtClub, setDistrictClub] = useState(null);
+  const [districtClubLoading, setDistrictClubLoading] = useState(false);
+
+  useEffect(() => {
+    if (isDistrictRole || districts.length > 0) return;
+    fetchDistricts({ limit: 100 });
+  }, [isDistrictRole, districts.length, fetchDistricts]);
+
+  useEffect(() => {
+    if (!isEditing || isDistrictRole) return;
+    fetchClubs({ limit: 100 });
+  }, [isEditing, isDistrictRole, fetchClubs]);
+
+  useEffect(() => {
+    if (!isEditing || !isDistrictRole || !clubId) return;
+    let cancelled = false;
+    const load = async () => {
+      setDistrictClubLoading(true);
+      try {
+        const response = await districtPortalApi.getClub(clubId);
+        const data = response?.data ?? response;
+        if (cancelled || !data) return;
+        setDistrictClub({
+          id: data._id || clubId,
+          name: data.name || "",
+          districtId: data.district || authUser?.districtId || "",
+          officeAddress: data.officeAddress || "",
+          about: data.about || "",
+          img: data.img || ""
+        });
+      } catch {
+        if (!cancelled) setDistrictClub(null);
+      } finally {
+        if (!cancelled) setDistrictClubLoading(false);
+      }
+    };
+    load();
+    return () => {
+      cancelled = true;
+    };
+  }, [isEditing, isDistrictRole, clubId, authUser?.districtId]);
+
+  const existingClub = useMemo(() => {
+    if (isDistrictRole) return districtClub;
+    return clubs.find((club) => String(club.id) === String(clubId)) ?? null;
+  }, [isDistrictRole, districtClub, clubs, clubId]);
 
   useEffect(() => {
     if (!existingClub?.id) return;
@@ -112,7 +144,7 @@ export const ClubFormPage = () => {
   };
 
   const handleSubmit = async () => {
-    const nextErrors = validateClubForm(formData);
+    const nextErrors = validateClubForm(formData, isDistrictRole);
 
     if (Object.keys(nextErrors).length > 0) {
       setErrors(nextErrors);
@@ -120,18 +152,19 @@ export const ClubFormPage = () => {
     }
 
     setIsSubmitting(true);
+    const storeOptions = isDistrictRole ? { skipRefresh: true } : {};
     const success =
       isEditing && existingClub
-        ? await updateClub(existingClub.id, formData)
-        : await addClub(formData);
+        ? await updateClub(existingClub.id, formData, storeOptions)
+        : await addClub(formData, storeOptions);
     setIsSubmitting(false);
 
     if (success) {
-      navigate("/clubs");
+      navigate(returnPath);
     }
   };
 
-  if (isEditing && isLoading && !existingClub) {
+  if (isEditing && (isDistrictRole ? districtClubLoading : isLoading) && !existingClub) {
     return (
       <Paper elevation={0} sx={{ p: 4, borderRadius: "28px", textAlign: "center" }}>
         <CircularProgress size={28} sx={{ color: "#f6765e" }} />
@@ -140,7 +173,7 @@ export const ClubFormPage = () => {
     );
   }
 
-  if (isEditing && !isLoading && !existingClub) {
+  if (isEditing && !(isDistrictRole ? districtClubLoading : isLoading) && !existingClub) {
     return (
       <Paper elevation={0} sx={{ p: 4, borderRadius: "28px", textAlign: "center" }}>
         <Typography variant="h5" sx={{ fontWeight: 700, color: "#2f2829" }}>
@@ -149,7 +182,7 @@ export const ClubFormPage = () => {
         <Typography sx={{ mt: 1.5, color: "#8d7f7b" }}>
           The club you are trying to edit is not available.
         </Typography>
-        <Button sx={{ mt: 3 }} variant="contained" onClick={() => navigate("/clubs")}>
+        <Button sx={{ mt: 3 }} variant="contained" onClick={() => navigate(returnPath)}>
           Back to clubs
         </Button>
       </Paper>
@@ -215,7 +248,7 @@ export const ClubFormPage = () => {
             >
               <Typography
                 component={RouterLink}
-                to="/dashboard"
+                to={dashboardPath}
                 sx={{
                   color: "inherit",
                   textDecoration: "none",
@@ -227,7 +260,7 @@ export const ClubFormPage = () => {
               </Typography>
               <Typography
                 component={RouterLink}
-                to="/clubs"
+                to={returnPath}
                 sx={{
                   color: "inherit",
                   textDecoration: "none",
@@ -286,7 +319,9 @@ export const ClubFormPage = () => {
           <Typography sx={{ mt: 0.8, color: "#8d7f7b", lineHeight: 1.7 }}>
             {isEditing
               ? "Review each section below and update the stored club data with a more structured form."
-              : "Complete the sections below to register a club in a clean and premium admin experience."}
+              : isDistrictRole
+                ? "Complete the sections below. This club will be created under your district."
+                : "Complete the sections below to register a club in a clean and premium admin experience."}
           </Typography>
         </Box>
 
@@ -296,6 +331,7 @@ export const ClubFormPage = () => {
             existingImageUrl={imagePreview}
             errors={errors}
             districts={districts}
+            hideDistrict={isDistrictRole}
             onFieldChange={handleFieldChange}
             onFileChange={handleFileChange}
           />
@@ -311,7 +347,7 @@ export const ClubFormPage = () => {
             justifyContent: "flex-end"
           }}
         >
-          <Button variant="outlined" onClick={() => navigate("/clubs")} disabled={isSubmitting}>
+          <Button variant="outlined" onClick={() => navigate(returnPath)} disabled={isSubmitting}>
             Cancel
           </Button>
           <Button

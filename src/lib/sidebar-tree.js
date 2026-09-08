@@ -9,8 +9,12 @@ const parentIdKey = (parentId) => {
  * Build nested nav items from a flat API sidebar list (sorted by order).
  * @param {import('@/types/sidebar.types').SidebarItem[]} items
  */
+const HIDDEN_ROUTES = new Set(["/dev/test"]);
+
 export const buildNavigationFromSidebarItems = (items = []) => {
-  const sorted = [...items].sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+  const sorted = [...items]
+    .filter((item) => !HIDDEN_ROUTES.has(item.route))
+    .sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
   const byParent = new Map();
 
   for (const item of sorted) {

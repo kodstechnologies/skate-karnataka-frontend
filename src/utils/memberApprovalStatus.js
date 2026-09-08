@@ -10,5 +10,5 @@ export const getMemberApprovalChipProps = (member) => {
 
 export const canApproveMembers = (role) => {
   const normalized = String(role || "").toLowerCase();
-  return normalized === "state" || normalized === "admin";
+  return normalized === "state" || normalized === "admin" || normalized === "district";
 };

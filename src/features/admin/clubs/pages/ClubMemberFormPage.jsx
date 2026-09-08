@@ -63,17 +63,27 @@ export const ClubMemberFormPage = () => {
   const role = useAuthStore((s) => s.role);
   const authUser = useAuthStore((s) => s.user);
   const isClubPortal = String(role || "").toLowerCase() === "club";
+  const isDistrictPortal = String(role || "").toLowerCase() === "district";
   const clubId = clubIdParam || (isClubPortal ? authUser?.id : null);
+  const clubsListPath = isDistrictPortal ? "/district/clubs" : "/clubs";
+  const membersPath = isClubPortal
+    ? "/club/members"
+    : isDistrictPortal
+      ? `/district/clubs/${clubId}/members`
+      : `/clubs/${clubId}/members`;
   const returnTo =
-    location.state?.returnTo || (isClubPortal ? "/club/members" : `/clubs/${clubId}/members`);
+    location.state?.returnTo || (isClubPortal ? "/club/members" : membersPath);
   const isEditing = Boolean(memberId);
 
   const clubs = useClubsStore((s) => s.clubs);
   const club = useMemo(
     () =>
       clubs.find((c) => c.id === clubId) ??
-      (isClubPortal ? { id: clubId, name: authUser?.name } : null),
-    [clubs, clubId, isClubPortal, authUser?.name]
+      (isClubPortal ? { id: clubId, name: authUser?.name } : null) ??
+      (isDistrictPortal
+        ? { id: clubId, name: location.state?.clubName || "Club" }
+        : null),
+    [clubs, clubId, isClubPortal, isDistrictPortal, authUser?.name, location.state?.clubName]
   );
 
   const { members, isLoading, fetchMembers, addMember, updateMember } = useClubMembersStore();
@@ -215,7 +225,7 @@ export const ClubMemberFormPage = () => {
           >
             <Typography
               component={RouterLink}
-              to={isClubPortal ? "/club/dashboard" : "/dashboard"}
+              to={isClubPortal ? "/club/dashboard" : isDistrictPortal ? "/district/dashboard" : "/dashboard"}
               sx={{ color: "inherit", textDecoration: "none" }}
             >
               Dashboard
@@ -223,7 +233,7 @@ export const ClubMemberFormPage = () => {
             {!isClubPortal && (
               <Typography
                 component={RouterLink}
-                to="/clubs"
+                to={clubsListPath}
                 sx={{ color: "inherit", textDecoration: "none" }}
               >
                 Clubs
@@ -232,7 +242,7 @@ export const ClubMemberFormPage = () => {
             {!isClubPortal && (
               <Typography
                 component={RouterLink}
-                to={`/clubs/${clubId}/members`}
+                to={membersPath}
                 sx={{ color: "inherit", textDecoration: "none" }}
               >
                 {clubName}

@@ -1,3 +1,4 @@
+import RollerSkatingIcon from "@mui/icons-material/RollerSkating";
 import {
   LayoutDashboard,
   CalendarDays,
@@ -7,7 +8,8 @@ import {
   Image,
   Layers,
   FunctionSquare,
-  Tags
+  Tags,
+  Building2
 } from "lucide-react";
 
 export const CLUB_NAV_SLUGS = new Set([
@@ -24,6 +26,8 @@ export const CLUB_NAV_SLUGS = new Set([
 ]);
 export const DISTRICT_NAV_SLUGS = new Set([
   "district-dashboard",
+  "district-clubs",
+  "district-skaters",
   "district-events",
   "district-media",
   "district-event-categories",
@@ -118,6 +122,18 @@ export const districtNavigationGroups = [
         icon: LayoutDashboard
       },
       {
+        slug: "district-clubs",
+        to: "/district/clubs",
+        label: "Clubs",
+        icon: Building2
+      },
+      {
+        slug: "district-skaters",
+        to: "/district/skaters",
+        label: "Skaters",
+        icon: RollerSkatingIcon
+      },
+      {
         slug: "district-events",
         to: "/district/events",
         label: "District Events",
@@ -193,6 +209,8 @@ const CLUB_PATH_PREFIXES = [
 
 const DISTRICT_PATH_PREFIXES = [
   ["/district/dashboard", "district-dashboard"],
+  ["/district/clubs", "district-clubs"],
+  ["/district/skaters", "district-skaters"],
   ["/district/events", "district-events"],
   ["/district/media", "district-media"],
   ["/district/event-categories", "district-event-categories"],

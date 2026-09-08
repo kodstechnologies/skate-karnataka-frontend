@@ -74,10 +74,12 @@ export const useClubsStore = create((set, get) => ({
     }
   },
 
-  addClub: async (payload) => {
+  addClub: async (payload, { skipRefresh = false } = {}) => {
     try {
       await clubApi.create(mapToBackend(payload));
-      await get().fetchClubs();
+      if (!skipRefresh) {
+        await get().fetchClubs();
+      }
       toast.success("Club created successfully");
       return true;
     } catch (error) {
@@ -87,10 +89,12 @@ export const useClubsStore = create((set, get) => ({
     }
   },
 
-  updateClub: async (id, payload) => {
+  updateClub: async (id, payload, { skipRefresh = false } = {}) => {
     try {
       await clubApi.update(id, mapToBackend(payload));
-      await get().fetchClubs();
+      if (!skipRefresh) {
+        await get().fetchClubs();
+      }
       toast.success("Club updated successfully");
       return true;
     } catch (error) {

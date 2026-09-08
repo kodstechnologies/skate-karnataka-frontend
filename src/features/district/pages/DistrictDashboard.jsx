@@ -1,13 +1,13 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { Skeleton } from "@mui/material";
-import { CalendarDays, Image, MapPin, Users } from "lucide-react";
+import { Building2, CalendarDays, Image, MapPin, Users } from "lucide-react";
 import { MemberAddMenuButton } from "@/components/members/MemberAddMenuButton";
 import { districtPortalApi } from "@/api/district-portal-api";
 import { useAuthStore } from "@/features/auth/store/auth-store";
 
-const StatCard = ({ label, value, icon: Icon, iconClass }) => (
-  <div className="rounded-[24px] border border-white/80 bg-white p-5 shadow-[0_12px_32px_rgba(145,110,98,0.08)]">
+const StatCard = ({ label, value, icon: Icon, iconClass, to }) => {
+  const content = (
     <div className="flex items-start justify-between gap-3">
       <div>
         <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#c4a498]">{label}</p>
@@ -17,8 +17,25 @@ const StatCard = ({ label, value, icon: Icon, iconClass }) => (
         <Icon className="h-5 w-5" />
       </span>
     </div>
-  </div>
-);
+  );
+
+  if (to) {
+    return (
+      <Link
+        to={to}
+        className="rounded-[24px] border border-white/80 bg-white p-5 shadow-[0_12px_32px_rgba(145,110,98,0.08)] transition hover:-translate-y-0.5 hover:shadow-md"
+      >
+        {content}
+      </Link>
+    );
+  }
+
+  return (
+    <div className="rounded-[24px] border border-white/80 bg-white p-5 shadow-[0_12px_32px_rgba(145,110,98,0.08)]">
+      {content}
+    </div>
+  );
+};
 
 export const DistrictDashboard = () => {
   const user = useAuthStore((state) => state.user);
@@ -97,12 +114,14 @@ export const DistrictDashboard = () => {
           value={stats.totalClubs ?? 0}
           icon={MapPin}
           iconClass="bg-[#f3efff] text-[#8e82ff]"
+          to="/district/clubs"
         />
         <StatCard
           label="Skaters"
           value={stats.totalSkaters ?? 0}
           icon={Users}
           iconClass="bg-[#fff1eb] text-[#f6765e]"
+          to="/district/skaters"
         />
         <StatCard
           label="Pending approvals"
@@ -118,7 +137,19 @@ export const DistrictDashboard = () => {
         />
       </section>
 
-      <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+      <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+        <Link
+          to="/district/clubs"
+          className="flex items-center gap-4 rounded-[24px] border border-[#efe2dc] bg-white p-5 transition hover:-translate-y-0.5 hover:shadow-md"
+        >
+          <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#f3efff] text-[#8e82ff]">
+            <Building2 className="h-5 w-5" />
+          </span>
+          <div>
+            <p className="font-semibold text-[#2f2829]">District clubs</p>
+            <p className="text-sm text-[#8f827e]">View all clubs affiliated with this district</p>
+          </div>
+        </Link>
         <Link
           to="/district/events"
           className="flex items-center gap-4 rounded-[24px] border border-[#efe2dc] bg-white p-5 transition hover:-translate-y-0.5 hover:shadow-md"
