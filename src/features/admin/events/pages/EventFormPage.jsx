@@ -167,6 +167,36 @@ export const EventFormPage = () => {
     try {
       const payload = { ...formData };
 
+      // Transform flat categoryIds + disciplineIds into the new nested format:
+      // [{ categoryId: "...", disciplines: [{ id: "..." }] }]
+      const categoryIds = Array.isArray(formData.skatingEventCategories)
+        ? formData.skatingEventCategories
+        : [];
+      const disciplineIds = new Set(
+        Array.isArray(formData.skatingEventDisciplines)
+          ? formData.skatingEventDisciplines
+          : []
+      );
+
+      // Build discipline → categoryId map from loaded eventCategories
+      const discToCatId = {};
+      for (const cat of eventCategories) {
+        const catId = String(cat._id || cat.id || "");
+        for (const disc of cat.disciplines || []) {
+          const discId = String(disc._id || disc.id || "");
+          if (discId) discToCatId[discId] = catId;
+        }
+      }
+
+      payload.skatingEventCategories = categoryIds.map((catId) => ({
+        categoryId: catId,
+        disciplines: [...disciplineIds]
+          .filter((discId) => discToCatId[discId] === catId)
+          .map((discId) => ({ id: discId })),
+      }));
+
+      delete payload.skatingEventDisciplines;
+
       if (isEditing && existingEvent) {
         const response = await updateEventAsAdmin(existingEvent, payload);
         const message =
