@@ -1,5 +1,5 @@
 import { useState, useRef, useCallback, useEffect } from "react";
-import { useNavigate, Navigate } from "react-router-dom";
+import { useNavigate, Navigate, useSearchParams } from "react-router-dom";
 import {
   Box,
   Button,
@@ -9,35 +9,66 @@ import {
   InputAdornment,
   Chip,
   CircularProgress,
-  LinearProgress,
   Fade,
   useTheme,
   useMediaQuery,
   alpha
 } from "@mui/material";
-import { Mail, LogIn, ArrowLeft, CheckCircle2, ShieldCheck, Timer } from "lucide-react";
-import { useLottie } from "lottie-react";
+import { Mail, LogIn, ArrowLeft, CheckCircle2, ShieldCheck, Timer, ArrowRight } from "lucide-react";
 import { useAuthStore } from "@/features/auth/store/auth-store";
 import { getHomePathForRole } from "@/lib/role-navigation";
 import toast from "react-hot-toast";
-import skateLottie from "@/assets/LottieFiles/SkateboardingBoy.json";
 import logo from "@/assets/karnataka-roller-skating-logo.png";
+import clubHero from "@/assets/Club_header.jpg";
+import districtHero from "@/assets/District_header.jpg";
+import stateHero from "@/assets/State_header.jpg";
+import skatingHero from "@/assets/Skating_header.jpg";
 import { getFCMToken } from "@/firebase/fcm";
 
-const BRAND = "#f6765e";
-const BRAND_DARK = "#e85d44";
-const BRAND_LIGHT = "#ff8c75";
+// ── Portal config ────────────────────────────────────────────────────────
+const PORTAL_CONFIG = {
+  club: {
+    label: "Club Portal",
+    tagline: "Manage your club, members and events",
+    hero: clubHero,
+    accent: "#f6765e",
+    accentDark: "#e85d44",
+    accentLight: "#ff8c75",
+    chips: ["Members", "Events", "Media"],
+  },
+  district: {
+    label: "District Portal",
+    tagline: "Oversee clubs and district-level events",
+    hero: districtHero,
+    accent: "#FD866F",
+    accentDark: "#e8724f",
+    accentLight: "#ff9d8a",
+    chips: ["Clubs", "Skaters", "Reports"],
+  },
+  state: {
+    label: "State Portal",
+    tagline: "State-wide administration and reporting",
+    hero: stateHero,
+    accent: "#FD866F",
+    accentDark: "#e8724f",
+    accentLight: "#ff9d8a",
+    chips: ["Events", "Officials", "Gallery"],
+  },
+};
 
-// ─── Individual OTP digit box ──────────────────────────────────────────────
-const OtpBox = ({ index, value, onChange, onKeyDown, inputRef, filled }) => (
-  <Box
-    sx={{
-      position: "relative",
-      width: 56,
-      height: 56,
-      flexShrink: 0
-    }}
-  >
+const DEFAULT_CONFIG = {
+  label: "Admin Portal",
+  tagline: "Welcome back to Skate Karnataka",
+  hero: skatingHero,
+  accent: "#f6765e",
+  accentDark: "#e85d44",
+  accentLight: "#ff8c75",
+  chips: [],
+};
+
+// ── OTP box ──────────────────────────────────────────────────────────────
+const OtpBox = ({ index, value, onChange, onKeyDown, inputRef, filled, accent }) => (
+  <Box sx={{ position: "relative", width: 56, height: 56, flexShrink: 0 }}>
     <TextField
       inputRef={inputRef}
       value={value}
@@ -50,10 +81,9 @@ const OtpBox = ({ index, value, onChange, onKeyDown, inputRef, filled }) => (
           fontSize: "1.35rem",
           fontWeight: 800,
           padding: 0,
-          letterSpacing: 0,
           color: filled ? "#2e7d32" : "#2f2829",
-          caretColor: BRAND
-        }
+          caretColor: accent,
+        },
       }}
       sx={{
         width: "100%",
@@ -61,22 +91,20 @@ const OtpBox = ({ index, value, onChange, onKeyDown, inputRef, filled }) => (
         "& .MuiOutlinedInput-root": {
           height: "100%",
           borderRadius: "14px",
-          backgroundColor: filled ? alpha("#2e7d32", 0.06) : "#fbf6f4",
+          backgroundColor: filled ? alpha("#2e7d32", 0.06) : "#f9f6f5",
           transition: "all 0.2s ease",
           "& fieldset": {
-            border: filled ? `2px solid #2e7d32` : "1.5px solid #efe2dc",
-            transition: "border-color 0.2s ease"
+            border: filled ? "2px solid #2e7d32" : "1.5px solid #e8ddd9",
           },
-          "&:hover fieldset": { borderColor: filled ? "#2e7d32" : BRAND },
+          "&:hover fieldset": { borderColor: filled ? "#2e7d32" : accent },
           "&.Mui-focused fieldset": {
-            borderColor: filled ? "#2e7d32" : BRAND,
+            borderColor: filled ? "#2e7d32" : accent,
             borderWidth: "2px",
-            boxShadow: `0 0 0 4px ${filled ? alpha("#2e7d32", 0.12) : alpha(BRAND, 0.12)}`
-          }
-        }
+            boxShadow: `0 0 0 4px ${filled ? alpha("#2e7d32", 0.1) : alpha(accent, 0.12)}`,
+          },
+        },
       }}
     />
-    {/* Bottom animated bar */}
     <Box
       sx={{
         position: "absolute",
@@ -87,13 +115,12 @@ const OtpBox = ({ index, value, onChange, onKeyDown, inputRef, filled }) => (
         height: "3px",
         backgroundColor: "#2e7d32",
         borderRadius: "2px",
-        transition: "width 0.25s cubic-bezier(0.4,0,0.2,1)"
+        transition: "width 0.25s cubic-bezier(0.4,0,0.2,1)",
       }}
     />
   </Box>
 );
 
-// ─── Email validation helper ───────────────────────────────────────────────
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const getEmailError = (val) => {
   if (!val) return "";
@@ -101,12 +128,16 @@ const getEmailError = (val) => {
   return "";
 };
 
-// ─── Main Component ────────────────────────────────────────────────────────
-export const LoginPage = () => {
+// ── Main Component ────────────────────────────────────────────────────────
+export const LoginPage = ({ portalRole: portalRoleProp = "" }) => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const portalRole = portalRoleProp || searchParams.get("role") || "";
+  const config = PORTAL_CONFIG[portalRole] || DEFAULT_CONFIG;
+  const { accent, accentDark, accentLight } = config;
+
   const requestLoginOtp = useAuthStore((state) => state.requestLoginOtp);
   const verifyLoginOtp = useAuthStore((state) => state.verifyLoginOtp);
-  const logout = useAuthStore((state) => state.logout);
   const isLoading = useAuthStore((state) => state.isLoading);
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
   const role = useAuthStore((state) => state.role);
@@ -114,20 +145,16 @@ export const LoginPage = () => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("md"));
 
-  const { View: LottieView } = useLottie({ animationData: skateLottie, loop: true });
-
   useEffect(() => {
-    if (isAuthenticated) {
-      navigate(getHomePathForRole(role), { replace: true });
-    }
+    if (isAuthenticated) navigate(getHomePathForRole(role), { replace: true });
   }, [isAuthenticated, navigate, role]);
 
   const [step, setStep] = useState(1);
   const [identifier, setIdentifier] = useState("");
   const [userId, setUserId] = useState("");
   const [otpDigits, setOtpDigits] = useState(["", "", "", ""]);
-  const [timeLeft, setTimeLeft] = useState(300); // 5 minutes in seconds
-  const [fcmToken, setFcmToken] = useState(null); // FCM token generated at OTP step
+  const [timeLeft, setTimeLeft] = useState(300);
+  const [fcmToken, setFcmToken] = useState(null);
 
   const otpRefs = useRef([]);
   const emailError = getEmailError(identifier);
@@ -135,110 +162,67 @@ export const LoginPage = () => {
   const otpValue = otpDigits.join("");
   const isOtpExpired = timeLeft === 0;
 
-  // Timer countdown — starts/resets when entering step 2
   useEffect(() => {
     if (step !== 2) return;
     const interval = setInterval(() => {
-      setTimeLeft((prev) => {
-        if (prev <= 1) {
-          clearInterval(interval);
-          return 0;
-        }
-        return prev - 1;
-      });
+      setTimeLeft((prev) => { if (prev <= 1) { clearInterval(interval); return 0; } return prev - 1; });
     }, 1000);
     return () => clearInterval(interval);
   }, [step]);
 
-  // Derived timer display values
   const timerMinutes = Math.floor(timeLeft / 60);
   const timerSeconds = timeLeft % 60;
-  const timerLabel = `${String(timerMinutes).padStart(2, "0")}:${String(timerSeconds).padStart(2, "0")}`;
-  const timerPercent = (timeLeft / 300) * 100;
   const timerColor = timeLeft > 120 ? "#2e7d32" : timeLeft > 60 ? "#ed6c02" : "#d32f2f";
 
-  // ── Handlers ────────────────────────────────────────────────────────────
-  const handleEmailChange = (e) => {
-    setIdentifier(e.target.value.trim());
-  };
+  const handleEmailChange = (e) => setIdentifier(e.target.value.trim());
 
   const handleRequestOtp = async (e) => {
     e.preventDefault();
     try {
       const data = await requestLoginOtp(identifier);
-
       if (data && data.type) {
         const userRole = data.type.toLowerCase();
-        const allowedWebRoles = ["admin", "state", "club", "district"];
-        if (!allowedWebRoles.includes(userRole)) {
+        if (!["admin", "state", "club", "district"].includes(userRole)) {
           toast.dismiss();
           toast.error("This account type cannot sign in on the web portal.");
           return;
         }
       }
-
       setUserId(data.id);
       setTimeLeft(300);
       setStep(2);
-      // Auto-focus first OTP box after transition
       setTimeout(() => otpRefs.current[0]?.focus(), 350);
-
-      // Generate FCM token in the background while the user reads their OTP SMS.
-      // Fire-and-forget: if permission is denied or Firebase fails, token stays null
-      // and login still succeeds — the backend treats null as "no notifications".
-      getFCMToken()
-        .then((token) => {
-          if (token) {
-            setFcmToken(token);
-            // Cache token AND version so useFirebaseMessaging treats it as valid.
-            // Without the version key, isTokenValid is always false and the hook
-            // re-generates the token on every page load.
-            localStorage.setItem("fcm_token", token);
-            localStorage.setItem("fcm_token_version", "v2-sw-pinned");
-          }
-        })
-        .catch(() => {
-          // Silently ignore — notification permission denial should not block login
-        });
+      getFCMToken().then((token) => {
+        if (token) {
+          setFcmToken(token);
+          localStorage.setItem("fcm_token", token);
+          localStorage.setItem("fcm_token_version", "v2-sw-pinned");
+        }
+      }).catch(() => {});
     } catch (error) {
       console.error("Request OTP failed:", error);
     }
   };
 
-  const handleOtpChange = useCallback(
-    (e, index) => {
-      const char = e.target.value.replace(/\D/g, "").slice(-1);
-      const next = [...otpDigits];
-      next[index] = char;
-      setOtpDigits(next);
-      if (char && index < 3) {
-        otpRefs.current[index + 1]?.focus();
-      }
-    },
-    [otpDigits]
-  );
+  const handleOtpChange = useCallback((e, index) => {
+    const char = e.target.value.replace(/\D/g, "").slice(-1);
+    const next = [...otpDigits];
+    next[index] = char;
+    setOtpDigits(next);
+    if (char && index < 3) otpRefs.current[index + 1]?.focus();
+  }, [otpDigits]);
 
-  const handleOtpKeyDown = useCallback(
-    (e, index) => {
-      if (e.key === "Backspace" && !otpDigits[index] && index > 0) {
-        otpRefs.current[index - 1]?.focus();
-      }
-      // Allow paste across all boxes
-      if (e.key === "v" && (e.ctrlKey || e.metaKey)) return;
-    },
-    [otpDigits]
-  );
+  const handleOtpKeyDown = useCallback((e, index) => {
+    if (e.key === "Backspace" && !otpDigits[index] && index > 0) otpRefs.current[index - 1]?.focus();
+  }, [otpDigits]);
 
   const handleOtpPaste = (e) => {
     e.preventDefault();
     const pasted = e.clipboardData.getData("text").replace(/\D/g, "").slice(0, 4);
     const next = ["", "", "", ""];
-    pasted.split("").forEach((ch, i) => {
-      next[i] = ch;
-    });
+    pasted.split("").forEach((ch, i) => { next[i] = ch; });
     setOtpDigits(next);
-    const focusIdx = Math.min(pasted.length, 3);
-    otpRefs.current[focusIdx]?.focus();
+    otpRefs.current[Math.min(pasted.length, 3)]?.focus();
   };
 
   const handleVerifyOtp = async (e) => {
@@ -252,12 +236,7 @@ export const LoginPage = () => {
     }
   };
 
-  const handleChangeEmail = () => {
-    setStep(1);
-    setOtpDigits(["", "", "", ""]);
-    setUserId("");
-    setTimeLeft(300);
-  };
+  const handleChangeEmail = () => { setStep(1); setOtpDigits(["", "", "", ""]); setUserId(""); setTimeLeft(300); };
 
   const handleResendOtp = async () => {
     try {
@@ -271,546 +250,442 @@ export const LoginPage = () => {
     }
   };
 
-  // ── Shared button sx ────────────────────────────────────────────────────
+  if (isAuthenticated) return <Navigate to={homePath} replace />;
+
   const primaryBtnSx = {
-    py: 2,
-    borderRadius: "16px",
-    background: `linear-gradient(135deg, ${BRAND} 0%, ${BRAND_LIGHT} 100%)`,
+    py: 1.85,
+    borderRadius: "14px",
+    background: `linear-gradient(135deg, ${accent} 0%, ${accentLight} 100%)`,
     fontWeight: 800,
-    fontSize: "1.05rem",
+    fontSize: "1rem",
     textTransform: "none",
-    letterSpacing: "0.01em",
-    boxShadow: `0 12px 30px ${alpha(BRAND, 0.35)}`,
+    boxShadow: `0 10px 28px ${alpha(accent, 0.32)}`,
     "&:hover:not(:disabled)": {
-      background: `linear-gradient(135deg, ${BRAND_DARK} 0%, ${BRAND} 100%)`,
-      boxShadow: `0 18px 40px ${alpha(BRAND, 0.45)}`,
-      transform: "translateY(-2px)"
+      background: `linear-gradient(135deg, ${accentDark} 0%, ${accent} 100%)`,
+      boxShadow: `0 16px 36px ${alpha(accent, 0.42)}`,
+      transform: "translateY(-2px)",
     },
-    "&:active": { transform: "translateY(0px)" },
-    "&:disabled": { opacity: 0.6, boxShadow: "none" },
-    transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)"
+    "&:active": { transform: "translateY(0)" },
+    "&:disabled": { opacity: 0.55, boxShadow: "none" },
+    transition: "all 0.28s cubic-bezier(0.4,0,0.2,1)",
   };
 
-  // ── Common TextField sx ─────────────────────────────────────────────────
-  const inputSx = {
-    "& .MuiOutlinedInput-root": {
-      borderRadius: "16px",
-      height: "60px",
-      backgroundColor: identifier.length > 0 ? alpha("#2e7d32", 0.04) : "#fbf6f4",
-      transition: "all 0.2s ease",
-      "& fieldset": {
-        border: identifier.length > 0 ? "1.5px solid #2e7d32" : "1.5px solid #efe2dc",
-        transition: "border-color 0.2s ease"
-      },
-      "&:hover fieldset": { borderColor: "#2e7d32" },
-      "&.Mui-focused fieldset": {
-        borderColor: "#2e7d32",
-        borderWidth: "2px",
-        boxShadow: `0 0 0 4px ${alpha("#2e7d32", 0.12)}`
-      }
-    },
-    "& .MuiInputLabel-root.Mui-focused": { color: "#2e7d32" }
-  };
-
-  // ── Render-level auth guard (fires before paint — eliminates login flash) ─
-  if (isAuthenticated) {
-    return <Navigate to={homePath} replace />;
-  }
-
-  // ────────────────────────────────────────────────────────────────────────
   return (
-    <Box className="min-h-screen w-full flex bg-white overflow-y-auto relative custom-scrollbar">
-      <Box className="flex flex-col md:flex-row w-full min-h-screen">
-        {/* ═══════════════ LEFT — Visual ═══════════════ */}
+    <Box sx={{ minHeight: "100vh", display: "flex", backgroundColor: "#FFFFFF" }}>
+      {/* ══ LEFT — hero panel ══════════════════════════════════════════════ */}
+      {!isMobile && (
         <Box
-          className="flex-[0_0_auto] md:flex-[1.15] flex flex-col items-center justify-center p-8 sm:p-12 md:p-16 text-center relative overflow-hidden min-h-[40vh] md:min-h-screen"
-          sx={{ background: `linear-gradient(145deg, ${BRAND} 0%, ${BRAND_DARK} 100%)` }}
+          sx={{
+            flex: "0 0 46%",
+            position: "relative",
+            overflow: "hidden",
+            display: "flex",
+            flexDirection: "column",
+            justifyContent: "flex-end",
+            p: 5,
+          }}
         >
+          {/* Hero image */}
           <Box
             sx={{
               position: "absolute",
-              top: "-10%",
-              left: "-10%",
-              width: "40%",
-              height: "40%",
-              background: "rgba(255,255,255,0.08)",
-              borderRadius: "50%",
-              filter: "blur(60px)",
-              pointerEvents: "none"
+              inset: 0,
+              backgroundImage: `url(${config.hero})`,
+              backgroundSize: "cover",
+              backgroundPosition: "center",
+              transform: "scale(1.02)",
             }}
           />
+          {/* Gradient overlay */}
           <Box
             sx={{
               position: "absolute",
-              bottom: "-5%",
-              right: "-5%",
-              width: "30%",
-              height: "30%",
-              background: "rgba(0,0,0,0.05)",
-              borderRadius: "50%",
-              filter: "blur(50px)",
-              pointerEvents: "none"
+              inset: 0,
+              background: `linear-gradient(160deg, ${alpha(accentDark, 0.55)} 0%, rgba(15,10,12,0.72) 100%)`,
             }}
           />
+          {/* Accent top bar */}
+          <Box sx={{ position: "absolute", top: 0, left: 0, right: 0, height: 4, background: `linear-gradient(90deg, ${accent}, ${accentLight})` }} />
 
-          <Stack
-            spacing={0}
-            sx={{
-              alignItems: "center",
-              position: "relative",
-              zIndex: 1,
-              transform: { md: "translateY(-40px)" }
-            }}
-          >
-            <Box
-              sx={{
-                width: { xs: "140px", sm: "180px", md: "100%" },
-                maxWidth: "400px",
-                mb: { xs: 2, md: 3 },
-                filter: "drop-shadow(0 20px 30px rgba(0,0,0,0.15))"
-              }}
-            >
-              {LottieView}
-            </Box>
-            <Typography
-              variant="h2"
-              sx={{
-                fontWeight: 900,
-                mb: 2,
-                letterSpacing: "-0.04em",
-                fontSize: { xs: "2rem", sm: "2.5rem", md: "3.5rem" },
-                color: "#fffcf2",
-                textShadow: "0 4px 15px rgba(0,0,0,0.12)"
-              }}
-            >
-              Admin Portal
-            </Typography>
-            <Box
-              sx={{
-                width: "60px",
-                height: "4px",
-                backgroundColor: "#fff9f0",
-                borderRadius: "2px",
-                mb: 3,
-                opacity: 0.8
-              }}
-            />
-            <Typography
-              sx={{
-                color: "#ffebd6",
-                maxWidth: "380px",
-                fontSize: { xs: "0.9rem", md: "1.15rem" },
-                lineHeight: 1.6,
-                fontWeight: 500,
-                opacity: 0.95
-              }}
-            >
-              Welcome back to Skate Karnataka. Manage your skating community with precision and
-              ease.
-            </Typography>
-          </Stack>
-        </Box>
-
-        {/* ═══════════════ RIGHT — Form ═══════════════ */}
-        <Box className="flex-1 flex flex-col justify-center bg-white w-full mx-auto p-8 sm:p-12 md:p-16 md:max-w-[600px] min-h-auto md:min-h-screen">
-          {/* Logo + Header */}
-          <Box sx={{ mb: { xs: 3, md: 5 }, textAlign: { xs: "center", md: "left" } }}>
+          {/* Content over hero */}
+          <Box sx={{ position: "relative", zIndex: 1 }}>
+            {/* Logo */}
             <Box
               component="img"
               src={logo}
               alt="Logo"
               sx={{
-                height: { xs: 50, md: 70 },
-                width: { xs: 50, md: 70 },
-                mb: { xs: 2, md: 3 },
-                borderRadius: "18px",
-                border: "1px solid #efe2dc",
-                p: 1,
-                backgroundColor: "white",
-                display: { xs: "inline-block", md: "block" },
-                boxShadow: "0 8px 20px rgba(0,0,0,0.04)"
+                height: 52,
+                width: 52,
+                borderRadius: "14px",
+                border: "1.5px solid rgba(255,255,255,0.2)",
+                p: "6px",
+                backgroundColor: "rgba(255,255,255,0.1)",
+                backdropFilter: "blur(8px)",
+                mb: 3,
               }}
             />
             <Typography
-              variant="h3"
               sx={{
-                fontWeight: 800,
-                color: "#2f2829",
-                mb: 1,
-                letterSpacing: "-0.04em",
-                fontSize: { xs: "1.75rem", md: "2.5rem" }
+                fontWeight: 900,
+                fontSize: "2.4rem",
+                letterSpacing: "-0.05em",
+                color: "#fff",
+                lineHeight: 1.1,
+                mb: 1.5,
               }}
             >
-              {step === 1 ? "Sign In" : "Verify OTP"}
+              {config.label}
             </Typography>
-            <Typography variant="body1" component="div" sx={{ color: "#8d7f7b", fontWeight: 400 }}>
-              {step === 1 ? (
-                "Enter your registered email address"
-              ) : (
-                <Box
-                  component="span"
-                  sx={{ display: "inline-flex", alignItems: "center", gap: 1, flexWrap: "wrap" }}
-                >
+            <Typography
+              sx={{
+                color: "rgba(255,255,255,0.7)",
+                fontSize: "1rem",
+                lineHeight: 1.6,
+                maxWidth: 340,
+                mb: 3,
+              }}
+            >
+              {config.tagline}
+            </Typography>
+
+            {/* Feature chips */}
+            {config.chips.length > 0 && (
+              <Stack direction="row" spacing={1} sx={{ flexWrap: "wrap", gap: 1 }}>
+                {config.chips.map((chip) => (
+                  <Chip
+                    key={chip}
+                    label={chip}
+                    size="small"
+                    sx={{
+                      fontSize: "0.75rem",
+                      fontWeight: 700,
+                      backgroundColor: "rgba(255,255,255,0.12)",
+                      color: "rgba(255,255,255,0.9)",
+                      border: "1px solid rgba(255,255,255,0.2)",
+                      backdropFilter: "blur(4px)",
+                    }}
+                  />
+                ))}
+              </Stack>
+            )}
+          </Box>
+        </Box>
+      )}
+
+      {/* ══ RIGHT — form panel ════════════════════════════════════════════ */}
+      <Box
+        sx={{
+          flex: 1,
+          display: "flex",
+          flexDirection: "column",
+          justifyContent: "center",
+          px: { xs: 3, sm: 6, md: 7 },
+          py: { xs: 5, md: 6 },
+          maxWidth: { md: 520 },
+          mx: "auto",
+          width: "100%",
+        }}
+      >
+        {/* Back link */}
+        <Button
+          onClick={() => navigate("/web")}
+          startIcon={<ArrowLeft size={15} />}
+          sx={{
+            alignSelf: "flex-start",
+            color: "#9e8f8b",
+            textTransform: "none",
+            fontWeight: 600,
+            fontSize: "0.85rem",
+            px: 0,
+            mb: 4,
+            "&:hover": { backgroundColor: "transparent", color: accent },
+          }}
+        >
+          Back
+        </Button>
+
+        {/* Mobile logo */}
+        {isMobile && (
+          <Stack direction="row" alignItems="center" spacing={1.5} sx={{ mb: 4 }}>
+            <Box
+              component="img"
+              src={logo}
+              alt="Logo"
+              sx={{ height: 44, width: 44, borderRadius: "12px", border: "1px solid #efe2dc", p: "5px" }}
+            />
+            <Typography sx={{ fontWeight: 800, fontSize: "1.1rem", color: "#2f2829", letterSpacing: "-0.03em" }}>
+              {config.label}
+            </Typography>
+          </Stack>
+        )}
+
+        {/* Step heading */}
+        <Box sx={{ mb: 4 }}>
+          <Typography
+            sx={{
+              fontWeight: 900,
+              fontSize: { xs: "1.9rem", md: "2.2rem" },
+              letterSpacing: "-0.05em",
+              color: "#2f2829",
+              lineHeight: 1.1,
+              mb: 0.75,
+            }}
+          >
+            {step === 1 ? "Sign In" : "Verify OTP"}
+          </Typography>
+          <Typography sx={{ color: "#9e8f8b", fontSize: "0.92rem" }}>
+            {step === 1
+              ? "Enter your registered email address"
+              : (
+                <Box component="span" sx={{ display: "inline-flex", alignItems: "center", gap: 0.75, flexWrap: "wrap" }}>
                   OTP sent to&nbsp;
                   <Chip
-                    icon={<CheckCircle2 size={14} color={BRAND_DARK} />}
+                    icon={<CheckCircle2 size={13} color={accentDark} />}
                     label={identifier}
                     size="small"
                     sx={{
                       fontWeight: 700,
-                      fontSize: "0.82rem",
-                      backgroundColor: alpha(BRAND, 0.1),
-                      color: BRAND_DARK,
-                      border: `1px solid ${alpha(BRAND, 0.3)}`,
-                      "& .MuiChip-icon": { ml: "6px" }
+                      fontSize: "0.8rem",
+                      backgroundColor: alpha(accent, 0.1),
+                      color: accentDark,
+                      border: `1px solid ${alpha(accent, 0.25)}`,
+                      "& .MuiChip-icon": { ml: "5px" },
                     }}
                   />
                 </Box>
               )}
-            </Typography>
+          </Typography>
+        </Box>
+
+        {/* ── STEP 1: Email ── */}
+        <Fade in={step === 1} unmountOnExit>
+          <Box component="form" onSubmit={handleRequestOtp} sx={{ display: step === 1 ? "block" : "none" }}>
+            <Stack spacing={2.5}>
+              <TextField
+                fullWidth
+                label="Email Address"
+                placeholder="you@example.com"
+                type="email"
+                required
+                autoFocus
+                autoComplete="email"
+                value={identifier}
+                onChange={handleEmailChange}
+                error={!!emailError}
+                helperText={emailError || (isEmailValid ? "✓ Valid email address" : "Enter your email")}
+                slotProps={{
+                  input: {
+                    startAdornment: (
+                      <InputAdornment position="start">
+                        <Mail size={17} style={{ color: "#b8a9a4" }} />
+                      </InputAdornment>
+                    ),
+                  },
+                }}
+                sx={{
+                  "& .MuiOutlinedInput-root": {
+                    borderRadius: "14px",
+                    height: 58,
+                    backgroundColor: identifier.length > 0 ? alpha("#2e7d32", 0.04) : "#faf7f6",
+                    "& fieldset": {
+                      border: identifier.length > 0 ? "1.5px solid #2e7d32" : "1.5px solid #e8ddd9",
+                    },
+                    "&:hover fieldset": { borderColor: accent },
+                    "&.Mui-focused fieldset": {
+                      borderColor: accent,
+                      borderWidth: "2px",
+                      boxShadow: `0 0 0 4px ${alpha(accent, 0.1)}`,
+                    },
+                  },
+                  "& .MuiFormHelperText-root": {
+                    fontWeight: 600,
+                    fontSize: "0.74rem",
+                    color: isEmailValid ? "#2e7d32" : emailError ? "#d32f2f" : "#b0a09b",
+                    mt: 0.75,
+                  },
+                }}
+              />
+
+              <Button
+                fullWidth
+                variant="contained"
+                size="large"
+                type="submit"
+                disabled={isLoading || !isEmailValid}
+                sx={primaryBtnSx}
+              >
+                {isLoading ? (
+                  <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
+                    <CircularProgress size={19} sx={{ color: "white" }} />
+                    Sending OTP…
+                  </Box>
+                ) : (
+                  <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                    <LogIn size={19} />
+                    Send OTP
+                  </Box>
+                )}
+              </Button>
+            </Stack>
           </Box>
+        </Fade>
 
-          {/* ── STEP 1: Phone Number ── */}
-          <Fade in={step === 1} unmountOnExit>
-            <Box
-              component="form"
-              onSubmit={handleRequestOtp}
-              sx={{ display: step === 1 ? "block" : "none" }}
-            >
-              <Stack spacing={2.5}>
-                {/* Email input */}
-                <TextField
-                  fullWidth
-                  label="Email Address"
-                  placeholder="you@example.com"
-                  variant="outlined"
-                  type="email"
-                  required
-                  autoFocus
-                  autoComplete="email"
-                  value={identifier}
-                  onChange={handleEmailChange}
-                  error={!!emailError}
-                  helperText={
-                    emailError || (isEmailValid ? "✓ Valid email address" : "Enter your email")
-                  }
-                  slotProps={{
-                    input: {
-                      startAdornment: (
-                        <InputAdornment position="start">
-                          <Mail size={18} style={{ color: "#b19f99" }} />
-                        </InputAdornment>
-                      )
-                    }
-                  }}
-                  sx={{
-                    ...inputSx,
-                    "& .MuiFormHelperText-root": {
-                      fontWeight: 600,
-                      fontSize: "0.75rem",
-                      color: isEmailValid ? "#2e7d32" : emailError ? "#d32f2f" : "#b19f99",
-                      mt: 0.75,
-                      ml: 0.5
-                    }
-                  }}
-                />
+        {/* ── STEP 2: OTP ── */}
+        <Fade in={step === 2} unmountOnExit>
+          <Box component="form" onSubmit={handleVerifyOtp} sx={{ display: step === 2 ? "block" : "none" }}>
+            <Stack spacing={3}>
+              <Box>
+                <Typography sx={{ fontWeight: 700, color: "#8a7b77", mb: 2, letterSpacing: "0.08em", textTransform: "uppercase", fontSize: "0.7rem" }}>
+                  Enter 4-digit OTP
+                </Typography>
 
-                <Button
-                  fullWidth
-                  variant="contained"
-                  size="large"
-                  type="submit"
-                  disabled={isLoading || !isEmailValid}
-                  sx={primaryBtnSx}
-                >
-                  {isLoading ? (
-                    <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
-                      <CircularProgress size={20} sx={{ color: "white" }} />
-                      Sending OTP…
-                    </Box>
-                  ) : (
-                    <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                      <LogIn size={20} />
-                      Send OTP
-                    </Box>
-                  )}
-                </Button>
-              </Stack>
-            </Box>
-          </Fade>
+                <Box sx={{ display: "flex", gap: 1.25, alignItems: "center" }} onPaste={handleOtpPaste}>
+                  {otpDigits.map((digit, i) => (
+                    <OtpBox
+                      key={i}
+                      index={i}
+                      value={digit}
+                      filled={!!digit}
+                      accent={accent}
+                      inputRef={(el) => (otpRefs.current[i] = el)}
+                      onChange={handleOtpChange}
+                      onKeyDown={handleOtpKeyDown}
+                    />
+                  ))}
 
-          {/* ── STEP 2: OTP ── */}
-          <Fade in={step === 2} unmountOnExit>
-            <Box
-              component="form"
-              onSubmit={handleVerifyOtp}
-              sx={{ display: step === 2 ? "block" : "none" }}
-            >
-              <Stack spacing={3}>
-                {/* OTP Boxes label */}
-                <Box>
-                  <Typography
-                    variant="body2"
+                  {/* Progress indicator */}
+                  <Box sx={{ display: "flex", flexDirection: "column", alignItems: "center", ml: 1 }}>
+                    {otpValue.length === 4 ? (
+                      <Fade in>
+                        <Stack alignItems="center" spacing={0.25}>
+                          <ShieldCheck size={26} color="#2e7d32" />
+                          <Typography sx={{ fontSize: "0.62rem", fontWeight: 700, color: "#2e7d32" }}>Ready</Typography>
+                        </Stack>
+                      </Fade>
+                    ) : (
+                      <Stack alignItems="center" spacing={0.25}>
+                        <Box sx={{ position: "relative", width: 26, height: 26 }}>
+                          <CircularProgress variant="determinate" value={100} size={26} sx={{ color: "#ede4e0", position: "absolute" }} />
+                          <CircularProgress variant="determinate" value={(otpValue.length / 4) * 100} size={26} sx={{ color: accent, position: "absolute" }} />
+                        </Box>
+                        <Typography sx={{ fontSize: "0.62rem", fontWeight: 700, color: "#b0a09b" }}>{otpValue.length}/4</Typography>
+                      </Stack>
+                    )}
+                  </Box>
+
+                  {/* Timer */}
+                  <Box
                     sx={{
-                      fontWeight: 700,
-                      color: "#6b5c58",
-                      mb: 2,
-                      letterSpacing: "0.08em",
-                      textTransform: "uppercase",
-                      fontSize: "0.72rem"
+                      ml: "auto",
+                      display: "flex",
+                      flexDirection: "column",
+                      alignItems: "center",
+                      gap: 0.25,
                     }}
                   >
-                    Enter 4-digit OTP
-                  </Typography>
-
-                  {/* Industrial OTP boxes */}
-                  <Box
-                    sx={{ display: "flex", gap: 1.25, alignItems: "center", width: "100%" }}
-                    onPaste={handleOtpPaste}
-                  >
-                    {otpDigits.map((digit, i) => (
-                      <OtpBox
-                        key={i}
-                        index={i}
-                        value={digit}
-                        filled={!!digit}
-                        inputRef={(el) => (otpRefs.current[i] = el)}
-                        onChange={handleOtpChange}
-                        onKeyDown={handleOtpKeyDown}
-                      />
-                    ))}
-
-                    {/* Status indicator */}
-                    <Box sx={{ display: "flex", alignItems: "center", ml: 1 }}>
-                      {otpValue.length === 4 ? (
-                        <Fade in>
-                          <Box
-                            sx={{
-                              display: "flex",
-                              flexDirection: "column",
-                              alignItems: "center",
-                              gap: 0.5
-                            }}
-                          >
-                            <ShieldCheck size={28} color="#2e7d32" />
-                            <Typography
-                              sx={{ fontSize: "0.65rem", fontWeight: 700, color: "#2e7d32" }}
-                            >
-                              Ready
-                            </Typography>
-                          </Box>
-                        </Fade>
-                      ) : (
-                        <Box
-                          sx={{
-                            display: "flex",
-                            flexDirection: "column",
-                            alignItems: "center",
-                            gap: 0.5
-                          }}
-                        >
-                          <Box sx={{ position: "relative", width: 28, height: 28 }}>
-                            <CircularProgress
-                              variant="determinate"
-                              value={100}
-                              size={28}
-                              sx={{ color: "#efe2dc", position: "absolute" }}
-                            />
-                            <CircularProgress
-                              variant="determinate"
-                              value={(otpValue.length / 4) * 100}
-                              size={28}
-                              sx={{ color: BRAND, position: "absolute" }}
-                            />
-                          </Box>
-                          <Typography
-                            sx={{ fontSize: "0.65rem", fontWeight: 700, color: "#b19f99" }}
-                          >
-                            {otpValue.length}/4
-                          </Typography>
-                        </Box>
-                      )}
+                    <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
+                      <Timer size={11} color="#9e8f8b" />
+                      <Typography sx={{ fontSize: "0.6rem", fontWeight: 700, color: "#9e8f8b", letterSpacing: "0.1em", textTransform: "uppercase" }}>
+                        {isOtpExpired ? "Expired" : "Expires"}
+                      </Typography>
                     </Box>
-
-                    {/* Industrial Digital Clock */}
                     <Box
                       sx={{
-                        ml: "auto",
                         display: "flex",
-                        flexDirection: "column",
                         alignItems: "center",
-                        gap: 0.25
+                        gap: 0.4,
+                        px: 1.25,
+                        py: 0.6,
+                        borderRadius: "10px",
+                        backgroundColor: alpha(timerColor, 0.08),
+                        border: `1.5px solid ${alpha(timerColor, 0.3)}`,
+                        boxShadow: timeLeft <= 60 ? `0 0 10px ${alpha(timerColor, 0.2)}` : "none",
+                        transition: "all 0.4s ease",
                       }}
                     >
-                      {/* Clock label */}
-                      <Box sx={{ display: "flex", alignItems: "center", gap: 0.5, mb: 0.25 }}>
-                        <Timer size={11} color="#8d7f7b" />
-                        <Typography
-                          sx={{
-                            fontSize: "0.62rem",
-                            fontWeight: 700,
-                            color: "#8d7f7b",
-                            letterSpacing: "0.12em",
-                            textTransform: "uppercase"
-                          }}
-                        >
-                          {isOtpExpired ? "Expired" : "Expires"}
-                        </Typography>
-                      </Box>
-
-                      {/* Digit display */}
-                      <Box
+                      <Typography
                         sx={{
-                          display: "flex",
-                          alignItems: "center",
-                          gap: 0.5,
-                          px: 1.25,
-                          py: 0.75,
-                          borderRadius: "12px",
-                          backgroundColor: alpha(timerColor, 0.08),
-                          border: `1.5px solid ${alpha(timerColor, 0.35)}`,
-                          boxShadow:
-                            timeLeft <= 60 ? `0 0 10px ${alpha(timerColor, 0.25)}` : "none",
-                          transition: "all 0.4s ease",
-                          animation:
-                            timeLeft <= 30 && !isOtpExpired
-                              ? "urgentPulse 1s ease-in-out infinite"
-                              : "none",
-                          "@keyframes urgentPulse": {
-                            "0%, 100%": { boxShadow: `0 0 6px ${alpha(timerColor, 0.2)}` },
-                            "50%": { boxShadow: `0 0 16px ${alpha(timerColor, 0.5)}` }
-                          }
+                          fontSize: "1.15rem",
+                          fontWeight: 900,
+                          fontFamily: "'Courier New', monospace",
+                          color: timerColor,
+                          lineHeight: 1,
+                          minWidth: "2ch",
+                          textAlign: "center",
                         }}
                       >
-                        {/* Minutes */}
-                        <Typography
-                          sx={{
-                            fontSize: "1.25rem",
-                            fontWeight: 900,
-                            fontFamily: "'Courier New', monospace",
-                            color: timerColor,
-                            lineHeight: 1,
-                            letterSpacing: "-0.02em",
-                            transition: "color 0.4s ease",
-                            minWidth: "2ch",
-                            textAlign: "center"
-                          }}
-                        >
-                          {String(timerMinutes).padStart(2, "0")}
-                        </Typography>
-
-                        {/* Blinking colon */}
-                        <Typography
-                          sx={{
-                            fontSize: "1.25rem",
-                            fontWeight: 900,
-                            fontFamily: "'Courier New', monospace",
-                            color: timerColor,
-                            lineHeight: 1,
-                            opacity: isOtpExpired ? 1 : undefined,
-                            animation: !isOtpExpired ? "blinkColon 1s step-start infinite" : "none",
-                            "@keyframes blinkColon": {
-                              "0%, 100%": { opacity: 1 },
-                              "50%": { opacity: 0.15 }
-                            },
-                            transition: "color 0.4s ease"
-                          }}
-                        >
-                          :
-                        </Typography>
-
-                        {/* Seconds */}
-                        <Typography
-                          sx={{
-                            fontSize: "1.25rem",
-                            fontWeight: 900,
-                            fontFamily: "'Courier New', monospace",
-                            color: timerColor,
-                            lineHeight: 1,
-                            letterSpacing: "-0.02em",
-                            transition: "color 0.4s ease",
-                            minWidth: "2ch",
-                            textAlign: "center"
-                          }}
-                        >
-                          {String(timerSeconds).padStart(2, "0")}
-                        </Typography>
-                      </Box>
+                        {String(timerMinutes).padStart(2, "0")}
+                      </Typography>
+                      <Typography sx={{ fontSize: "1.1rem", fontWeight: 900, fontFamily: "'Courier New', monospace", color: timerColor, lineHeight: 1, animation: !isOtpExpired ? "blinkColon 1s step-start infinite" : "none", "@keyframes blinkColon": { "0%,100%": { opacity: 1 }, "50%": { opacity: 0.15 } } }}>
+                        :
+                      </Typography>
+                      <Typography
+                        sx={{
+                          fontSize: "1.15rem",
+                          fontWeight: 900,
+                          fontFamily: "'Courier New', monospace",
+                          color: timerColor,
+                          lineHeight: 1,
+                          minWidth: "2ch",
+                          textAlign: "center",
+                        }}
+                      >
+                        {String(timerSeconds).padStart(2, "0")}
+                      </Typography>
                     </Box>
                   </Box>
                 </Box>
+              </Box>
 
-                {/* Verify button */}
+              <Button
+                fullWidth
+                variant="contained"
+                size="large"
+                type="submit"
+                disabled={isLoading || otpValue.length < 4 || isOtpExpired}
+                sx={primaryBtnSx}
+              >
+                {isLoading ? (
+                  <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
+                    <CircularProgress size={19} sx={{ color: "white" }} />
+                    Verifying…
+                  </Box>
+                ) : (
+                  <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                    <ShieldCheck size={19} />
+                    Verify &amp; Login
+                  </Box>
+                )}
+              </Button>
+
+              <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
                 <Button
-                  fullWidth
-                  variant="contained"
-                  size="large"
-                  type="submit"
-                  disabled={isLoading || otpValue.length < 4 || isOtpExpired}
-                  sx={primaryBtnSx}
+                  onClick={handleChangeEmail}
+                  startIcon={<ArrowLeft size={15} />}
+                  sx={{ color: "#9e8f8b", textTransform: "none", fontWeight: 600, fontSize: "0.88rem", px: 0, "&:hover": { backgroundColor: "transparent", color: accent } }}
                 >
-                  {isLoading ? (
-                    <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
-                      <CircularProgress size={20} sx={{ color: "white" }} />
-                      Verifying…
-                    </Box>
-                  ) : (
-                    <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                      <ShieldCheck size={20} />
-                      Verify &amp; Login
-                    </Box>
-                  )}
+                  Change Email
                 </Button>
-
-                {/* Resend / Change Number row */}
-                <Box
-                  sx={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}
-                >
-                  <Button
-                    onClick={handleChangeEmail}
-                    startIcon={<ArrowLeft size={16} />}
-                    sx={{
-                      color: "#8d7f7b",
-                      textTransform: "none",
-                      fontWeight: 600,
-                      fontSize: "0.9rem",
-                      px: 0,
-                      "&:hover": { backgroundColor: "transparent", color: BRAND }
-                    }}
-                  >
-                    Change Email
-                  </Button>
-
-                  {isOtpExpired && (
-                    <Fade in={isOtpExpired}>
-                      <Button
-                        onClick={handleResendOtp}
-                        disabled={isLoading}
-                        sx={{
-                          textTransform: "none",
-                          fontWeight: 700,
-                          fontSize: "0.9rem",
-                          color: BRAND,
-                          px: 0,
-                          "&:hover": { backgroundColor: "transparent", color: BRAND_DARK }
-                        }}
-                      >
-                        {isLoading ? "Sending…" : "Resend OTP"}
-                      </Button>
-                    </Fade>
-                  )}
-                </Box>
-              </Stack>
-            </Box>
-          </Fade>
-
-          {/* Footer */}
-          <Box sx={{ mt: { xs: 4, md: 6 }, textAlign: "center" }}>
-            <Typography variant="body2" sx={{ color: "#b19f99", fontSize: "0.82rem" }}>
-              © {new Date().getFullYear()} Karnataka Roller Skating Association
-            </Typography>
+                {isOtpExpired && (
+                  <Fade in={isOtpExpired}>
+                    <Button
+                      onClick={handleResendOtp}
+                      disabled={isLoading}
+                      sx={{ textTransform: "none", fontWeight: 700, fontSize: "0.88rem", color: accent, px: 0, "&:hover": { backgroundColor: "transparent", color: accentDark } }}
+                    >
+                      {isLoading ? "Sending…" : "Resend OTP"}
+                    </Button>
+                  </Fade>
+                )}
+              </Box>
+            </Stack>
           </Box>
-        </Box>
+        </Fade>
+
+        <Typography sx={{ mt: 5, color: "#c9bab5", fontSize: "0.78rem", textAlign: "center" }}>
+          © {new Date().getFullYear()} Karnataka Roller Skating Association
+        </Typography>
       </Box>
     </Box>
   );

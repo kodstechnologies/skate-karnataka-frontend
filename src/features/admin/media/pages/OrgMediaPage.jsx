@@ -55,7 +55,8 @@ export const OrgMediaPage = ({ orgType, portalMode = false }) => {
   const navigate = useNavigate();
   const params = useParams();
   const role = useAuthStore((s) => s.role);
-  const canApprove = ["admin", "state"].includes(String(role || "").toLowerCase());
+  const isDistrictRole = String(role || "").toLowerCase() === "district";
+  const canApprove = ["admin", "state", "district"].includes(String(role || "").toLowerCase());
 
   const orgId =
     orgType === "club"
@@ -63,7 +64,11 @@ export const OrgMediaPage = ({ orgType, portalMode = false }) => {
       : orgType === "district"
         ? params.districtId
         : null;
-  const listPath = portalMode ? PORTAL_HOME[orgType] : ORG_LIST_PATHS[orgType];
+  const listPath = portalMode
+    ? PORTAL_HOME[orgType]
+    : isDistrictRole
+      ? "/district/clubs"
+      : ORG_LIST_PATHS[orgType];
   const orgLabel = ORG_LABELS[orgType] || "Organization";
 
   const [items, setItems] = useState([]);

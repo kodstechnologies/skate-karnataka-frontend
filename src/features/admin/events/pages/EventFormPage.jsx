@@ -144,7 +144,7 @@ export const EventFormPage = () => {
 
   const handleFieldChange = (field) => (event) => {
     const value =
-      field === "skatingEventCategories"
+      field === "skatingEventCategories" || field === "skatingEventDisciplines"
         ? normalizeSkatingEventCategoryIds(event.target.value)
         : event.target.value;
 
@@ -359,6 +359,7 @@ export const EventFormPage = () => {
           disabled={saving}
           eventCategories={eventCategories}
           categorySeedFromEvent={existingEvent?.skatingEventCategories}
+          showCategorySourcePicker={false}
         />
 
         <Stack

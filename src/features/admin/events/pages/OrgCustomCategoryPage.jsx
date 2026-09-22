@@ -86,7 +86,7 @@ const CategoryTypeTabs = ({ categories, activeId, onSelect }) => (
             "&:hover": { color: isActive ? "#f6765e" : "#5f5552" }
           }}
         >
-          {cat.typeName || "Unnamed"}
+          {cat.name || cat.typeName || "Unnamed"}
         </Box>
       );
     })}

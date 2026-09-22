@@ -34,6 +34,10 @@ export const eventsApi = {
     return api.post("/event/v1/register-form", payload, skaterAuth(token));
   },
 
+  freeRegisterSkaterEvent: async (payload, token) => {
+    return api.post("/event/v1/free-register-form", payload, skaterAuth(token));
+  },
+
   verifySkaterPayment: async (payload, token) => {
     return api.post("/payment/v1/verify/web", payload, skaterAuth(token));
   },

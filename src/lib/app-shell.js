@@ -53,7 +53,6 @@ export const navigationGroups = [
     items: [
       { slug: "districts", to: "/districts", label: "Districts", icon: LocationCityIcon },
       { slug: "clubs", to: "/clubs", label: "Clubs", icon: Groups2Icon },
-      { slug: "discipline", to: "/discipline", label: "Discipline", icon: Layers },
       { slug: "about", to: "/about", label: "About Us", icon: Info },
       {
         slug: "about-us-discipline",

@@ -15,6 +15,7 @@ import {
 export const CLUB_NAV_SLUGS = new Set([
   "club-dashboard",
   "club-events",
+  "club-skaters",
   "club-media",
   "club-event-categories",
   "club-event-categories-home",
@@ -54,6 +55,12 @@ export const clubNavigationGroups = [
         to: "/club/events",
         label: "Club Events",
         icon: CalendarDays
+      },
+      {
+        slug: "club-skaters",
+        to: "/club/skaters",
+        label: "Club Skaters",
+        icon: RollerSkatingIcon
       },
       {
         slug: "club-media",
@@ -198,6 +205,7 @@ export const districtNavigationGroups = [
 const CLUB_PATH_PREFIXES = [
   ["/club/dashboard", "club-dashboard"],
   ["/club/events", "club-events"],
+  ["/club/skaters", "club-skaters"],
   ["/club/media", "club-media"],
   ["/club/event-categories", "club-event-categories"],
   ["/club/formula", "club-formula"],

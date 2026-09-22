@@ -25,21 +25,26 @@ export default function CategoryInlineEditor({
   isOrgOverride = false,
   isCreate = false,
   readOnly = false,
+  showAgeGroups = true,
+  nameLabel = "Discipline name",
+  namePlaceholder = 'e.g. "500 Meter"',
   onTypeNameChange,
   onCategoryNameChange,
   onCategoryFormulaChange,
   onAddCategoryRow,
   onRemoveCategoryRow
 }) {
+  const showNameInput = !readOnly && (isCreate || !isOrgOverride);
+
   return (
     <Box sx={{ px: 2.5, pb: 2 }}>
-      {!isOrgOverride && isCreate ? (
+      {showNameInput ? (
         <Box sx={{ mb: 2.5 }}>
           <Typography sx={{ fontWeight: 700, color: "#2f2829", mb: 1 }}>
-            Type Name <span style={{ color: "#f6765e" }}>*</span>
+            {nameLabel} <span style={{ color: "#f6765e" }}>*</span>
           </Typography>
           <TextField
-            placeholder='e.g. "Speed Skating"'
+            placeholder={namePlaceholder}
             value={form.typeName}
             onChange={(e) => onTypeNameChange(e.target.value)}
             error={Boolean(errors.typeName)}
@@ -54,19 +59,20 @@ export default function CategoryInlineEditor({
             {form.typeName || "—"}
           </Typography>
           {isOrgOverride ? (
-            <Chip size="small" label="KRSA type" sx={{ fontSize: 11, fontWeight: 700 }} />
+            <Chip size="small" label="Discipline" sx={{ fontSize: 11, fontWeight: 700 }} />
           ) : null}
         </Stack>
       )}
 
+      {showAgeGroups ? (
+        <>
       <Divider sx={{ borderColor: "#f5ebe7", mb: 2 }} />
 
       <Typography sx={{ fontWeight: 700, color: "#2f2829", mb: 0.5 }}>
         Age Groups & Categories
       </Typography>
       <Typography sx={{ fontSize: 13, color: "#8d7f7b", mb: 2 }}>
-        Use + on the right to add rows. Each lap name must have a formula selected. Update at the
-        bottom saves this type only.
+        These age groups belong to this discipline. Use + to add lap names, then save.
         {showFormula && !formulasLoading && formulas.length === 0 ? (
           <>
             {" "}
@@ -207,6 +213,8 @@ export default function CategoryInlineEditor({
           );
         })}
       </Stack>
+        </>
+      ) : null}
     </Box>
   );
 }

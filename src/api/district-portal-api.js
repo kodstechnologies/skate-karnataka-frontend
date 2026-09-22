@@ -7,6 +7,8 @@ export const districtPortalApi = {
   getClubs: async (params = {}) => api.get("/district/v1/total-club", { params }),
   getSkaters: async (params = {}) => api.get("/district/v1/total-skater", { params }),
   getSkater: async (skaterId) => api.get(`/district/v1/skater/${skaterId}`),
+  blockSkater: async (skaterId, isBlocked) => api.patch(`/district/v1/skater/${skaterId}/block`, { isBlocked }),
+  deleteSkater: async (skaterId) => api.delete(`/district/v1/skater/${skaterId}`),
   getClub: async (clubId) => api.get(`/district/v1/club-details/${clubId}`),
   getProfile: async () => api.get("/district/v1/profile"),
   updateProfile: async (data) =>

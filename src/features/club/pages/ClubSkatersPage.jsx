@@ -8,7 +8,6 @@ import {
   Drawer,
   IconButton,
   InputAdornment,
-  MenuItem,
   Paper,
   Skeleton,
   Stack,
@@ -22,18 +21,13 @@ import {
   TextField,
   Tooltip,
   Typography,
-  CircularProgress
 } from "@mui/material";
 import VisibilityOutlinedIcon from "@mui/icons-material/VisibilityOutlined";
 import EditOutlinedIcon from "@mui/icons-material/EditOutlined";
-import BlockOutlinedIcon from "@mui/icons-material/BlockOutlined";
-import LockOpenOutlinedIcon from "@mui/icons-material/LockOpenOutlined";
-import DeleteOutlineOutlinedIcon from "@mui/icons-material/DeleteOutlineOutlined";
-import { ChevronRight, Search, Users ,X} from "lucide-react";
+import { ChevronRight, Search, Users, X, Phone, Mail, User, MapPin, Award } from "lucide-react";
 import { Link as RouterLink, useNavigate } from "react-router-dom";
 import skatersHero from "@/assets/Skating_header.jpg";
-import { districtPortalApi } from "@/api/district-portal-api";
-import { ConfirmDeleteModal } from "@/components/ui/ConfirmDeleteModal";
+import { clubPortalApi } from "@/api/club-portal-api";
 import toast from "react-hot-toast";
 
 const formatGender = (g) => {
@@ -48,19 +42,16 @@ const DetailItem = ({ label, value }) => (
   </div>
 );
 
-export const DistrictSkatersPage = () => {
+export const ClubSkatersPage = () => {
   const navigate = useNavigate();
   const [skaters, setSkaters] = useState([]);
-  const [districtName, setDistrictName] = useState("District");
+  const [clubName, setClubName] = useState("Club");
   const [pagination, setPagination] = useState({ total: 0 });
   const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
-  const [blockTarget, setBlockTarget] = useState(null);
-  const [deleteTarget, setDeleteTarget] = useState(null);
-  const [isActioning, setIsActioning] = useState(false);
 
   // detail drawer
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -72,7 +63,7 @@ export const DistrictSkatersPage = () => {
     setDrawerOpen(true);
     setDrawerLoading(true);
     try {
-      const res = await districtPortalApi.getSkater(skater.id);
+      const res = await clubPortalApi.getSkater(skater.id);
       const data = res?.data ?? res;
       setDrawerSkater(data);
     } catch {
@@ -94,7 +85,7 @@ export const DistrictSkatersPage = () => {
     const load = async () => {
       setIsLoading(true);
       try {
-        const res = await districtPortalApi.getSkaters({
+        const res = await clubPortalApi.getSkaters({
           page: page + 1,
           limit: rowsPerPage,
           search: debouncedSearch,
@@ -103,7 +94,7 @@ export const DistrictSkatersPage = () => {
         const payload = res?.data ?? res;
         setSkaters(Array.isArray(payload?.data) ? payload.data : []);
         setPagination(payload?.pagination || { total: 0 });
-        if (payload?.district?.name) setDistrictName(payload.district.name);
+        if (payload?.club?.name) setClubName(payload.club.name);
       } catch (err) {
         if (!cancelled) {
           setSkaters([]);
@@ -118,35 +109,6 @@ export const DistrictSkatersPage = () => {
   }, [page, rowsPerPage, debouncedSearch]);
 
   const totalCount = pagination.total || 0;
-
-  const handleBlock = async (skater) => {
-    setIsActioning(true);
-    try {
-      const newBlocked = !skater.isBlocked;
-      await districtPortalApi.blockSkater(skater.id, newBlocked);
-      setSkaters((prev) => prev.map((s) => s.id === skater.id ? { ...s, isBlocked: newBlocked } : s));
-      toast.success(newBlocked ? "Skater blocked" : "Skater unblocked");
-    } catch (err) {
-      toast.error(err?.response?.data?.message || "Action failed");
-    } finally {
-      setIsActioning(false);
-      setBlockTarget(null);
-    }
-  };
-
-  const handleDeleteConfirm = async () => {
-    setIsActioning(true);
-    try {
-      await districtPortalApi.deleteSkater(deleteTarget.id);
-      setSkaters((prev) => prev.filter((s) => s.id !== deleteTarget.id));
-      toast.success("Skater deleted");
-    } catch (err) {
-      toast.error(err?.response?.data?.message || "Delete failed");
-    } finally {
-      setIsActioning(false);
-      setDeleteTarget(null);
-    }
-  };
 
   return (
     <Box className="space-y-5">
@@ -172,16 +134,16 @@ export const DistrictSkatersPage = () => {
               separator={<ChevronRight size={14} />}
               sx={{ mb: 2, "& .MuiBreadcrumbs-separator": { color: "rgba(255,255,255,0.6)" }, "& .MuiBreadcrumbs-li": { color: "rgba(255,255,255,0.86)" } }}
             >
-              <Typography component={RouterLink} to="/district/dashboard" sx={{ color: "inherit", textDecoration: "none", fontWeight: 600, "&:hover": { color: "white" } }}>
+              <Typography component={RouterLink} to="/club/dashboard" sx={{ color: "inherit", textDecoration: "none", fontWeight: 600, "&:hover": { color: "white" } }}>
                 Dashboard
               </Typography>
               <Typography sx={{ color: "white", fontWeight: 700 }}>Skaters</Typography>
             </Breadcrumbs>
             <Typography variant="h3" sx={{ fontWeight: 700, letterSpacing: "-0.05em", mb: 1.5 }}>
-              Skaters Registry
+              Club Skaters
             </Typography>
             <Typography sx={{ color: "rgba(255,255,255,0.86)", maxWidth: 580, lineHeight: 1.7 }}>
-              All skaters registered under {districtName}.
+              All skaters registered under {clubName}.
             </Typography>
             <Stack direction="row" spacing={1.25} useFlexGap sx={{ mt: 3, flexWrap: "wrap" }}>
               <Chip
@@ -199,7 +161,7 @@ export const DistrictSkatersPage = () => {
         <Stack direction={{ xs: "column", lg: "row" }} spacing={2} sx={{ p: 3, alignItems: { lg: "center" }, justifyContent: "space-between" }}>
           <Box>
             <Typography variant="h5" sx={{ fontWeight: 700, letterSpacing: "-0.04em" }}>All Skaters</Typography>
-            <Typography sx={{ mt: 0.75, color: "#8d7f7b" }}>Search skaters by name, KRSA ID, phone, or club.</Typography>
+            <Typography sx={{ mt: 0.75, color: "#8d7f7b" }}>Search skaters by name, KRSA ID, or phone.</Typography>
           </Box>
           <TextField
             value={searchTerm}
@@ -230,7 +192,7 @@ export const DistrictSkatersPage = () => {
                   </Stack>
                   <div className="grid grid-cols-2 gap-3">
                     <DetailItem label="Phone" value={s.phone} />
-                    <DetailItem label="Club" value={s.clubName} />
+                    <DetailItem label="District" value={s.districtName} />
                     <Box sx={{ gridColumn: "span 2" }}><DetailItem label="Address" value={s.address} /></Box>
                   </div>
                 </Stack>
@@ -246,7 +208,7 @@ export const DistrictSkatersPage = () => {
           <Table sx={{ minWidth: 800 }}>
             <TableHead>
               <TableRow sx={{ backgroundColor: "#fdf7f3" }}>
-                {["Photo", "KRSA ID", "Name", "Phone", "Email", "Gender", "Club", "Address", "Actions"].map((col) => (
+                {["Photo", "KRSA ID", "Name", "Phone", "Email", "Gender", "District", "Address", "Actions"].map((col) => (
                   <TableCell key={col} sx={{ borderBottom: "1px solid #f0e1da", color: "#7e716d", fontWeight: 700, fontSize: 13, whiteSpace: "nowrap" }}>
                     {col}
                   </TableCell>
@@ -257,7 +219,7 @@ export const DistrictSkatersPage = () => {
               {isLoading ? (
                 [0,1,2,3].map((i) => (
                   <TableRow key={i}>
-                    {[0,1,2,3,4,5,6,7].map((j) => (
+                    {[0,1,2,3,4,5,6,7,8].map((j) => (
                       <TableCell key={j}><Skeleton variant="rounded" height={28} sx={{ borderRadius: "8px" }} /></TableCell>
                     ))}
                   </TableRow>
@@ -275,7 +237,7 @@ export const DistrictSkatersPage = () => {
                     <TableCell>
                       <Chip label={formatGender(s.gender)} size="small" sx={{ backgroundColor: "#f4ede9", color: "#7a5c52", fontWeight: 600, fontSize: 11 }} />
                     </TableCell>
-                    <TableCell sx={{ fontSize: 13, color: "#5a4f4c" }}>{s.clubName || "—"}</TableCell>
+                    <TableCell sx={{ fontSize: 13, color: "#5a4f4c" }}>{s.districtName || "—"}</TableCell>
                     <TableCell sx={{ maxWidth: 200 }}>
                       <Typography title={s.address} sx={{ fontSize: 13, color: "#6d5c57", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", maxWidth: 180 }}>
                         {s.address || "—"}
@@ -284,27 +246,15 @@ export const DistrictSkatersPage = () => {
                     <TableCell>
                       <Stack direction="row" spacing={0.5}>
                         <Tooltip title="View">
-                          <IconButton size="small" onClick={() => navigate(`/district/skaters/${s.id}`)}
+                          <IconButton size="small" onClick={() => handleViewSkater(s)}
                             sx={{ border: "1px solid #efe2dc", backgroundColor: "#fff8f4", color: "#5a4f4c" }}>
                             <VisibilityOutlinedIcon sx={{ fontSize: 17 }} />
                           </IconButton>
                         </Tooltip>
                         <Tooltip title="Edit">
-                          <IconButton size="small" onClick={() => navigate(`/district/skaters/${s.id}/edit`)}
+                          <IconButton size="small" onClick={() => navigate(`/club/skaters/${s.id}/edit`)}
                             sx={{ border: "1px solid #efe2dc", backgroundColor: "#fff8f4", color: "#f6765e" }}>
                             <EditOutlinedIcon sx={{ fontSize: 17 }} />
-                          </IconButton>
-                        </Tooltip>
-                        <Tooltip title={s.isBlocked ? "Unblock" : "Block"}>
-                          <IconButton size="small" onClick={() => setBlockTarget(s)} disabled={isActioning}
-                            sx={{ border: "1px solid #efe2dc", backgroundColor: s.isBlocked ? "#e8f5e9" : "#fff1f0", color: s.isBlocked ? "#2e7d32" : "#c62828" }}>
-                            {s.isBlocked ? <LockOpenOutlinedIcon sx={{ fontSize: 17 }} /> : <BlockOutlinedIcon sx={{ fontSize: 17 }} />}
-                          </IconButton>
-                        </Tooltip>
-                        <Tooltip title="Delete">
-                          <IconButton size="small" onClick={() => setDeleteTarget(s)}
-                            sx={{ border: "1px solid #efe2dc", backgroundColor: "#fff1f0", color: "#c62828" }}>
-                            <DeleteOutlineOutlinedIcon sx={{ fontSize: 17 }} />
                           </IconButton>
                         </Tooltip>
                       </Stack>
@@ -390,7 +340,6 @@ export const DistrictSkatersPage = () => {
                 { icon: <Mail size={15} />, label: "Email", value: drawerSkater.email },
                 { icon: <User size={15} />, label: "Gender", value: formatGender(drawerSkater.gender) },
                 { icon: <MapPin size={15} />, label: "Address", value: drawerSkater.address },
-                { icon: <Award size={15} />, label: "Club", value: drawerSkater.clubName },
                 { icon: <Award size={15} />, label: "District", value: drawerSkater.districtName },
               ].map((item) => (
                 <Box
@@ -433,32 +382,6 @@ export const DistrictSkatersPage = () => {
           ) : null}
         </Box>
       </Drawer>
-
-      {/* Block confirmation */}
-      <ConfirmDeleteModal
-        open={Boolean(blockTarget)}
-        title={blockTarget?.isBlocked ? "Unblock skater" : "Block skater"}
-        description={blockTarget?.isBlocked
-          ? "This skater will be able to log in again."
-          : "This skater will be blocked from logging in."}
-        itemLabel={blockTarget?.name}
-        confirmLabel={blockTarget?.isBlocked ? "Unblock" : "Block"}
-        onClose={() => setBlockTarget(null)}
-        onConfirm={() => handleBlock(blockTarget)}
-        loading={isActioning}
-      />
-
-      {/* Delete confirmation */}
-      <ConfirmDeleteModal
-        open={Boolean(deleteTarget)}
-        title="Delete Skater"
-        description="This will permanently remove the skater and all associated data."
-        itemLabel={deleteTarget?.name}
-        confirmLabel="Delete"
-        onClose={() => setDeleteTarget(null)}
-        onConfirm={handleDeleteConfirm}
-        loading={isActioning}
-      />
     </Box>
   );
 };

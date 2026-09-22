@@ -24,7 +24,7 @@ export const normalizeCategoryRow = (row) => {
 export const categoryRowName = (row) => normalizeCategoryRow(row).name;
 
 export const buildFormState = (doc) => ({
-  typeName: doc?.typeName ?? "",
+  typeName: doc?.name || doc?.typeName || "",
   ageGroups: AGE_GROUP_LABELS.map((label) => {
     const existing = doc?.ageGroups?.find((ag) => ag.label === label);
     return {
@@ -96,6 +96,7 @@ export const buildPayload = (form, { namesOnly = false, requireFormula = false }
   }
 
   return {
+    name: form.typeName.trim(),
     typeName: form.typeName.trim(),
     ageGroups
   };

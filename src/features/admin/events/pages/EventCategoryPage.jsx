@@ -27,7 +27,7 @@ import {
   useCategoryFormActions,
   validateCategoryForm
 } from "@/features/admin/events/utils/categoryFormUtils";
-import { unwrapOrgCategoryContext } from "@/features/admin/events/utils/categoryDisplay";
+import { unwrapOrgCategoryContext, unwrapCategoryList, categoryDisplayName } from "@/features/admin/events/utils/categoryDisplay";
 import eventsHero from "@/assets/Events_header.jpg";
 import toast from "react-hot-toast";
 
@@ -88,7 +88,7 @@ const CategoryTypeTabs = ({ categories, activeId, onSelect, showNewTab }) => (
             "&:hover": { color: isActive ? "#f6765e" : "#5f5552" }
           }}
         >
-          {cat.typeName || "Unnamed"}
+          {cat.name || cat.typeName || "Unnamed"}
         </Box>
       );
     })}
@@ -147,18 +147,18 @@ const CategoryPickerCard = ({ cat, onOpen }) => (
       <Layers size={22} />
     </Box>
     <Typography sx={{ fontSize: 18, fontWeight: 800, color: "#2f2829" }}>
-      {cat.typeName || "Unnamed"}
+      {categoryDisplayName(cat)}
     </Typography>
     <Chip
       size="small"
-      label={cat.categoryStatus === "custom" ? "Custom" : "Standard"}
+      label={`${Array.isArray(cat.disciplines) ? cat.disciplines.length : 0} discipline${(cat.disciplines || []).length === 1 ? "" : "s"}`}
       sx={{
         mt: 1.25,
         height: 22,
         fontSize: 11,
         fontWeight: 700,
-        bgcolor: cat.categoryStatus === "custom" ? "#e0f7f5" : "#fff1eb",
-        color: cat.categoryStatus === "custom" ? "#00897b" : "#f6765e"
+        bgcolor: "#fff1eb",
+        color: "#f6765e"
       }}
     />
   </Paper>
@@ -191,6 +191,7 @@ export default function EventCategoryPage({
 
   const [editorOpen, setEditorOpen] = useState(false);
   const [activeCategoryId, setActiveCategoryId] = useState(null);
+  const [activeDisciplineId, setActiveDisciplineId] = useState(null);
   const [form, setForm] = useState(() => buildFormState(null));
   const [formErrors, setFormErrors] = useState({});
   const [saving, setSaving] = useState(false);
@@ -219,13 +220,18 @@ export default function EventCategoryPage({
   };
 
   const loadFormForId = useCallback(
-    (id) => {
+    (id, disciplineId = null) => {
       if (id === "new") {
         setForm(buildFormState(null));
+        setActiveDisciplineId(null);
         return;
       }
       const cat = categories.find((c) => getCategoryId(c) === id);
-      setForm(buildFormState(cat ?? null));
+      const disciplines = Array.isArray(cat?.disciplines) ? cat.disciplines : [];
+      const selected =
+        disciplines.find((row) => String(row._id) === String(disciplineId)) || disciplines[0] || null;
+      setActiveDisciplineId(selected ? String(selected._id) : "new-discipline");
+      setForm(buildFormState(selected || { name: "" }));
     },
     [categories]
   );
@@ -241,8 +247,7 @@ export default function EventCategoryPage({
         list = ctx.categories;
       } else {
         const res = await eventCategoriesApi.getAll();
-        const data = res?.data?.data ?? res?.data ?? [];
-        list = Array.isArray(data) ? data : [];
+        list = unwrapCategoryList(res);
       }
       setCategories(list);
       return list;
@@ -287,6 +292,7 @@ export default function EventCategoryPage({
   const closeEditor = () => {
     setEditorOpen(false);
     setActiveCategoryId(null);
+    setActiveDisciplineId(null);
     setFormErrors({});
   };
 
@@ -297,10 +303,12 @@ export default function EventCategoryPage({
   };
 
   const handleUpdate = async () => {
-    const requireFormula = !isOrgOverrideList;
+    const creatingParent = activeCategoryId === "new";
+    const creatingDiscipline = activeDisciplineId === "new-discipline";
+    const requireFormula = !isOrgOverrideList && !creatingParent;
     const nextErrors = validateCategoryForm(form, {
       requireFormula,
-      requireTypeName: !isOrgOverrideList && activeCategoryId === "new"
+      requireTypeName: true
     });
     if (hasCategoryFormErrors(nextErrors)) {
       setFormErrors(nextErrors);
@@ -317,24 +325,45 @@ export default function EventCategoryPage({
     setSaving(true);
     try {
       if (activeCategoryId === "new") {
-        const res = await eventCategoriesApi.create(payload);
+        const res = await eventCategoriesApi.create({ name: form.typeName.trim() });
         toast.success(res?.message || "Category created successfully");
-        const list = await fetchCategories();
         const created = res?.data?.data ?? res?.data;
+        const list = await fetchCategories();
         const newId = created ? getCategoryId(created) : null;
         const fromList = newId ? list.find((c) => getCategoryId(c) === newId) : list.at(-1);
         if (fromList) {
           setActiveCategoryId(getCategoryId(fromList));
-          setForm(buildFormState(fromList));
+          setActiveDisciplineId("new-discipline");
+          setForm(buildFormState({ name: "" }));
         } else {
           closeEditor();
         }
-      } else {
-        const res = await eventCategoriesApi.update(activeCategoryId, payload);
-        toast.success(res?.message || "Category updated successfully");
+      } else if (creatingDiscipline) {
+        const res = await eventCategoriesApi.addDisciplines(activeCategoryId, {
+          name: form.typeName.trim(),
+          ageGroups: payload.ageGroups
+        });
+        toast.success(res?.message || "Discipline added successfully");
         const list = await fetchCategories();
         const updated = list.find((c) => getCategoryId(c) === activeCategoryId);
-        if (updated) setForm(buildFormState(updated));
+        const last = updated?.disciplines?.at(-1);
+        if (last) {
+          setActiveDisciplineId(String(last._id));
+          setForm(buildFormState(last));
+        }
+      } else {
+        const res = await eventCategoriesApi.updateDiscipline(
+          activeCategoryId,
+          activeDisciplineId,
+          payload
+        );
+        toast.success(res?.message || "Discipline updated successfully");
+        const list = await fetchCategories();
+        const updated = list.find((c) => getCategoryId(c) === activeCategoryId);
+        const discipline = (updated?.disciplines || []).find(
+          (row) => String(row._id) === String(activeDisciplineId)
+        );
+        if (discipline) setForm(buildFormState(discipline));
       }
     } catch (err) {
       toast.error(extractError(err));
@@ -347,6 +376,20 @@ export default function EventCategoryPage({
     if (!pendingDelete) return;
     setDeleting(true);
     try {
+      if (pendingDelete._kind === "discipline") {
+        const res = await eventCategoriesApi.deleteDiscipline(
+          activeCategoryId,
+          pendingDelete._id
+        );
+        toast.success(res?.message || "Discipline deleted successfully");
+        const list = await fetchCategories();
+        const updated = list.find((c) => getCategoryId(c) === activeCategoryId);
+        if (updated) {
+          loadFormForId(activeCategoryId);
+        }
+        setPendingDelete(null);
+        return;
+      }
       const id = pendingDelete._id ?? pendingDelete.id;
       const { message } = await eventCategoriesApi.delete(id);
       toast.success(message || "Category deleted successfully");
@@ -363,17 +406,8 @@ export default function EventCategoryPage({
     }
   };
 
-  // Group all standard categories into one virtual "Standard" card
-  const standardCategories = categories.filter((c) => c.categoryStatus !== "custom");
-  const customCategories = categories.filter((c) => c.categoryStatus === "custom");
-  const displayCards = [
-    ...(standardCategories.length > 0
-      ? [{ _id: "__standard__", typeName: "Standard", categoryStatus: "standard", _items: standardCategories }]
-      : []),
-    ...customCategories
-  ];
+  const displayCards = categories;
 
-  const showCreateTab = !isOrgOverrideList && !portal && editorOpen;
   const readOnlyEditor = editorOpen && !canEditActive();
 
   return (
@@ -433,8 +467,8 @@ export default function EventCategoryPage({
           </Typography>
           <Typography sx={{ color: "rgba(255,255,255,0.86)", maxWidth: 620, lineHeight: 1.7 }}>
             {isOrgOverrideList
-              ? `Click a type to edit lap names for your ${portal.label.toLowerCase()}. Update saves that type only.`
-              : "Click a type card to open details. Use + to add rows, then Update at the bottom for that type."}
+              ? `Open a category, then edit the discipline age groups for your ${portal.label.toLowerCase()}.`
+              : "Create an event category first, then add disciplines (for example 500 Meter) with their own age groups."}
           </Typography>
         </Stack>
       </Paper>
@@ -460,14 +494,16 @@ export default function EventCategoryPage({
             </Typography>
             <Typography sx={{ mt: 0.75, color: "#8d7f7b" }}>
               {editorOpen
-                ? "Switch tabs to edit another type. Update applies to the active tab only."
-                : "Select a type below to open the editor."}
+                ? activeCategoryId === "new"
+                  ? "Step 1: save the event category name. You can add disciplines next."
+                  : "Step 2: add or edit disciplines for this category. Each discipline has its own age groups."
+                : "Select a category below, or create one first."}
             </Typography>
           </Box>
           <Stack direction={{ xs: "column", sm: "row" }} spacing={1.5}>
             {editorOpen ? (
               <Button variant="outlined" onClick={closeEditor} disabled={saving}>
-                Back to types
+                Back to categories
               </Button>
             ) : null}
             <Button
@@ -485,7 +521,7 @@ export default function EventCategoryPage({
                 onClick={() => openEditor("new")}
                 sx={{ backgroundColor: "#f6765e", "&:hover": { backgroundColor: "#ea6b54" } }}
               >
-                Add type
+                Add category
               </Button>
             ) : null}
           </Stack>
@@ -509,7 +545,7 @@ export default function EventCategoryPage({
             <Paper elevation={0} sx={{ p: 5, borderRadius: "22px", textAlign: "center", color: "#978a86" }}>
               {isOrgOverrideList
                 ? "No KRSA standard categories yet."
-                : 'No categories yet. Click "Add type" to create one.'}
+                : 'No categories yet. Click "Add category" to create one.'}
             </Paper>
           ) : !editorOpen ? (
             <Box
@@ -527,22 +563,55 @@ export default function EventCategoryPage({
             </Box>
           ) : (
             <Paper elevation={0} sx={{ ...CATEGORY_CARD_SX, maxWidth: 960, mx: "auto", width: "100%", cursor: "default" }}>
-              <CategoryTypeTabs
-                categories={categories}
-                activeId={activeCategoryId}
-                onSelect={handleTabSelect}
-                showNewTab={showCreateTab}
-              />
+              {activeCategoryId !== "new" ? (
+                <>
+                  <Box sx={{ px: 2.5, pt: 2.5, pb: 1 }}>
+                    <Typography sx={{ fontSize: 12, fontWeight: 700, color: "#8d7f7b", letterSpacing: "0.04em" }}>
+                      EVENT CATEGORY
+                    </Typography>
+                    <Typography sx={{ fontWeight: 800, color: "#2f2829", fontSize: 22 }}>
+                      {categoryDisplayName(
+                        categories.find((c) => getCategoryId(c) === activeCategoryId)
+                      )}
+                    </Typography>
+                  </Box>
+                  <CategoryTypeTabs
+                    categories={[
+                      ...(categories.find((c) => getCategoryId(c) === activeCategoryId)?.disciplines ||
+                        []),
+                      ...(!readOnlyEditor
+                        ? [{ _id: "new-discipline", name: "+ Add discipline" }]
+                        : [])
+                    ]}
+                    activeId={activeDisciplineId}
+                    onSelect={(id) => {
+                      if (id === "new-discipline") {
+                        setActiveDisciplineId("new-discipline");
+                        setForm(buildFormState({ name: "" }));
+                        setFormErrors({});
+                        return;
+                      }
+                      loadFormForId(activeCategoryId, id);
+                      setFormErrors({});
+                    }}
+                  />
+                </>
+              ) : null}
               <CategoryInlineEditor
                 form={form}
                 errors={formErrors}
                 formulas={formulas}
                 formulasLoading={formulasLoading}
                 formulaCreatePath={formulaCreatePath}
-                showFormula={!isOrgOverrideList}
+                showFormula={!isOrgOverrideList && activeCategoryId !== "new"}
                 isOrgOverride={isOrgOverrideList}
-                isCreate={activeCategoryId === "new"}
+                isCreate={activeCategoryId === "new" || activeDisciplineId === "new-discipline"}
                 readOnly={readOnlyEditor}
+                showAgeGroups={activeCategoryId !== "new"}
+                nameLabel={activeCategoryId === "new" ? "Event category name" : "Discipline name"}
+                namePlaceholder={
+                  activeCategoryId === "new" ? 'e.g. "Speed Skating"' : 'e.g. "500 Meter"'
+                }
                 onTypeNameChange={setTypeName}
                 onCategoryNameChange={setCategoryName}
                 onCategoryFormulaChange={setCategoryFormula}
@@ -569,8 +638,18 @@ export default function EventCategoryPage({
                     color="error"
                     startIcon={<Trash2 size={15} />}
                     onClick={() => {
+                      if (activeDisciplineId && activeDisciplineId !== "new-discipline") {
+                        const cat = categories.find((c) => getCategoryId(c) === activeCategoryId);
+                        const discipline = (cat?.disciplines || []).find(
+                          (row) => String(row._id) === String(activeDisciplineId)
+                        );
+                        if (discipline) {
+                          setPendingDelete({ ...discipline, _kind: "discipline" });
+                          return;
+                        }
+                      }
                       const cat = categories.find((c) => getCategoryId(c) === activeCategoryId);
-                      if (cat) setPendingDelete(cat);
+                      if (cat) setPendingDelete({ ...cat, _kind: "category" });
                     }}
                     disabled={saving}
                   >
@@ -590,10 +669,10 @@ export default function EventCategoryPage({
                     {saving
                       ? "Saving…"
                       : activeCategoryId === "new"
-                        ? "Create"
-                        : isOrgOverrideList
-                          ? "Update"
-                          : "Update"}
+                        ? "Save category"
+                        : activeDisciplineId === "new-discipline"
+                          ? "Add discipline"
+                          : "Update discipline"}
                   </Button>
                 ) : null}
               </Stack>
@@ -604,9 +683,13 @@ export default function EventCategoryPage({
 
       <ConfirmDeleteModal
         open={Boolean(pendingDelete)}
-        title="Delete Category"
-        itemLabel={pendingDelete?.typeName}
-        description="This event category and all its age groups will be permanently removed."
+        title={pendingDelete?._kind === "discipline" ? "Delete discipline" : "Delete category"}
+        itemLabel={pendingDelete?.name || pendingDelete?.typeName}
+        description={
+          pendingDelete?._kind === "discipline"
+            ? "This discipline and its age groups will be permanently removed from the category."
+            : "This event category and all of its disciplines will be permanently removed."
+        }
         confirmLabel={deleting ? "Deleting…" : "Delete"}
         onClose={() => setPendingDelete(null)}
         onConfirm={handleDelete}

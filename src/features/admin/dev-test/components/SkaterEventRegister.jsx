@@ -77,12 +77,22 @@ export const SkaterEventRegister = ({ event, token, onBack, onRegistered }) => {
   );
 
   const selectedType = useMemo(
-    () => types.find((item) => String(item._id) === String(typeId)) || null,
+    () =>
+      types.find(
+        (item) =>
+          String(item._id || item.categoryId || item.id) === String(typeId)
+      ) || null,
     [types, typeId]
   );
 
   const ageGroups = useMemo(() => {
-    const groups = Array.isArray(selectedType?.ageGroups) ? selectedType.ageGroups : [];
+    const direct = Array.isArray(selectedType?.ageGroups) ? selectedType.ageGroups : [];
+    const nested = Array.isArray(selectedType?.disciplines)
+      ? selectedType.disciplines.flatMap((disc) =>
+          Array.isArray(disc?.ageGroups) ? disc.ageGroups : []
+        )
+      : [];
+    const groups = direct.length ? direct : nested;
     return groups.filter((group) => Array.isArray(group.categories) && group.categories.length > 0);
   }, [selectedType]);
 
@@ -163,30 +173,39 @@ export const SkaterEventRegister = ({ event, token, onBack, onRegistered }) => {
 
     setBusy(true);
     try {
-      const response = await eventsApi.registerSkaterEvent(
-        {
-          eventId: String(event._id || event.id),
-          name: form?.skaterName || "",
-          ageGroup: ageLabel,
-          categoriesId: typeId,
-          categories: selectedLaps.map((name) => ({ name }))
-        },
-        token
-      );
+      const body = {
+        eventId: String(event._id || event.id),
+        name: form?.skaterName || "",
+        ageGroup: ageLabel,
+        categoriesId: selectedType?.categoryId || selectedType?.parentCategoryId || typeId,
+        discipline: selectedType?._id || typeId,
+        categories: selectedLaps
+      };
+
+      const isFree = !form?.entryFee || Number(form.entryFee) === 0;
+
+      const response = isFree
+        ? await eventsApi.freeRegisterSkaterEvent(body, token)
+        : await eventsApi.registerSkaterEvent(body, token);
+
       const result = unwrap(response);
 
+      // Free event or dev bypass — already registered
       if (
         result?.registrationComplete ||
         result?.registration ||
         result?.payment?.isDevBypass ||
-        result?.payment?.registrationComplete
+        result?.payment?.registrationComplete ||
+        result?.payment?.isFreeEvent ||
+        isFree
       ) {
         toast.success(result?.message || "Registered successfully");
         onRegistered();
         return;
       }
 
-      if (result?.payment && !result.payment.isFreeEvent) {
+      // Paid event — open Razorpay
+      if (result?.payment && result.payment.orderId) {
         await openRazorpay(result.payment);
         toast.success("Registered successfully");
         onRegistered();
@@ -258,13 +277,13 @@ export const SkaterEventRegister = ({ event, token, onBack, onRegistered }) => {
             <Typography sx={{ fontWeight: 700, mb: 1 }}>1. Skating event category</Typography>
             <Stack direction="row" spacing={1} useFlexGap sx={{ flexWrap: "wrap" }}>
               {types.map((item) => {
-                const id = String(item._id);
+                const id = String(item._id || item.categoryId || item.id);
                 const selected = id === String(typeId);
                 return (
                   <Chip
                     key={id}
                     clickable
-                    label={item.typeName || "Category"}
+                    label={item.name || item.typeName || "Category"}
                     onClick={() => handleSelectType(id)}
                     icon={selected ? <Check size={14} /> : undefined}
                     sx={{

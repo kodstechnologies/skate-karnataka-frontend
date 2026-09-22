@@ -184,7 +184,7 @@ export const buildDisciplineColumns = (skatingCategories = [], attendees = []) =
   const seenDiscipline = new Set();
 
   for (const skatingCategory of skatingCategories) {
-    const discipline = cell(skatingCategory?.typeName);
+    const discipline = cell(skatingCategory?.name || skatingCategory?.typeName);
     if (!discipline || seenDiscipline.has(discipline.toLowerCase())) continue;
     seenDiscipline.add(discipline.toLowerCase());
 

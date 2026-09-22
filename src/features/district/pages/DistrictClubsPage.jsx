@@ -23,11 +23,12 @@ import {
   Typography
 } from "@mui/material";
 
-import { Check, ChevronRight, PencilLine, Plus, Search, ShieldCheck, Trash2, Trophy, UserPlus, Users, X } from "lucide-react";
+import { CalendarDays, Check, ChevronRight, Image, PencilLine, Plus, Search, ShieldCheck, Trash2, Trophy, UserPlus, Users, X } from "lucide-react";
 import { Link as RouterLink, useNavigate } from "react-router-dom";
 import clubHero from "@/assets/Club_header.jpg";
 import { districtPortalApi } from "@/api/district-portal-api";
 import { ConfirmDeleteModal } from "@/components/ui/ConfirmDeleteModal";
+import { ApprovalGlowIconButton } from "@/components/ui/ApprovalGlowIconButton";
 import toast from "react-hot-toast";
 
 const DetailItem = ({ label, value }) => (
@@ -231,6 +232,25 @@ export const DistrictClubsPage = () => {
             </IconButton>
           </Tooltip>
         )}
+        {/* Events */}
+        <ApprovalGlowIconButton
+          onClick={() => navigate(`/clubs/${club.id}/events`)}
+          sx={{ border: "1px solid #efe2dc", color: "#f6765e", backgroundColor: "#fff8f4" }}
+          ariaLabel={`Events for ${club.name}`}
+          title="Events (pending approval)"
+        >
+          <CalendarDays size={16} />
+        </ApprovalGlowIconButton>
+        {/* Media */}
+        <ApprovalGlowIconButton
+          glowVariant="teal"
+          onClick={() => navigate(`/clubs/${club.id}/media`)}
+          sx={{ border: "1px solid #e0f2f1", color: "#00897b", backgroundColor: "#e0f7f5" }}
+          ariaLabel={`Media for ${club.name}`}
+          title="Media (pending approval)"
+        >
+          <Image size={16} />
+        </ApprovalGlowIconButton>
         {/* Add Member */}
         <Tooltip title="Add Member">
           <IconButton

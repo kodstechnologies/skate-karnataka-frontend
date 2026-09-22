@@ -4,7 +4,7 @@ const BASE = "/event/v1/event-categories";
 
 export const eventCategoriesApi = {
   /** GET /event/v1/event-categories */
-  getAll: () => api.get(BASE),
+  getAll: (params = {}) => api.get(BASE, { params: { limit: 100, ...params } }),
 
   /** GET /event/v1/event-categories/:id */
   getById: (id) => api.get(`${BASE}/${id}`),
@@ -17,6 +17,21 @@ export const eventCategoriesApi = {
 
   /** DELETE /event/v1/event-categories/:id */
   delete: (id) => api.delete(`${BASE}/${id}`),
+
+  /** POST /event/v1/event-categories/:categoryId/disciplines */
+  addDisciplines: (categoryId, body) => api.post(`${BASE}/${categoryId}/disciplines`, body),
+
+  /** GET /event/v1/event-categories/:categoryId/disciplines/:disciplineId */
+  getDiscipline: (categoryId, disciplineId) =>
+    api.get(`${BASE}/${categoryId}/disciplines/${disciplineId}`),
+
+  /** PUT /event/v1/event-categories/:categoryId/disciplines/:disciplineId */
+  updateDiscipline: (categoryId, disciplineId, body) =>
+    api.put(`${BASE}/${categoryId}/disciplines/${disciplineId}`, body),
+
+  /** DELETE /event/v1/event-categories/:categoryId/disciplines/:disciplineId */
+  deleteDiscipline: (categoryId, disciplineId) =>
+    api.delete(`${BASE}/${categoryId}/disciplines/${disciplineId}`),
 
   /** GET /event/v1/event-categories/org-context — standard list + your custom doc */
   getOrgContext: () => api.get(`${BASE}/org-context`),

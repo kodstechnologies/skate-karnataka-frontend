@@ -1,5 +1,6 @@
 import { Navigate, Route, Routes } from "react-router-dom";
 import { useAuthStore } from "@/features/auth/store/auth-store";
+import { WebLandingPage } from "@/pages/WebLandingPage";
 import { ClubDetailsPage } from "@/features/admin/clubs/pages/ClubDetailsPage";
 import { ClubEventsPage } from "@/features/admin/clubs/pages/ClubEventsPage";
 import { ClubFormPage } from "@/features/admin/clubs/pages/ClubFormPage";
@@ -51,7 +52,6 @@ import { FeedbackPage } from "@/features/admin/feedback/pages/FeedbackPage";
 import { FeedbackDetailPage } from "@/features/admin/feedback/pages/FeedbackDetailPage";
 import { ComplainsPage } from "@/features/admin/complains/pages/ComplainsPage";
 import { ComplainDetailsPage } from "@/features/admin/complains/pages/ComplainDetailsPage";
-import { DisciplineRegistryPage } from "@/features/admin/discipline-registry/pages/DisciplineRegistryPage";
 import { DisciplinesPage } from "@/features/admin/disciplines/pages/DisciplinesPage";
 import { DisciplineFormPage } from "@/features/admin/disciplines/pages/DisciplineFormPage";
 import { DisciplineDetailPage } from "@/features/admin/disciplines/pages/DisciplineDetailPage";
@@ -89,9 +89,12 @@ import ProtectedRoutes from "./ProtectedRoutes";
 import { ClubDashboard } from "@/features/club/pages/ClubDashboard";
 import { ClubEventFormPage } from "@/features/club/pages/ClubEventFormPage";
 import { ClubPortalEventsPage } from "@/features/club/pages/ClubPortalEventsPage";
+import { ClubSkatersPage } from "@/features/club/pages/ClubSkatersPage";
 import { DistrictDashboard } from "@/features/district/pages/DistrictDashboard";
 import { DistrictClubsPage } from "@/features/district/pages/DistrictClubsPage";
 import { DistrictSkatersPage } from "@/features/district/pages/DistrictSkatersPage";
+import { DistrictSkaterDetailPage } from "@/features/district/pages/DistrictSkaterDetailPage";
+import { DistrictSkaterEditPage } from "@/features/district/pages/DistrictSkaterEditPage";
 import { DistrictEventFormPage } from "@/features/district/pages/DistrictEventFormPage";
 import { DistrictPortalEventsPage } from "@/features/district/pages/DistrictPortalEventsPage";
 import { getHomePathForRole } from "@/lib/role-navigation";
@@ -99,6 +102,8 @@ import { DevTestPage } from "@/features/admin/dev-test/pages/DevTestPage";
 
 const HomeRedirect = () => {
   const role = useAuthStore((state) => state.role);
+  const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
+  if (!isAuthenticated) return <Navigate to="/web" replace />;
   return <Navigate to={getHomePathForRole(role)} replace />;
 };
 
@@ -107,7 +112,11 @@ export const AppRoutes = () => {
 
   return (
     <Routes>
+      <Route path="/web" element={<WebLandingPage />} />
       <Route path="/login" element={<LoginPage />} />
+      <Route path="/club/login" element={<LoginPage portalRole="club" />} />
+      <Route path="/district/login" element={<LoginPage portalRole="district" />} />
+      <Route path="/state/login" element={<LoginPage portalRole="state" />} />
       <Route path="/dev/test" element={<DevTestPage />} />
       <Route path="/" element={<HomeRedirect />} />
       <Route
@@ -123,6 +132,7 @@ export const AppRoutes = () => {
         <Route path="/club/events/create" element={<ClubEventFormPage />} />
         <Route path="/club/events/:eventId/attendees" element={<EventAttendeesPage />} />
         <Route path="/club/events/:eventId/edit" element={<ClubEventFormPage />} />
+        <Route path="/club/skaters" element={<ClubSkatersPage />} />
         <Route path="/club/media" element={<ClubPortalMediaPage />} />
         <Route path="/club/event-categories" element={<ClubEventCategoriesPage />} />
         <Route path="/club/formula" element={<FormulasPage portalMode="club" />} />
@@ -174,6 +184,8 @@ export const AppRoutes = () => {
         <Route path="/district/dashboard" element={<DistrictDashboard />} />
         <Route path="/district/clubs" element={<DistrictClubsPage />} />
         <Route path="/district/skaters" element={<DistrictSkatersPage />} />
+        <Route path="/district/skaters/:skaterId" element={<DistrictSkaterDetailPage />} />
+        <Route path="/district/skaters/:skaterId/edit" element={<DistrictSkaterEditPage />} />
         <Route path="/district/clubs/create" element={<ClubFormPage />} />
         <Route path="/district/clubs/:clubId/edit" element={<ClubFormPage />} />
         <Route path="/district/clubs/:clubId/members" element={<ClubMembersPage />} />
@@ -198,7 +210,7 @@ export const AppRoutes = () => {
         <Route path="/feedback/:feedbackId" element={<FeedbackDetailPage />} />
         <Route path="/complains" element={<ComplainsPage />} />
         <Route path="/complains/:complainId" element={<ComplainDetailsPage />} />
-        <Route path="/discipline" element={<DisciplineRegistryPage />} />
+        <Route path="/discipline" element={<Navigate to="/events/category" replace />} />
         <Route path="/about-us-discipline" element={<DisciplinesPage />} />
         <Route path="/disciplines" element={<DisciplinesPage />} />
         <Route path="/disciplines/create" element={<DisciplineFormPage />} />

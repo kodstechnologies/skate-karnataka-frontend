@@ -14,7 +14,7 @@ export const getEventApprovalChipProps = (event) => {
 
 export const canApproveEvents = (role) => {
   const normalized = String(role || "").toLowerCase();
-  return normalized === "admin" || normalized === "superadmin";
+  return normalized === "admin" || normalized === "superadmin" || normalized === "state" || normalized === "district";
 };
 
 export const isEventPubliclyVisible = (event) => {

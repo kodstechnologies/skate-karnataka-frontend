@@ -88,7 +88,7 @@ export const createSkaterFormValues = (skater = {}) => ({
     skater.club?.districtName ?? skater.club?.district?.name ?? "",
   clubStatus: skater.clubStatus ?? "",
   categoryId: String(skater.category?._id ?? skater.category ?? ""),
-  categoryName: skater.category?.typeName ?? skater.categoryName ?? "",
+  categoryName: skater.category?.name ?? skater.category?.typeName ?? skater.categoryName ?? "",
   photoPreview: getSkaterProfileImage(skater),
   photoFile: null,
   existingDocuments: getSkaterDocuments(skater),

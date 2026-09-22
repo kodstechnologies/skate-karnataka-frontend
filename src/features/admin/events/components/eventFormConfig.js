@@ -22,6 +22,47 @@ export const mapSkatingCategoryOptions = (list = []) =>
     }))
     .filter((item) => OBJECT_ID_REGEX.test(item.id));
 
+/** Discipline options from selected event-category documents. */
+export const mapSkatingDisciplineOptions = (categories = [], selectedCategoryIds = []) => {
+  const selected = new Set(
+    (Array.isArray(selectedCategoryIds) ? selectedCategoryIds : []).map((id) => String(id))
+  );
+  const options = [];
+  const seen = new Set();
+
+  for (const category of Array.isArray(categories) ? categories : []) {
+    const categoryId = getSkatingCategoryOptionId(category);
+    if (selected.size && !selected.has(categoryId)) continue;
+
+    for (const discipline of category?.disciplines || []) {
+      const id = getSkatingCategoryOptionId(discipline);
+      if (!OBJECT_ID_REGEX.test(id) || seen.has(id)) continue;
+      seen.add(id);
+      const categoryLabel = getSkatingCategoryOptionLabel(category);
+      const disciplineLabel = getSkatingCategoryOptionLabel(discipline) || "Unnamed";
+      options.push({
+        id,
+        label: categoryLabel ? `${disciplineLabel} (${categoryLabel})` : disciplineLabel,
+        categoryId
+      });
+    }
+  }
+
+  return options;
+};
+
+/** Keep selected discipline ids that still belong to the selected categories. */
+export const filterDisciplineIdsForCategories = (
+  disciplineIds = [],
+  categories = [],
+  selectedCategoryIds = []
+) => {
+  const allowed = new Set(
+    mapSkatingDisciplineOptions(categories, selectedCategoryIds).map((row) => row.id)
+  );
+  return normalizeSkatingEventCategoryIds(disciplineIds).filter((id) => allowed.has(id));
+};
+
 /** Keep category ids as a string array — never spread a string (that splits into chars). */
 export const normalizeSkatingEventCategoryIds = (value) => {
   if (value == null || value === "") return [];
@@ -62,6 +103,7 @@ export const initialEventFormValues = {
   status: "coming_soon",
   entryFee: "",
   skatingEventCategories: [],
+  skatingEventDisciplines: [],
   categoryFormat: "standard",
   colorOne: "#f117d5",
   colorTwo: "#1838e3",
@@ -170,6 +212,9 @@ export const validateEventForm = (formData) => {
   if (!Array.isArray(formData.skatingEventCategories) || formData.skatingEventCategories.length < 1) {
     errors.skatingEventCategories = "Select at least one category";
   }
+  if (!Array.isArray(formData.skatingEventDisciplines) || formData.skatingEventDisciplines.length < 1) {
+    errors.skatingEventDisciplines = "Select at least one discipline";
+  }
 
   const regStartMs = startOfDayMs(formData.registerStartDate);
   const regEndMs = startOfDayMs(formData.registerEndDate);
@@ -218,6 +263,7 @@ export const createEventFormValues = (event = {}) => ({
   status: event.status ?? "coming_soon",
   entryFee: event.entryFee ?? "",
   skatingEventCategories: normalizeSkatingEventCategoryIds(event.skatingEventCategories),
+  skatingEventDisciplines: normalizeSkatingEventCategoryIds(event.skatingEventDisciplines),
   categoryFormat: event.categoryFormat ?? event.categorySource ?? "standard",
   colorOne: event.colorOne ?? "#ffffff",
   colorTwo: event.colorTwo ?? "#ffffff",

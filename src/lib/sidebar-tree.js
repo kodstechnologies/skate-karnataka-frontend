@@ -9,7 +9,7 @@ const parentIdKey = (parentId) => {
  * Build nested nav items from a flat API sidebar list (sorted by order).
  * @param {import('@/types/sidebar.types').SidebarItem[]} items
  */
-const HIDDEN_ROUTES = new Set(["/dev/test"]);
+const HIDDEN_ROUTES = new Set(["/dev/test", "/discipline"]);
 
 export const buildNavigationFromSidebarItems = (items = []) => {
   const sorted = [...items]

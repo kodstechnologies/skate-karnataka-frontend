@@ -21,8 +21,8 @@ export const getSkaterDocuments = (skater) => {
 
 export const getSkaterCategoryName = (skater) => {
   if (!skater) return "-";
-  if (skater.category && typeof skater.category === "object" && skater.category.typeName) {
-    return skater.category.typeName;
+  if (skater.category && typeof skater.category === "object") {
+    return skater.category.name || skater.category.typeName || "-";
   }
   if (skater.categoryName?.trim()) {
     return skater.categoryName.trim();

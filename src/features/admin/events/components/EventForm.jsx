@@ -23,7 +23,9 @@ import { useState } from "react";
 import { HexColorPicker } from "react-colorful";
 import {
   eventStatusOptions,
+  filterDisciplineIdsForCategories,
   mapSkatingCategoryOptions,
+  mapSkatingDisciplineOptions,
   normalizeSkatingEventCategoryIds
 } from "@/features/admin/events/components/eventFormConfig";
 
@@ -157,6 +159,13 @@ export const EventForm = ({
 }) => {
   const categoryFormat = formData.categoryFormat ?? "standard";
   const selectedCategoryIds = normalizeSkatingEventCategoryIds(formData.skatingEventCategories);
+  const selectedDisciplineIds = normalizeSkatingEventCategoryIds(formData.skatingEventDisciplines);
+  const categoriesForOptions = [
+    ...(Array.isArray(eventCategories) ? eventCategories : []),
+    ...(Array.isArray(categorySeedFromEvent)
+      ? categorySeedFromEvent.filter((item) => item && typeof item === "object")
+      : [])
+  ];
   const categoryOptions = mapSkatingCategoryOptions(eventCategories);
   const seedOptions = mapSkatingCategoryOptions(
     Array.isArray(categorySeedFromEvent)
@@ -169,6 +178,10 @@ export const EventForm = ({
   ];
   const selectedCategoryOptions = allCategoryOptions.filter((opt) =>
     selectedCategoryIds.includes(opt.id)
+  );
+  const disciplineOptions = mapSkatingDisciplineOptions(categoriesForOptions, selectedCategoryIds);
+  const selectedDisciplineOptions = disciplineOptions.filter((opt) =>
+    selectedDisciplineIds.includes(opt.id)
   );
 
   return (
@@ -244,8 +257,8 @@ export const EventForm = ({
         title="Skating Event Categories"
         description={
           showCategorySourcePicker
-            ? "Choose standard (KRSA) or your custom list. Custom uses your saved names when you have them; otherwise KRSA standard categories apply."
-            : "Select one or more category types allowed for this event."
+            ? "Choose one or more category types, then pick disciplines for this event. Custom uses your saved names when you have them; otherwise KRSA standard categories apply."
+            : "Select one or more category types, then choose disciplines under those categories."
         }
       >
         {showCategorySourcePicker ? (
@@ -273,47 +286,105 @@ export const EventForm = ({
             ) : null}
           </FormControl>
         ) : null}
-        <Autocomplete
-          multiple
-          disableCloseOnSelect
-          options={allCategoryOptions}
-          value={selectedCategoryOptions}
-          onChange={(_, newValue) => {
-            onFieldChange("skatingEventCategories")({
-              target: { value: newValue.map((item) => item.id) }
-            });
-          }}
-          getOptionLabel={(option) => option.label || ""}
-          isOptionEqualToValue={(a, b) => a.id === b.id}
-          disabled={disabled}
-          fullWidth
-          sx={inputStyles}
-          renderTags={(value, getTagProps) =>
-            value.map((option, index) => (
-              <Chip
-                {...getTagProps({ index })}
-                key={option.id}
-                label={option.label}
-                size="small"
-                sx={{ bgcolor: "#fff1eb", color: "#c45a42", fontWeight: 600 }}
+        <Stack spacing={2}>
+          <Autocomplete
+            multiple
+            disableCloseOnSelect
+            options={allCategoryOptions}
+            value={selectedCategoryOptions}
+            onChange={(_, newValue) => {
+              const nextCategoryIds = newValue.map((item) => item.id);
+              onFieldChange("skatingEventCategories")({
+                target: { value: nextCategoryIds }
+              });
+              onFieldChange("skatingEventDisciplines")({
+                target: {
+                  value: filterDisciplineIdsForCategories(
+                    formData.skatingEventDisciplines,
+                    categoriesForOptions,
+                    nextCategoryIds
+                  )
+                }
+              });
+            }}
+            getOptionLabel={(option) => option.label || ""}
+            isOptionEqualToValue={(a, b) => a?.id === b?.id}
+            disabled={disabled}
+            fullWidth
+            sx={inputStyles}
+            renderTags={(value, getTagProps) =>
+              value.map((option, index) => (
+                <Chip
+                  {...getTagProps({ index })}
+                  key={option.id}
+                  label={option.label}
+                  size="small"
+                  sx={{ bgcolor: "#fff4e6", color: "#e65100", fontWeight: 600 }}
+                />
+              ))
+            }
+            renderInput={(params) => (
+              <TextField
+                {...params}
+                label="Event Categories"
+                placeholder="Select one or more categories"
+                error={Boolean(errors.skatingEventCategories)}
+                helperText={
+                  errors.skatingEventCategories || "Choose one or more skating categories for this event"
+                }
               />
-            ))
-          }
-          renderInput={(params) => (
-            <TextField
-              {...params}
-              label="Category types"
-              placeholder={
-                selectedCategoryOptions.length ? "" : "Select one or more categories"
-              }
-              error={Boolean(errors.skatingEventCategories)}
-              helperText={
-                errors.skatingEventCategories ||
-                "Choose all skating categories that apply to this event"
-              }
-            />
-          )}
-        />
+            )}
+          />
+          <Autocomplete
+            multiple
+            disableCloseOnSelect
+            options={disciplineOptions}
+            value={selectedDisciplineOptions}
+            onChange={(_, newValue) => {
+              onFieldChange("skatingEventDisciplines")({
+                target: { value: newValue.map((item) => item.id) }
+              });
+            }}
+            getOptionLabel={(option) => option.label || ""}
+            isOptionEqualToValue={(a, b) => a.id === b.id}
+            disabled={disabled || selectedCategoryIds.length === 0}
+            fullWidth
+            sx={inputStyles}
+            renderTags={(value, getTagProps) =>
+              value.map((option, index) => (
+                <Chip
+                  {...getTagProps({ index })}
+                  key={option.id}
+                  label={option.label}
+                  size="small"
+                  sx={{ bgcolor: "#eef6ff", color: "#2f5f9e", fontWeight: 600 }}
+                />
+              ))
+            }
+            renderInput={(params) => (
+              <TextField
+                {...params}
+                label="Disciplines"
+                placeholder={
+                  selectedCategoryIds.length === 0
+                    ? "Select a category first"
+                    : selectedDisciplineOptions.length
+                      ? ""
+                      : "Select one or more disciplines"
+                }
+                error={Boolean(errors.skatingEventDisciplines)}
+                helperText={
+                  errors.skatingEventDisciplines ||
+                  (selectedCategoryIds.length === 0
+                    ? "Pick a category to load disciplines"
+                    : disciplineOptions.length === 0
+                      ? "No disciplines found for the selected category"
+                      : "Choose one or more disciplines for this event")
+                }
+              />
+            )}
+          />
+        </Stack>
       </SectionCard>
 
       {/* ── Schedule ── */}

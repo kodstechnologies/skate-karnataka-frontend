@@ -2,6 +2,13 @@
 export const collectCategoryNameLabels = (doc) => {
   if (!doc || typeof doc !== "object") return [];
 
+  const fromDisciplines = (doc.disciplines || []).flatMap((discipline) =>
+    collectCategoryNameLabels(discipline)
+  );
+  if (fromDisciplines.length) {
+    return [...new Set(fromDisciplines)];
+  }
+
   const custom = Array.isArray(doc.customCategoryNames) ? doc.customCategoryNames : [];
   if (custom.length) {
     return custom
@@ -15,6 +22,15 @@ export const collectCategoryNameLabels = (doc) => {
   );
 
   return [...new Set(fromAgeGroups)];
+};
+
+export const categoryDisplayName = (cat) => cat?.name || cat?.typeName || "Unnamed";
+
+export const unwrapCategoryList = (response) => {
+  const inner = response?.data?.data ?? response?.data ?? [];
+  if (Array.isArray(inner)) return inner;
+  if (Array.isArray(inner?.data)) return inner.data;
+  return [];
 };
 
 export const unwrapOrgCategoryContext = (response) => {

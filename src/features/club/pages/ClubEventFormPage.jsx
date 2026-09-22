@@ -97,12 +97,16 @@ export const ClubEventFormPage = () => {
 
   const handleCategoryFormatChange = (format) => {
     setCategoryFormat(format);
-    setFormData((current) => ({ ...current, skatingEventCategories: [] }));
+    setFormData((current) => ({
+      ...current,
+      skatingEventCategories: [],
+      skatingEventDisciplines: []
+    }));
   };
 
   const handleFieldChange = (field) => (event) => {
     const value =
-      field === "skatingEventCategories"
+      field === "skatingEventCategories" || field === "skatingEventDisciplines"
         ? normalizeSkatingEventCategoryIds(event.target.value)
         : event.target.value;
 
