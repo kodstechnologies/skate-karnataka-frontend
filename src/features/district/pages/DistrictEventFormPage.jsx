@@ -122,14 +122,39 @@ export const DistrictEventFormPage = () => {
 
     setSaving(true);
     try {
+      const payload = { ...formData };
+
+      // Transform flat categoryIds + disciplineIds into nested format expected by backend:
+      // [{ categoryId: "...", disciplines: [{ id: "..." }] }]
+      const categoryIds = Array.isArray(formData.skatingEventCategories)
+        ? formData.skatingEventCategories : [];
+      const disciplineIds = new Set(
+        Array.isArray(formData.skatingEventDisciplines) ? formData.skatingEventDisciplines : []
+      );
+      const discToCatId = {};
+      for (const cat of eventCategories) {
+        const catId = String(cat._id || cat.id || "");
+        for (const disc of cat.disciplines || []) {
+          const discId = String(disc._id || disc.id || "");
+          if (discId) discToCatId[discId] = catId;
+        }
+      }
+      payload.skatingEventCategories = categoryIds.map((catId) => ({
+        categoryId: catId,
+        disciplines: [...disciplineIds]
+          .filter((discId) => discToCatId[discId] === catId)
+          .map((discId) => ({ id: discId })),
+      }));
+      delete payload.skatingEventDisciplines;
+
       if (isEditing && existingEvent) {
         const response = await eventsApi.updateDistrictEvent(
           existingEvent._id || existingEvent.id,
-          { ...formData }
+          payload
         );
         toast.success(response?.message || response?.data?.message || "Event updated successfully");
       } else {
-        const response = await eventsApi.createDistrictEvent({ ...formData });
+        const response = await eventsApi.createDistrictEvent(payload);
         toast.success(
           response?.message || "District event submitted — pending super admin approval"
         );

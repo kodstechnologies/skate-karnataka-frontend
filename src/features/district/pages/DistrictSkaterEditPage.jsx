@@ -7,7 +7,6 @@ import { ChevronRight, Save } from "lucide-react";
 import { Link as RouterLink, useNavigate, useParams } from "react-router-dom";
 import skatersHero from "@/assets/Skating_header.jpg";
 import { districtPortalApi } from "@/api/district-portal-api";
-import api from "@/lib/axios";
 import toast from "react-hot-toast";
 
 const GENDER_OPTIONS = [
@@ -68,7 +67,7 @@ export const DistrictSkaterEditPage = () => {
     if (!form.fullName.trim()) { toast.error("Full name is required"); return; }
     setSaving(true);
     try {
-      await api.patch(`/admin/v1/skater/${skaterId}`, form);
+      await districtPortalApi.editSkater(skaterId, form);
       toast.success("Skater updated");
       navigate(`/district/skaters/${skaterId}`);
     } catch (err) {

@@ -129,6 +129,29 @@ export const ClubEventFormPage = () => {
     try {
       const payload = { ...formData };
 
+      // Transform flat categoryIds + disciplineIds into nested format expected by backend:
+      // [{ categoryId: "...", disciplines: [{ id: "..." }] }]
+      const categoryIds = Array.isArray(formData.skatingEventCategories)
+        ? formData.skatingEventCategories : [];
+      const disciplineIds = new Set(
+        Array.isArray(formData.skatingEventDisciplines) ? formData.skatingEventDisciplines : []
+      );
+      const discToCatId = {};
+      for (const cat of eventCategories) {
+        const catId = String(cat._id || cat.id || "");
+        for (const disc of cat.disciplines || []) {
+          const discId = String(disc._id || disc.id || "");
+          if (discId) discToCatId[discId] = catId;
+        }
+      }
+      payload.skatingEventCategories = categoryIds.map((catId) => ({
+        categoryId: catId,
+        disciplines: [...disciplineIds]
+          .filter((discId) => discToCatId[discId] === catId)
+          .map((discId) => ({ id: discId })),
+      }));
+      delete payload.skatingEventDisciplines;
+
       if (isEditing && existingEvent) {
         const response = await eventsApi.updateClubEvent(
           existingEvent._id || existingEvent.id,

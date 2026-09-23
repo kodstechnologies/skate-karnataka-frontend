@@ -6,8 +6,8 @@ import { MemberAddMenuButton } from "@/components/members/MemberAddMenuButton";
 import { clubPortalApi } from "@/api/club-portal-api";
 import { useAuthStore } from "@/features/auth/store/auth-store";
 
-const StatCard = ({ label, value, icon: Icon, iconClass }) => (
-  <div className="rounded-[24px] border border-white/80 bg-white p-5 shadow-[0_12px_32px_rgba(145,110,98,0.08)]">
+const StatCard = ({ label, value, icon: Icon, iconClass, to }) => {
+  const content = (
     <div className="flex items-start justify-between gap-3">
       <div>
         <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#c4a498]">{label}</p>
@@ -17,8 +17,22 @@ const StatCard = ({ label, value, icon: Icon, iconClass }) => (
         <Icon className="h-5 w-5" />
       </span>
     </div>
-  </div>
-);
+  );
+
+  if (to) {
+    return (
+      <Link to={to} className="block rounded-[24px] border border-white/80 bg-white p-5 shadow-[0_12px_32px_rgba(145,110,98,0.08)] transition-shadow hover:shadow-[0_16px_40px_rgba(145,110,98,0.14)]">
+        {content}
+      </Link>
+    );
+  }
+
+  return (
+    <div className="rounded-[24px] border border-white/80 bg-white p-5 shadow-[0_12px_32px_rgba(145,110,98,0.08)]">
+      {content}
+    </div>
+  );
+};
 
 export const ClubDashboard = () => {
   const user = useAuthStore((state) => state.user);
@@ -96,6 +110,7 @@ export const ClubDashboard = () => {
           value={data?.totalSkaters ?? 0}
           icon={Users}
           iconClass="bg-[#fff1eb] text-[#f6765e]"
+          to="/club/skaters"
         />
         <StatCard
           label="Championships"
