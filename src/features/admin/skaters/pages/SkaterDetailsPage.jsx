@@ -368,7 +368,7 @@ export const SkaterDetailsPage = () => {
               onClick={() => navigate(`/skaters/${skater._id}/edit`)}
               sx={{ bgcolor: "#f6765e", "&:hover": { bgcolor: "#e85d3f" } }}
             >
-              Edit skater
+              Edit skater 
             </Button>
             <Button
               variant={skater.isBlocked ? "contained" : "outlined"}

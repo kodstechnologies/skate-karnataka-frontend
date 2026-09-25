@@ -388,7 +388,7 @@ export const LoginPage = ({ portalRole: portalRoleProp = "" }) => {
         }}
       >
         {/* Back link */}
-        <Button
+        {/* <Button
           onClick={() => navigate("/web")}
           startIcon={<ArrowLeft size={15} />}
           sx={{
@@ -403,7 +403,7 @@ export const LoginPage = ({ portalRole: portalRoleProp = "" }) => {
           }}
         >
           Back
-        </Button>
+        </Button> */}
 
         {/* Mobile logo */}
         {isMobile && (

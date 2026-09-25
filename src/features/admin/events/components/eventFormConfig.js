@@ -250,22 +250,54 @@ export const validateEventForm = (formData) => {
   return errors;
 };
 
-export const createEventFormValues = (event = {}) => ({
-  header: event.header ?? "",
-  about: event.about ?? "",
-  address: event.address ?? "",
-  registerStartDate: formatDateForInput(event.registerStartDate),
-  registerEndDate: formatDateForInput(event.registerEndDate),
-  eventStartDate: formatDateForInput(event.eventStartDate),
-  eventEndDate: formatDateForInput(event.eventEndDate),
-  eventStartTime: formatTimeForInput(event.eventStartTime),
-  eventEndTime: formatTimeForInput(event.eventEndTime),
-  status: event.status ?? "coming_soon",
-  entryFee: event.entryFee ?? "",
-  skatingEventCategories: normalizeSkatingEventCategoryIds(event.skatingEventCategories),
-  skatingEventDisciplines: normalizeSkatingEventCategoryIds(event.skatingEventDisciplines),
-  categoryFormat: event.categoryFormat ?? event.categorySource ?? "standard",
-  colorOne: event.colorOne ?? "#ffffff",
-  colorTwo: event.colorTwo ?? "#ffffff",
-  textColor: event.textColor ?? "#000000"
-});
+export const createEventFormValues = (event = {}) => {
+  // API returns skatingEventCategories as either:
+  //   - [{categoryId, name, disciplines:[{id,name}]}]  (new nested format from DB)
+  //   - ["id1","id2"]  (flat string array - legacy)
+  const rawCats = Array.isArray(event.skatingEventCategories) ? event.skatingEventCategories : [];
+
+  const categoryIds = [];
+  const disciplineIds = [];
+
+  for (const item of rawCats) {
+    if (!item) continue;
+    if (typeof item === "string") {
+      // flat string id
+      if (OBJECT_ID_REGEX.test(item.trim())) categoryIds.push(item.trim());
+    } else if (typeof item === "object") {
+      // nested object: {categoryId, disciplines:[{id}]}
+      const catId = String(item.categoryId || item._id || item.id || "").trim();
+      if (OBJECT_ID_REGEX.test(catId)) categoryIds.push(catId);
+      for (const disc of Array.isArray(item.disciplines) ? item.disciplines : []) {
+        const discId = String(disc.id || disc._id || "").trim();
+        if (OBJECT_ID_REGEX.test(discId)) disciplineIds.push(discId);
+      }
+    }
+  }
+
+  // Also merge any top-level skatingEventDisciplines (flat array) if present
+  const rawDiscs = normalizeSkatingEventCategoryIds(event.skatingEventDisciplines);
+  for (const id of rawDiscs) {
+    if (!disciplineIds.includes(id)) disciplineIds.push(id);
+  }
+
+  return {
+    header: event.header ?? "",
+    about: event.about ?? "",
+    address: event.address ?? "",
+    registerStartDate: formatDateForInput(event.registerStartDate),
+    registerEndDate: formatDateForInput(event.registerEndDate),
+    eventStartDate: formatDateForInput(event.eventStartDate),
+    eventEndDate: formatDateForInput(event.eventEndDate),
+    eventStartTime: formatTimeForInput(event.eventStartTime),
+    eventEndTime: formatTimeForInput(event.eventEndTime),
+    status: event.status ?? "coming_soon",
+    entryFee: event.entryFee ?? "",
+    skatingEventCategories: categoryIds,
+    skatingEventDisciplines: disciplineIds,
+    categoryFormat: event.categoryFormat ?? event.categorySource ?? "standard",
+    colorOne: event.colorOne ?? "#ffffff",
+    colorTwo: event.colorTwo ?? "#ffffff",
+    textColor: event.textColor ?? "#000000"
+  };
+};

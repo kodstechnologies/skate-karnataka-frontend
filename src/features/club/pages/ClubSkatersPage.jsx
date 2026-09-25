@@ -12,6 +12,7 @@ import { ChevronRight, Search, Users, X, Phone, Mail, User, MapPin, Award, Dropl
 import { Link as RouterLink } from "react-router-dom";
 import skatersHero from "@/assets/Skating_header.jpg";
 import { clubPortalApi } from "@/api/club-portal-api";
+import { eventCategoriesApi } from "@/api/event-categories-api";
 import toast from "react-hot-toast";
 import EditOutlinedIcon from "@mui/icons-material/EditOutlined";
 
@@ -25,12 +26,18 @@ const formatDate = (d) => {
   return new Date(d).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" });
 };
 
+const resolveDisplayValue = (value) => {
+  if (value === null || value === undefined || value === "") return "—";
+  if (typeof value === "object") return value.name || value.typeName || value.title || "—";
+  return String(value);
+};
+
 const InfoRow = ({ icon, label, value }) => (
   <Stack direction="row" spacing={1.5} alignItems="flex-start" sx={{ py: 1.25, borderBottom: "1px solid #f5ede9" }}>
     <Box sx={{ color: "#f6765e", mt: "2px", flexShrink: 0 }}>{icon}</Box>
     <Box sx={{ flex: 1, minWidth: 0 }}>
       <Typography sx={{ fontSize: "0.68rem", fontWeight: 700, color: "#b09890", textTransform: "uppercase", letterSpacing: "0.07em" }}>{label}</Typography>
-      <Typography sx={{ fontSize: "0.88rem", color: "#2f2829", fontWeight: 500, mt: 0.2, wordBreak: "break-word" }}>{value || "—"}</Typography>
+      <Typography sx={{ fontSize: "0.88rem", color: "#2f2829", fontWeight: 500, mt: 0.2, wordBreak: "break-word" }}>{resolveDisplayValue(value)}</Typography>
     </Box>
   </Stack>
 );
@@ -48,17 +55,12 @@ const SectionLabel = ({ children }) => (
   </Typography>
 );
 
-const EDIT_FIELDS = [
-  { key: "fullName", label: "Full Name" },
-  { key: "phone", label: "Phone" },
-  { key: "address", label: "Address", multiline: true },
-];
-
 const GENDER_OPTIONS = [
   { value: "male", label: "Male" },
   { value: "female", label: "Female" },
-  { value: "other", label: "Other" },
 ];
+
+const BLOOD_GROUP_OPTIONS = ["A+", "A-", "B+", "B-", "O+", "O-", "AB+", "AB-"].map((v) => ({ value: v, label: v }));
 
 export const ClubSkatersPage = () => {
   const [skaters, setSkaters] = useState([]);
@@ -81,6 +83,8 @@ export const ClubSkatersPage = () => {
   const [editForm, setEditForm] = useState({});
   const [editLoading, setEditLoading] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [districts, setDistricts] = useState([]);
+  const [eventCategories, setEventCategories] = useState([]);
 
   const [blockingId, setBlockingId] = useState(null);
 
@@ -106,13 +110,36 @@ export const ClubSkatersPage = () => {
     setEditDrawerOpen(true);
     setEditLoading(true);
     try {
-      const res = await clubPortalApi.getSkater(skater.id);
+      const [res, distRes, catRes] = await Promise.all([
+        clubPortalApi.getSkater(skater.id),
+        districts.length === 0 ? clubPortalApi.listDistricts({ limit: 100 }) : Promise.resolve(null),
+        eventCategories.length === 0 ? eventCategoriesApi.getAll() : Promise.resolve(null),
+      ]);
       const data = res?.data?.data ?? res?.data ?? res;
+      if (distRes) {
+        const d = distRes?.data?.data ?? distRes?.data ?? distRes;
+        setDistricts(Array.isArray(d?.data) ? d.data : Array.isArray(d) ? d : []);
+      }
+      if (catRes) {
+        const c = catRes?.data?.data ?? catRes?.data ?? catRes;
+        setEventCategories(Array.isArray(c?.data) ? c.data : Array.isArray(c) ? c : []);
+      }
       setEditForm({
         fullName: data.fullName || "",
         phone: data.phone || "",
         gender: data.gender || "",
         address: data.address || "",
+        parent: data.parent || "",
+        bloodGroup: data.bloodGroup || "",
+        school: data.school || "",
+        grade: data.grade || "",
+        aadharNumber: data.aadharNumber || "",
+        signature: data.signature || "",
+        dob: data.dob ? new Date(data.dob).toISOString().split("T")[0] : "",
+        rsfiId: data.rsfiId || "",
+        district: data.district?._id || data.district || "",
+        eventCategory: data.eventCategory?._id || String(data.eventCategory || ""),
+        discipline: data.discipline?._id || String(data.discipline || ""),
       });
     } catch {
       toast.error("Failed to load skater details");
@@ -233,9 +260,7 @@ export const ClubSkatersPage = () => {
           <Table sx={{ minWidth: 800 }}>
             <TableHead>
               <TableRow sx={{ backgroundColor: "#fdf7f3" }}>
-                {["Photo", "KRSA ID", "Name", "Phone", "Gender"
-                // , "District"
-                , "Status", "Actions"].map((col) => (
+                {["Photo", "KRSA ID", "Name", "Phone", "Email", "Gender", "Status", "Actions"].map((col) => (
                   <TableCell key={col} sx={{ borderBottom: "1px solid #f0e1da", color: "#7e716d", fontWeight: 700, fontSize: 13, whiteSpace: "nowrap" }}>{col}</TableCell>
                 ))}
               </TableRow>
@@ -244,7 +269,7 @@ export const ClubSkatersPage = () => {
               {isLoading ? (
                 [0,1,2,3].map((i) => (
                   <TableRow key={i}>
-                    {[0,1,2,3,4,5,6,7].map((j) => (
+                    {[0,1,2,3,4,5,6,7,8].map((j) => (
                       <TableCell key={j}><Skeleton variant="rounded" height={28} sx={{ borderRadius: "8px" }} /></TableCell>
                     ))}
                   </TableRow>
@@ -258,6 +283,7 @@ export const ClubSkatersPage = () => {
                       <TableCell sx={{ fontWeight: 700, color: "#f6765e", fontSize: 13 }}>{s.krsaId || "—"}</TableCell>
                       <TableCell sx={{ fontWeight: 600, fontSize: 14 }}>{s.name}</TableCell>
                       <TableCell sx={{ fontSize: 13, color: "#5a4f4c" }}>{s.phone || "—"}</TableCell>
+                      <TableCell sx={{ fontSize: 13, color: "#5a4f4c" }}>{s.email || "—"}</TableCell>
                       <TableCell>
                         <Chip label={formatGender(s.gender)} size="small" sx={{ backgroundColor: "#f4ede9", color: "#7a5c52", fontWeight: 600, fontSize: 11 }} />
                       </TableCell>
@@ -306,7 +332,7 @@ export const ClubSkatersPage = () => {
                 })
               ) : (
                 <TableRow>
-                  <TableCell colSpan={8} sx={{ py: 6, textAlign: "center", color: "#978a86" }}>No skaters found.</TableCell>
+                  <TableCell colSpan={9} sx={{ py: 6, textAlign: "center", color: "#978a86" }}>No skaters found.</TableCell>
                 </TableRow>
               )}
             </TableBody>
@@ -370,7 +396,7 @@ export const ClubSkatersPage = () => {
 
       {/* View Drawer */}
       <Drawer anchor="right" open={drawerOpen} onClose={() => setDrawerOpen(false)}
-        PaperProps={{ sx: { width: { xs: "100%", sm: 440 }, borderRadius: { sm: "24px 0 0 24px" }, p: 0, overflow: "hidden", display: "flex", flexDirection: "column" } }}
+        slotProps={{ paper: { sx: { width: { xs: "100%", sm: 440 }, borderRadius: { sm: "24px 0 0 24px" }, p: 0, overflow: "hidden", display: "flex", flexDirection: "column" } } }}
       >
         {/* Hero header */}
         <Box sx={{ position: "relative", background: "linear-gradient(145deg, #1e1618 0%, #3a2a26 60%, #4e3530 100%)", pb: 3, flexShrink: 0 }}>
@@ -452,12 +478,27 @@ export const ClubSkatersPage = () => {
                 <InfoRow icon={<User size={14} />} label="Parent / Guardian" value={drawerSkater.parent} />
                 <InfoRow icon={<Award size={14} />} label="District" value={drawerSkater.district?.name || drawerSkater.districtName} />
               </Box>
-              {(drawerSkater.school || drawerSkater.grade || drawerSkater.discipline) && (
+              {(drawerSkater.school || drawerSkater.grade || drawerSkater.aadharNumber || drawerSkater.discipline || drawerSkater.eventCategory) && (
                 <Box sx={{ p: 2, borderRadius: "16px", backgroundColor: "white", border: "1px solid #f0e6e1" }}>
                   <SectionLabel>Academic & Discipline</SectionLabel>
+                  {drawerSkater.aadharNumber && <InfoRow icon={<Award size={14} />} label="Aadhaar Number" value={drawerSkater.aadharNumber} />}
                   {drawerSkater.school && <InfoRow icon={<GraduationCap size={14} />} label="School" value={drawerSkater.school} />}
                   {drawerSkater.grade && <InfoRow icon={<BookOpen size={14} />} label="Grade" value={drawerSkater.grade} />}
-                  {drawerSkater.discipline && <InfoRow icon={<Award size={14} />} label="Discipline" value={drawerSkater.discipline} />}
+                  {drawerSkater.discipline && (
+                    <InfoRow
+                      icon={<Award size={14} />}
+                      label="Discipline"
+                      value={drawerSkater.discipline?.name || drawerSkater.discipline}
+                    />
+                  )}
+                  {drawerSkater.eventCategory && (
+                    <InfoRow
+                      icon={<Award size={14} />}
+                      label="Event Category"
+                      value={drawerSkater.eventCategory?.name || "—"}
+                    />
+                  )}
+                  {drawerSkater.signature && <InfoRow icon={<Award size={14} />} label="Signature" value={drawerSkater.signature} />}
                 </Box>
               )}
               <Box sx={{ p: 2, borderRadius: "16px", backgroundColor: "white", border: "1px solid #f0e6e1" }}>
@@ -479,7 +520,7 @@ export const ClubSkatersPage = () => {
               onClick={() => { setDrawerOpen(false); handleEditSkater({ id: drawerSkater.id || drawerSkater._id, name: drawerSkater.name || drawerSkater.fullName }); }}
               sx={{ borderRadius: "12px", fontWeight: 700, backgroundColor: "#f6765e", "&:hover": { backgroundColor: "#e5604a" } }}
             >
-              Edit Skater
+              Edit Skater 
             </Button>
           </Box>
         )}
@@ -487,7 +528,7 @@ export const ClubSkatersPage = () => {
 
       {/* Edit Drawer */}
       <Drawer anchor="right" open={editDrawerOpen} onClose={() => setEditDrawerOpen(false)}
-        PaperProps={{ sx: { width: { xs: "100%", sm: 420 }, borderRadius: { sm: "24px 0 0 24px" }, p: 0, overflow: "hidden", display: "flex", flexDirection: "column" } }}
+        slotProps={{ paper: { sx: { width: { xs: "100%", sm: 420 }, borderRadius: { sm: "24px 0 0 24px" }, p: 0, overflow: "hidden", display: "flex", flexDirection: "column" } } }}
       >
         <Box sx={{ background: "linear-gradient(135deg, #2f2829 0%, #4a3c38 100%)", p: 3, position: "relative", flexShrink: 0 }}>
           <IconButton onClick={() => setEditDrawerOpen(false)} size="small" sx={{ position: "absolute", top: 12, right: 12, color: "rgba(255,255,255,0.7)" }}>
@@ -506,35 +547,76 @@ export const ClubSkatersPage = () => {
 
         <Box sx={{ p: 3, overflowY: "auto", flex: 1 }}>
           {editLoading ? (
-            <Stack spacing={2}>{[1,2,3,4].map((i) => <Skeleton key={i} variant="rounded" height={56} sx={{ borderRadius: "12px" }} />)}</Stack>
+            <Stack spacing={2}>{[1,2,3,4,5,6,7,8].map((i) => <Skeleton key={i} variant="rounded" height={56} sx={{ borderRadius: "12px" }} />)}</Stack>
           ) : (
             <Stack spacing={2}>
-              {EDIT_FIELDS.map(({ key, label, multiline }) => (
-                <TextField
-                  key={key}
-                  label={label}
-                  value={editForm[key] || ""}
-                  onChange={(e) => setEditForm((f) => ({ ...f, [key]: e.target.value }))}
-                  fullWidth
-                  multiline={multiline}
-                  rows={multiline ? 3 : 1}
-                  size="small"
-                  sx={{ "& .MuiOutlinedInput-root": { borderRadius: "12px" } }}
-                />
-              ))}
+              {/* Basic */}
+              <TextField label="Full Name" value={editForm.fullName || ""} onChange={(e) => setEditForm((f) => ({ ...f, fullName: e.target.value }))} fullWidth size="small" sx={{ "& .MuiOutlinedInput-root": { borderRadius: "12px" } }} />
+              <TextField label="Phone" value={editForm.phone || ""} disabled fullWidth size="small" sx={{ "& .MuiOutlinedInput-root": { borderRadius: "12px" } }} />
+              <TextField select label="Gender" value={editForm.gender || ""} onChange={(e) => setEditForm((f) => ({ ...f, gender: e.target.value }))} fullWidth size="small" sx={{ "& .MuiOutlinedInput-root": { borderRadius: "12px" } }}>
+                {GENDER_OPTIONS.map((opt) => <MenuItem key={opt.value} value={opt.value}>{opt.label}</MenuItem>)}
+              </TextField>
+              <TextField label="Date of Birth" type="date" value={editForm.dob || ""} onChange={(e) => setEditForm((f) => ({ ...f, dob: e.target.value }))} fullWidth size="small" slotProps={{ inputLabel: { shrink: true } }} sx={{ "& .MuiOutlinedInput-root": { borderRadius: "12px" } }} />
+              <TextField select label="Blood Group" value={editForm.bloodGroup || ""} onChange={(e) => setEditForm((f) => ({ ...f, bloodGroup: e.target.value }))} fullWidth size="small" sx={{ "& .MuiOutlinedInput-root": { borderRadius: "12px" } }}>
+                <MenuItem value=""><em>Select</em></MenuItem>
+                {BLOOD_GROUP_OPTIONS.map((opt) => <MenuItem key={opt.value} value={opt.value}>{opt.label}</MenuItem>)}
+              </TextField>
+
+              {/* Contact */}
+              <TextField label="Address" value={editForm.address || ""} onChange={(e) => setEditForm((f) => ({ ...f, address: e.target.value }))} fullWidth multiline rows={2} size="small" sx={{ "& .MuiOutlinedInput-root": { borderRadius: "12px" } }} />
+              <TextField select label="District" value={editForm.district || ""} onChange={(e) => setEditForm((f) => ({ ...f, district: e.target.value }))} fullWidth size="small" sx={{ "& .MuiOutlinedInput-root": { borderRadius: "12px" } }}>
+                <MenuItem value=""><em>Select district</em></MenuItem>
+                {districts.map((d) => <MenuItem key={String(d._id)} value={String(d._id)}>{d.name}</MenuItem>)}
+              </TextField>
+
+              {/* Personal */}
+              <TextField label="Parent / Guardian" value={editForm.parent || ""} onChange={(e) => setEditForm((f) => ({ ...f, parent: e.target.value }))} fullWidth size="small" sx={{ "& .MuiOutlinedInput-root": { borderRadius: "12px" } }} />
+              <TextField label="Aadhaar Number" value={editForm.aadharNumber || ""} onChange={(e) => setEditForm((f) => ({ ...f, aadharNumber: e.target.value }))} fullWidth size="small" inputProps={{ maxLength: 12 }} sx={{ "& .MuiOutlinedInput-root": { borderRadius: "12px" } }} />
+
+              {/* Academic */}
+              <TextField label="School" value={editForm.school || ""} onChange={(e) => setEditForm((f) => ({ ...f, school: e.target.value }))} fullWidth size="small" sx={{ "& .MuiOutlinedInput-root": { borderRadius: "12px" } }} />
+              <TextField label="Grade" value={editForm.grade || ""} onChange={(e) => setEditForm((f) => ({ ...f, grade: e.target.value }))} fullWidth size="small" sx={{ "& .MuiOutlinedInput-root": { borderRadius: "12px" } }} />
+
+              {/* IDs */}
+              <TextField label="RSFI ID" value={editForm.rsfiId || ""} onChange={(e) => setEditForm((f) => ({ ...f, rsfiId: e.target.value }))} fullWidth size="small" sx={{ "& .MuiOutlinedInput-root": { borderRadius: "12px" } }} />
+              <TextField label="Signature (URL)" value={editForm.signature || ""} onChange={(e) => setEditForm((f) => ({ ...f, signature: e.target.value }))} fullWidth size="small" sx={{ "& .MuiOutlinedInput-root": { borderRadius: "12px" } }} />
+
+              {/* Event Category & Discipline */}
               <TextField
                 select
-                label="Gender"
-                value={editForm.gender || ""}
-                onChange={(e) => setEditForm((f) => ({ ...f, gender: e.target.value }))}
-                fullWidth
-                size="small"
+                label="Event Category"
+                value={editForm.eventCategory || ""}
+                onChange={(e) => setEditForm((f) => ({ ...f, eventCategory: e.target.value, discipline: "" }))}
+                fullWidth size="small"
                 sx={{ "& .MuiOutlinedInput-root": { borderRadius: "12px" } }}
               >
-                {GENDER_OPTIONS.map((opt) => (
-                  <MenuItem key={opt.value} value={opt.value}>{opt.label}</MenuItem>
+                <MenuItem value=""><em>Select category</em></MenuItem>
+                {eventCategories.map((cat) => (
+                  <MenuItem key={String(cat._id)} value={String(cat._id)}>
+                    {cat.name || cat.typeName || "—"}
+                  </MenuItem>
                 ))}
               </TextField>
+              {editForm.eventCategory && (() => {
+                const cat = eventCategories.find((c) => String(c._id) === editForm.eventCategory);
+                const discs = cat?.disciplines ?? [];
+                if (!discs.length) return null;
+                return (
+                  <TextField
+                    select
+                    label="Discipline"
+                    value={editForm.discipline || ""}
+                    onChange={(e) => setEditForm((f) => ({ ...f, discipline: e.target.value }))}
+                    fullWidth size="small"
+                    sx={{ "& .MuiOutlinedInput-root": { borderRadius: "12px" } }}
+                  >
+                    <MenuItem value=""><em>Select discipline</em></MenuItem>
+                    {discs.map((d) => (
+                      <MenuItem key={String(d._id)} value={String(d._id)}>{d.name || "—"}</MenuItem>
+                    ))}
+                  </TextField>
+                );
+              })()}
             </Stack>
           )}
         </Box>

@@ -167,19 +167,38 @@ export const EventForm = ({
       : [])
   ];
   const categoryOptions = mapSkatingCategoryOptions(eventCategories);
-  const seedOptions = mapSkatingCategoryOptions(
-    Array.isArray(categorySeedFromEvent)
-      ? categorySeedFromEvent.filter((item) => item && typeof item === "object")
-      : []
-  );
+  // categorySeedFromEvent items may use {categoryId, name} shape — normalize before mapping
+  const normalizedSeed = Array.isArray(categorySeedFromEvent)
+    ? categorySeedFromEvent
+        .filter((item) => item && typeof item === "object")
+        .map((item) => ({
+          _id: item.categoryId || item._id || item.id,
+          name: item.name || item.typeName || "",
+          disciplines: (item.disciplines || []).map((d) => ({
+            _id: d.id || d._id,
+            name: d.name || d.typeName || "",
+          })),
+        }))
+    : [];
+  const seedOptions = mapSkatingCategoryOptions(normalizedSeed);
   const allCategoryOptions = [
     ...categoryOptions,
     ...seedOptions.filter((seed) => !categoryOptions.some((opt) => opt.id === seed.id))
   ];
+  // categoriesForOptions must also include normalized seed for discipline mapping
+  const allCategoriesForOptions = [
+    ...(Array.isArray(eventCategories) ? eventCategories : []),
+    ...normalizedSeed.filter((s) => {
+      const sid = String(s._id || "");
+      return !(Array.isArray(eventCategories) ? eventCategories : []).some(
+        (c) => String(c._id || c.id || "") === sid
+      );
+    }),
+  ];
   const selectedCategoryOptions = allCategoryOptions.filter((opt) =>
     selectedCategoryIds.includes(opt.id)
   );
-  const disciplineOptions = mapSkatingDisciplineOptions(categoriesForOptions, selectedCategoryIds);
+  const disciplineOptions = mapSkatingDisciplineOptions(allCategoriesForOptions, selectedCategoryIds);
   const selectedDisciplineOptions = disciplineOptions.filter((opt) =>
     selectedDisciplineIds.includes(opt.id)
   );
@@ -301,7 +320,7 @@ export const EventForm = ({
                 target: {
                   value: filterDisciplineIdsForCategories(
                     formData.skatingEventDisciplines,
-                    categoriesForOptions,
+                    allCategoriesForOptions,
                     nextCategoryIds
                   )
                 }

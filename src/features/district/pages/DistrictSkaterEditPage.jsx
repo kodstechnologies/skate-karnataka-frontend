@@ -148,12 +148,35 @@ export const DistrictSkaterEditPage = () => {
             <Field label="Full Name">
               <TextField fullWidth value={form.fullName} onChange={handleChange("fullName")} sx={inputSx} />
             </Field>
-            <Field label="Phone">
+            {/* <Field label="Phone">
               <TextField fullWidth value={form.phone} onChange={handleChange("phone")} sx={inputSx} />
-            </Field>
-            <Field label="Email">
+            </Field> */}
+            <Field label="Phone">
+  <TextField
+    fullWidth
+    value={form.phone}
+    onChange={handleChange("phone")}
+    sx={inputSx}
+    disabled
+  />
+</Field>
+            {/* <Field label="Email">
               <TextField fullWidth value={form.email} onChange={handleChange("email")} type="email" sx={inputSx} />
-            </Field>
+            </Field> */}
+
+    
+
+<Field label="Email">
+  <TextField
+    fullWidth
+    value={form.email}
+    onChange={handleChange("email")}
+    type="email"
+    sx={inputSx}
+    disabled
+  />
+</Field>
+            
             <Field label="Gender">
               <TextField fullWidth select value={form.gender} onChange={handleChange("gender")} sx={inputSx}>
                 <MenuItem value="">Select gender</MenuItem>

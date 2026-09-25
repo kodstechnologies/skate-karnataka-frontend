@@ -33,7 +33,8 @@ import toast from "react-hot-toast";
 const extractError = (err) =>
   err?.response?.data?.message || err?.message || "An unexpected error occurred.";
 
-const getCategoryId = (cat) => String(cat?._id ?? cat?.id ?? "");
+const getCatId = (c) => String(c?._id ?? c?.id ?? "");
+const getDisciplineId = (d) => String(d?._id ?? d?.id ?? "");
 
 const PORTAL_CONFIG = {
   club: { dashboard: "/club/dashboard", list: "/club/event-categories", label: "Club" },
@@ -48,28 +49,28 @@ const EDITOR_CARD_SX = {
   boxShadow: "0 20px 50px rgba(56,36,29,0.08)"
 };
 
-const CategoryTypeTabs = ({ categories, activeId, onSelect }) => (
+const TabRow = ({ items, activeId, onSelect, getId, getLabel, sx = {} }) => (
   <Box
     sx={{
       display: "flex",
       gap: 0,
       overflowX: "auto",
       px: 2,
-      pt: 1.5,
       borderBottom: "1px solid #e8dcd6",
       "&::-webkit-scrollbar": { height: 4 },
-      "&::-webkit-scrollbar-thumb": { backgroundColor: "#e8dcd6", borderRadius: 4 }
+      "&::-webkit-scrollbar-thumb": { backgroundColor: "#e8dcd6", borderRadius: 4 },
+      ...sx
     }}
   >
-    {categories.map((cat) => {
-      const catId = getCategoryId(cat);
-      const isActive = catId === activeId;
+    {items.map((item) => {
+      const id = getId(item);
+      const isActive = id === activeId;
       return (
         <Box
-          key={catId}
+          key={id}
           component="button"
           type="button"
-          onClick={() => onSelect(catId)}
+          onClick={() => onSelect(id)}
           sx={{
             flexShrink: 0,
             px: 2,
@@ -86,7 +87,7 @@ const CategoryTypeTabs = ({ categories, activeId, onSelect }) => (
             "&:hover": { color: isActive ? "#f6765e" : "#5f5552" }
           }}
         >
-          {cat.name || cat.typeName || "Unnamed"}
+          {getLabel(item)}
         </Box>
       );
     })}
@@ -96,11 +97,15 @@ const CategoryTypeTabs = ({ categories, activeId, onSelect }) => (
 export default function OrgCustomCategoryPage({ orgType }) {
   const portal = PORTAL_CONFIG[orgType];
 
-  // all standard categories (the full list from admin)
+  // categories[] each with disciplines[]
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
   const [fetchError, setFetchError] = useState(null);
-  const [activeCategoryId, setActiveCategoryId] = useState(null);
+
+  // two-level selection
+  const [activeCatId, setActiveCatId] = useState(null);
+  const [activeDisciplineId, setActiveDisciplineId] = useState(null);
+
   const [form, setForm] = useState(() => buildFormState(null));
   const [saving, setSaving] = useState(false);
 
@@ -123,21 +128,30 @@ export default function OrgCustomCategoryPage({ orgType }) {
       const res = await eventCategoriesApi.getOrgContext();
       const body = res?.data ?? res;
       const inner = body?.data && typeof body.data === "object" ? body.data : body;
-      // collect all categories visible to this org (standard + custom override)
       const allCats = Array.isArray(inner?.categories)
         ? inner.categories
         : Array.isArray(inner?.standardCategories)
           ? inner.standardCategories
           : [];
-      // reverse order
-      const sorted = [...allCats].reverse();
-      setCategories(sorted);
-      if (sorted.length > 0) {
-        const firstId = getCategoryId(sorted[0]);
-        setActiveCategoryId(firstId);
-        setForm(buildFormState(sorted[0]));
+
+      setCategories(allCats);
+
+      // auto-select first category + its first discipline
+      if (allCats.length > 0) {
+        const firstCat = allCats[0];
+        const firstCatId = getCatId(firstCat);
+        setActiveCatId(firstCatId);
+        const firstDiscs = firstCat.disciplines ?? [];
+        if (firstDiscs.length > 0) {
+          const firstDiscId = getDisciplineId(firstDiscs[0]);
+          setActiveDisciplineId(firstDiscId);
+          setForm(buildFormState(firstDiscs[0]));
+        } else {
+          setActiveDisciplineId(null);
+          setForm(buildFormState(null));
+        }
       }
-      return sorted;
+      return allCats;
     } catch (err) {
       toast.error(extractError(err));
       setFetchError(extractError(err));
@@ -149,15 +163,32 @@ export default function OrgCustomCategoryPage({ orgType }) {
 
   useEffect(() => { load(); }, [load]);
 
-  const handleTabSelect = (id) => {
-    setActiveCategoryId(id);
-    const cat = categories.find((c) => getCategoryId(c) === id);
-    setForm(buildFormState(cat ?? null));
+  // selecting a category tab resets discipline selection to first of that category
+  const handleCatSelect = (catId) => {
+    setActiveCatId(catId);
     setFormErrors({});
+    const cat = categories.find((c) => getCatId(c) === catId);
+    const discs = cat?.disciplines ?? [];
+    if (discs.length > 0) {
+      const firstDiscId = getDisciplineId(discs[0]);
+      setActiveDisciplineId(firstDiscId);
+      setForm(buildFormState(discs[0]));
+    } else {
+      setActiveDisciplineId(null);
+      setForm(buildFormState(null));
+    }
+  };
+
+  const handleDisciplineSelect = (discId) => {
+    setActiveDisciplineId(discId);
+    setFormErrors({});
+    const cat = categories.find((c) => getCatId(c) === activeCatId);
+    const disc = (cat?.disciplines ?? []).find((d) => getDisciplineId(d) === discId);
+    setForm(buildFormState(disc ?? null));
   };
 
   const handleUpdate = async () => {
-    if (!activeCategoryId) return;
+    if (!activeDisciplineId || !activeCatId) return;
     const nextErrors = validateCategoryForm(form, { requireFormula: true });
     if (hasCategoryFormErrors(nextErrors)) {
       setFormErrors(nextErrors);
@@ -165,18 +196,17 @@ export default function OrgCustomCategoryPage({ orgType }) {
       return;
     }
     setFormErrors({});
-    const payload = buildPayload(form, { requireFormula: true });
+
+    const payload = {
+      ...buildPayload(form, { requireFormula: true }),
+      disciplineId: activeDisciplineId
+    };
+
     setSaving(true);
     try {
-      const res = await eventCategoriesApi.update(activeCategoryId, payload);
-      toast.success(res?.message || "Category updated successfully");
-      // reload and keep active tab
-      const list = await load();
-      const updated = list?.find((c) => getCategoryId(c) === activeCategoryId);
-      if (updated) {
-        setActiveCategoryId(getCategoryId(updated));
-        setForm(buildFormState(updated));
-      }
+      const res = await eventCategoriesApi.update(activeCatId, payload);
+      toast.success(res?.message || "Discipline updated successfully");
+      await load();
     } catch (err) {
       toast.error(extractError(err));
     } finally {
@@ -184,7 +214,9 @@ export default function OrgCustomCategoryPage({ orgType }) {
     }
   };
 
-  const activeCategory = categories.find((c) => getCategoryId(c) === activeCategoryId);
+  const activeCat = categories.find((c) => getCatId(c) === activeCatId);
+  const activeCatDisciplines = activeCat?.disciplines ?? [];
+  const activeDisc = activeCatDisciplines.find((d) => getDisciplineId(d) === activeDisciplineId);
 
   return (
     <Box className="space-y-5">
@@ -222,7 +254,7 @@ export default function OrgCustomCategoryPage({ orgType }) {
             Custom Categories
           </Typography>
           <Typography sx={{ color: "rgba(255,255,255,0.86)", maxWidth: 620, lineHeight: 1.7 }}>
-            Showing all types. Edit and update any tab — unmodified types show the default values.
+            Each tab is a discipline. Edit and update any tab — unmodified disciplines show the default values.
           </Typography>
         </Stack>
       </Paper>
@@ -248,7 +280,7 @@ export default function OrgCustomCategoryPage({ orgType }) {
               {portal.label} Custom Categories
             </Typography>
             <Typography sx={{ mt: 0.75, color: "#8d7f7b" }}>
-              Switch tabs to edit another type. Update applies to the active tab only.
+              Switch tabs to edit another discipline. Update applies to the active tab only.
             </Typography>
           </Box>
           <Button variant="outlined" startIcon={<RefreshCw size={16} />} onClick={load} disabled={loading}>
@@ -270,44 +302,77 @@ export default function OrgCustomCategoryPage({ orgType }) {
             </Paper>
           ) : (
             <Paper elevation={0} sx={{ ...EDITOR_CARD_SX, maxWidth: 960, mx: "auto", width: "100%", cursor: "default" }}>
-              <CategoryTypeTabs
-                categories={categories}
-                activeId={activeCategoryId}
-                onSelect={handleTabSelect}
+
+              {/* Level 1 — Category tabs */}
+              <TabRow
+                items={categories}
+                activeId={activeCatId}
+                onSelect={handleCatSelect}
+                getId={getCatId}
+                getLabel={(c) => c.name || c.typeName || "Unnamed"}
+                sx={{ pt: 1.5 }}
               />
-              <CategoryInlineEditor
-                form={form}
-                errors={formErrors}
-                formulas={formulas}
-                formulasLoading={formulasLoading}
-                formulaCreatePath={formulaCreatePath}
-                showFormula
-                isOrgOverride={false}
-                isCreate={false}
-                readOnly={false}
-                onTypeNameChange={() => {}}
-                onCategoryNameChange={setCategoryName}
-                onCategoryFormulaChange={setCategoryFormula}
-                onAddCategoryRow={addCategoryRow}
-                onRemoveCategoryRow={removeCategoryRow}
-              />
-              <Divider sx={{ borderColor: "#f5ebe7", mx: 2.5 }} />
-              <Stack direction="row" spacing={1.5} sx={{ p: 2.5, justifyContent: "flex-end", alignItems: "center" }}>
-                <Typography sx={{ fontSize: 13, color: "#8d7f7b", flex: 1 }}>
-                  {activeCategory?.categoryStatus === "custom"
-                    ? <Chip label="Custom" size="small" sx={{ height: 20, fontSize: 11, fontWeight: 700, bgcolor: "#e0f7f5", color: "#00897b" }} />
-                    : <Chip label="Standard (default)" size="small" sx={{ height: 20, fontSize: 11, fontWeight: 700, bgcolor: "#fff1eb", color: "#f6765e" }} />
-                  }
-                </Typography>
-                <Button
-                  variant="contained"
-                  onClick={handleUpdate}
-                  disabled={saving}
-                  sx={{ backgroundColor: "#f6765e", "&:hover": { backgroundColor: "#ea6b54" }, minWidth: 140 }}
-                >
-                  {saving ? <CircularProgress size={16} color="inherit" /> : "Update"}
-                </Button>
-              </Stack>
+
+              {/* Level 2 — Discipline tabs (shown after a category is selected) */}
+              {activeCatDisciplines.length > 0 ? (
+                <TabRow
+                  items={activeCatDisciplines}
+                  activeId={activeDisciplineId}
+                  onSelect={handleDisciplineSelect}
+                  getId={getDisciplineId}
+                  getLabel={(d) => d.name || d.typeName || "Unnamed"}
+                  sx={{
+                    pt: 1,
+                    background: "rgba(246,118,94,0.04)",
+                    borderTop: "1px solid #f5ebe7",
+                    "& button": { fontSize: 13, py: 1 }
+                  }}
+                />
+              ) : (
+                <Box sx={{ px: 2.5, py: 1.5 }}>
+                  <Typography sx={{ fontSize: 13, color: "#978a86" }}>No disciplines in this category.</Typography>
+                </Box>
+              )}
+
+              {/* Editor — only when a discipline is selected */}
+              {activeDisc ? (
+                <>
+                  <CategoryInlineEditor
+                    form={form}
+                    errors={formErrors}
+                    formulas={formulas}
+                    formulasLoading={formulasLoading}
+                    formulaCreatePath={formulaCreatePath}
+                    showFormula
+                    isOrgOverride
+                    isCreate={false}
+                    readOnly={false}
+                    onTypeNameChange={() => {}}
+                    onCategoryNameChange={setCategoryName}
+                    onCategoryFormulaChange={setCategoryFormula}
+                    onAddCategoryRow={addCategoryRow}
+                    onRemoveCategoryRow={removeCategoryRow}
+                  />
+                  <Divider sx={{ borderColor: "#f5ebe7", mx: 2.5 }} />
+                  <Stack direction="row" spacing={1.5} sx={{ p: 2.5, justifyContent: "flex-end", alignItems: "center" }}>
+                    <Box sx={{ flex: 1 }}>
+                      {activeDisc._effectiveOverride
+                        ? <Chip label="Custom" size="small" sx={{ height: 20, fontSize: 11, fontWeight: 700, bgcolor: "#e0f7f5", color: "#00897b" }} />
+                        : <Chip label="Standard (default)" size="small" sx={{ height: 20, fontSize: 11, fontWeight: 700, bgcolor: "#fff1eb", color: "#f6765e" }} />
+                      }
+                    </Box>
+                    <Button
+                      variant="contained"
+                      onClick={handleUpdate}
+                      disabled={saving}
+                      sx={{ backgroundColor: "#f6765e", "&:hover": { backgroundColor: "#ea6b54" }, minWidth: 140 }}
+                    >
+                      {saving ? <CircularProgress size={16} color="inherit" /> : "Update"}
+                    </Button>
+                  </Stack>
+                </>
+              ) : null}
+
             </Paper>
           )}
         </Box>
