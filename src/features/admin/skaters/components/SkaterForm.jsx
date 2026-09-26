@@ -23,6 +23,7 @@ export const SkaterForm = ({
   onFieldChange,
   districts = [],
   clubs = [],
+  clubsLoading = false,
   categories = [],
   onPhotoChange,
   onDocumentsChange,
@@ -102,10 +103,22 @@ export const SkaterForm = ({
           value={formData.clubId}
           onChange={onFieldChange("clubId")}
           error={Boolean(errors.clubId)}
-          helperText={errors.clubId || (formData.districtId ? "" : "Select a district to filter clubs")}
+          helperText={
+            errors.clubId ||
+            (clubsLoading
+              ? "Loading clubs…"
+              : !formData.districtId
+              ? "Select a district first"
+              : clubs.length === 0
+              ? "No clubs found for this district"
+              : "")
+          }
+          disabled={clubsLoading || !formData.districtId}
           fullWidth
         >
-          <MenuItem value="">Select club</MenuItem>
+          <MenuItem value="">
+            {clubsLoading ? "Loading…" : "Select club"}
+          </MenuItem>
           {filteredClubs.map((club) => (
             <MenuItem key={club.id} value={club.id}>
               {club.name}

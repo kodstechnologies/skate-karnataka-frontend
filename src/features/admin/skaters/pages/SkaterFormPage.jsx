@@ -14,6 +14,7 @@ import skatersHero from "@/assets/Skating_header.jpg";
 import { clubApi } from "@/api/club-api";
 import { districtApi } from "@/api/district-api";
 import { eventsApi } from "@/api/events-api";
+import { eventCategoriesApi } from "@/api/event-categories-api";
 import { SkaterForm } from "@/features/admin/skaters/components/SkaterForm";
 import {
   buildSkaterUpdateFormData,
@@ -97,7 +98,9 @@ export const SkaterFormPage = () => {
   const [errors, setErrors] = useState({});
   const [districts, setDistricts] = useState([]);
   const [clubs, setClubs] = useState([]);
+  const [clubsLoading, setClubsLoading] = useState(false);
   const [categories, setCategories] = useState([]);
+  const [disciplines, setDisciplines] = useState([]);
   const [optionsLoading, setOptionsLoading] = useState(true);
 
   useEffect(() => {
@@ -106,29 +109,30 @@ export const SkaterFormPage = () => {
     }
   }, [skaterId, fetchSkaterById]);
 
+  // Raw category docs (with embedded disciplines) keyed by category id
+  const [rawCategories, setRawCategories] = useState([]);
+
   useEffect(() => {
     let active = true;
 
     const loadOptions = async () => {
       setOptionsLoading(true);
       try {
-        const [districtRes, clubRes, categoryRes] = await Promise.all([
+        const [districtRes, categoryRes] = await Promise.all([
           districtApi.getAll({ page: 1, limit: 500 }),
-          clubApi.getAll({ page: 1, limit: 500 }),
           eventsApi.getSkatingCategories({ source: "standard" })
         ]);
 
         if (!active) return;
 
         const districtRows = districtRes?.data?.data ?? districtRes?.data ?? [];
-        const clubRows = clubRes?.data?.data ?? clubRes?.data ?? [];
         const categoryRows = Array.isArray(categoryRes?.data)
           ? categoryRes.data
           : categoryRes?.data?.data ?? categoryRes?.data ?? [];
 
         setDistricts(Array.isArray(districtRows) ? districtRows.map(mapDistrictOption) : []);
-        setClubs(Array.isArray(clubRows) ? clubRows.map(mapClubOption) : []);
         setCategories(Array.isArray(categoryRows) ? categoryRows.map(mapCategoryOption) : []);
+        setRawCategories(Array.isArray(categoryRows) ? categoryRows : []);
       } catch (error) {
         console.error("Failed to load skater form options:", error);
       } finally {
@@ -156,6 +160,47 @@ export const SkaterFormPage = () => {
     });
   }, [selectedSkater, skaterId]);
 
+  // Load clubs for the selected district
+  useEffect(() => {
+    const districtId = formData?.districtId;
+    if (!districtId) {
+      // keep any pre-seeded current club; clear rest
+      setClubs((prev) => prev.filter((c) => c.id === formData?.clubId));
+      return;
+    }
+    let cancelled = false;
+    setClubsLoading(true);
+    clubApi.getByDistrict(districtId)
+      .then((res) => {
+        if (cancelled) return;
+        const body = res?.data?.data ?? res?.data ?? res;
+        const list = Array.isArray(body?.club) ? body.club : Array.isArray(body) ? body : [];
+        const mapped = list.map((c) => mapClubOption({ _id: c._id, name: c.name, districtId }));
+        setClubs(mapped);
+      })
+      .catch(() => {
+        if (!cancelled) setClubs([]);
+      })
+      .finally(() => { if (!cancelled) setClubsLoading(false); });
+    return () => { cancelled = true; };
+  }, [formData?.districtId]);
+
+  // Sync discipline options when category changes
+  useEffect(() => {
+    const categoryId = formData?.categoryId;
+    if (!categoryId || !rawCategories.length) {
+      setDisciplines([]);
+      return;
+    }
+    const matched = rawCategories.find(
+      (c) => String(c._id || c.id) === String(categoryId)
+    );
+    const list = Array.isArray(matched?.disciplines) ? matched.disciplines : [];
+    setDisciplines(
+      list.map((d) => ({ id: String(d._id || d.id), name: d.name || "" }))
+    );
+  }, [formData?.categoryId, rawCategories]);
+
   const handleFieldChange = useCallback(
     (field) => (event) => {
       const value = event.target.value;
@@ -180,13 +225,21 @@ export const SkaterFormPage = () => {
         if (field === "categoryId") {
           const selectedCategory = categories.find((category) => category.id === value);
           next.categoryName = selectedCategory?.name || "";
+          // clear discipline when category changes
+          next.disciplineId = "";
+          next.disciplineName = "";
+        }
+
+        if (field === "disciplineId") {
+          const selectedDiscipline = disciplines.find((d) => d.id === value);
+          next.disciplineName = selectedDiscipline?.name || "";
         }
 
         return next;
       });
       setErrors((current) => ({ ...current, [field]: "" }));
     },
-    [clubs, categories]
+    [clubs, categories, disciplines]
   );
 
   const handlePhotoChange = useCallback((event) => {
@@ -361,7 +414,9 @@ export const SkaterFormPage = () => {
             onFieldChange={handleFieldChange}
             districts={districts}
             clubs={clubs}
+            clubsLoading={clubsLoading}
             categories={categories}
+            disciplines={disciplines}
             onPhotoChange={handlePhotoChange}
             onDocumentsChange={handleDocumentsChange}
             onRemoveExistingDocument={handleRemoveExistingDocument}

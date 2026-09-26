@@ -127,6 +127,7 @@ export const ClubSkatersPage = () => {
       setEditForm({
         fullName: data.fullName || "",
         phone: data.phone || "",
+        email: data.email || "",
         gender: data.gender || "",
         address: data.address || "",
         parent: data.parent || "",
@@ -140,6 +141,8 @@ export const ClubSkatersPage = () => {
         district: data.district?._id || data.district || "",
         eventCategory: data.eventCategory?._id || String(data.eventCategory || ""),
         discipline: data.discipline?._id || String(data.discipline || ""),
+        photo: null,                          // File object when user picks a new photo
+        photoPreview: data.photo || data.img || "", // current URL for preview
       });
     } catch {
       toast.error("Failed to load skater details");
@@ -550,9 +553,49 @@ export const ClubSkatersPage = () => {
             <Stack spacing={2}>{[1,2,3,4,5,6,7,8].map((i) => <Skeleton key={i} variant="rounded" height={56} sx={{ borderRadius: "12px" }} />)}</Stack>
           ) : (
             <Stack spacing={2}>
+              {/* Photo upload */}
+              <Box sx={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 1.5 }}>
+                <Box sx={{ position: "relative" }}>
+                  <Avatar
+                    src={editForm.photoPreview || ""}
+                    sx={{ width: 80, height: 80, border: "3px solid #f5e0d8", fontSize: "2rem", backgroundColor: "#4a3530" }}
+                  />
+                  <Box
+                    component="label"
+                    htmlFor="skater-photo-input"
+                    sx={{
+                      position: "absolute", bottom: 0, right: 0,
+                      width: 26, height: 26, borderRadius: "50%",
+                      backgroundColor: "#f6765e", cursor: "pointer",
+                      display: "flex", alignItems: "center", justifyContent: "center",
+                      border: "2px solid white",
+                    }}
+                  >
+                    <EditOutlinedIcon sx={{ fontSize: 13, color: "white" }} />
+                  </Box>
+                  <input
+                    id="skater-photo-input"
+                    type="file"
+                    accept="image/*"
+                    style={{ display: "none" }}
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (!file) return;
+                      setEditForm((f) => ({
+                        ...f,
+                        photo: file,
+                        photoPreview: URL.createObjectURL(file),
+                      }));
+                    }}
+                  />
+                </Box>
+                <Typography sx={{ fontSize: 11, color: "#b09890" }}>Tap pencil to change photo</Typography>
+              </Box>
+
               {/* Basic */}
               <TextField label="Full Name" value={editForm.fullName || ""} onChange={(e) => setEditForm((f) => ({ ...f, fullName: e.target.value }))} fullWidth size="small" sx={{ "& .MuiOutlinedInput-root": { borderRadius: "12px" } }} />
               <TextField label="Phone" value={editForm.phone || ""} disabled fullWidth size="small" sx={{ "& .MuiOutlinedInput-root": { borderRadius: "12px" } }} />
+              <TextField label="Email" value={editForm.email || ""} disabled fullWidth size="small" sx={{ "& .MuiOutlinedInput-root": { borderRadius: "12px" } }} />
               <TextField select label="Gender" value={editForm.gender || ""} onChange={(e) => setEditForm((f) => ({ ...f, gender: e.target.value }))} fullWidth size="small" sx={{ "& .MuiOutlinedInput-root": { borderRadius: "12px" } }}>
                 {GENDER_OPTIONS.map((opt) => <MenuItem key={opt.value} value={opt.value}>{opt.label}</MenuItem>)}
               </TextField>

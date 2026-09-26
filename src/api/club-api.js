@@ -6,6 +6,9 @@ export const clubApi = {
   getAll: async (params = {}) => {
     return api.get("/admin/v1/club", { params });
   },
+  getByDistrict: async (districtId) => {
+    return api.get(`/club/v1/all/${districtId}`);
+  },
   create: async (data) => {
     return api.post("/admin/v1/club", data, { headers: multipartHeaders });
   },

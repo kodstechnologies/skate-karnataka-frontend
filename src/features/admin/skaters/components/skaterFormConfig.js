@@ -34,6 +34,10 @@ export const initialSkaterFormValues = {
   clubStatus: "",
   categoryId: "",
   categoryName: "",
+  eventCategoryId: "",
+  eventCategoryName: "",
+  disciplineId: "",
+  disciplineName: "",
   photoPreview: "",
   photoFile: null,
   existingDocuments: [],
@@ -89,6 +93,10 @@ export const createSkaterFormValues = (skater = {}) => ({
   clubStatus: skater.clubStatus ?? "",
   categoryId: String(skater.category?._id ?? skater.category ?? ""),
   categoryName: skater.category?.name ?? skater.category?.typeName ?? skater.categoryName ?? "",
+  eventCategoryId: String(skater.eventCategory?._id ?? skater.eventCategory ?? ""),
+  eventCategoryName: skater.eventCategory?.name ?? "",
+  disciplineId: String(skater.discipline?._id ?? skater.discipline ?? ""),
+  disciplineName: skater.discipline?.name ?? "",
   photoPreview: getSkaterProfileImage(skater),
   photoFile: null,
   existingDocuments: getSkaterDocuments(skater),
@@ -136,6 +144,14 @@ export const buildSkaterUpdateFormData = (formData) => {
 
   if (formData.categoryId) {
     fd.append("category", formData.categoryId);
+  }
+
+  if (formData.eventCategoryId) {
+    fd.append("eventCategory", formData.eventCategoryId);
+  }
+
+  if (formData.disciplineId) {
+    fd.append("discipline", formData.disciplineId);
   }
 
   if (formData.photoFile instanceof File) {
