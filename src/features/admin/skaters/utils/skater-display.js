@@ -30,6 +30,20 @@ export const getSkaterCategoryName = (skater) => {
   return "-";
 };
 
+export const getSkaterDisciplineName = (skater) => {
+  if (!skater) return "-";
+  // Admin endpoint returns disciplineName as a resolved string
+  if (skater.disciplineName?.trim()) return skater.disciplineName.trim();
+  // Other endpoints (digital ID card) return discipline as a resolved string
+  if (typeof skater.discipline === "string" && skater.discipline.trim()) {
+    return skater.discipline.trim();
+  }
+  if (skater.discipline && typeof skater.discipline === "object") {
+    return skater.discipline.name || skater.discipline.title || "-";
+  }
+  return "-";
+};
+
 export const formatSkaterDate = (value) => {
   if (!value) return "-";
   const date = new Date(value);

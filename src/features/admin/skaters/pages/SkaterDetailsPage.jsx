@@ -27,6 +27,7 @@ import { useSkatersStore } from "@/features/admin/skaters/store/skaters-store";
 import {
   formatSkaterDate,
   getSkaterCategoryName,
+  getSkaterDisciplineName,
   getSkaterDistrictName,
   getSkaterDocuments,
   getSkaterProfileImage
@@ -505,6 +506,7 @@ export const SkaterDetailsPage = () => {
               <DetailItem label="District" value={getSkaterDistrictName(skater)} />
               <DetailItem label="Club" value={skater.club?.name} />
               <DetailItem label="Category" value={getSkaterCategoryName(skater)} />
+              <DetailItem label="Discipline" value={getSkaterDisciplineName(skater)} />
               <DetailItem label="Address" value={skater.address} />
             </Box>
           </SectionCard>

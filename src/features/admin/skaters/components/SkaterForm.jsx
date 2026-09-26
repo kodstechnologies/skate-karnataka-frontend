@@ -25,6 +25,7 @@ export const SkaterForm = ({
   clubs = [],
   clubsLoading = false,
   categories = [],
+  disciplines = [],
   onPhotoChange,
   onDocumentsChange,
   onRemoveExistingDocument,
@@ -168,6 +169,31 @@ export const SkaterForm = ({
           {categories.map((category) => (
             <MenuItem key={category.id} value={category.id}>
               {category.name}
+            </MenuItem>
+          ))}
+        </TextField>
+
+        <TextField
+          select
+          label="Discipline"
+          value={formData.disciplineId}
+          onChange={onFieldChange("disciplineId")}
+          error={Boolean(errors.disciplineId)}
+          helperText={
+            errors.disciplineId ||
+            (!formData.categoryId
+              ? "Select a category first"
+              : disciplines.length === 0
+              ? "No disciplines for this category"
+              : "")
+          }
+          disabled={!formData.categoryId || disciplines.length === 0}
+          fullWidth
+        >
+          <MenuItem value="">Select discipline</MenuItem>
+          {disciplines.map((d) => (
+            <MenuItem key={d.id} value={d.id}>
+              {d.name}
             </MenuItem>
           ))}
         </TextField>
