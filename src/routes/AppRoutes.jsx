@@ -191,6 +191,10 @@ export const AppRoutes = () => {
         <Route path="/district/clubs/:clubId/members" element={<ClubMembersPage />} />
         <Route path="/district/clubs/:clubId/members/create" element={<ClubMemberFormPage />} />
         <Route
+          path="/district/clubs/:clubId/members/bulk"
+          element={<MemberBulkImportPage orgType="club" />}
+        />
+        <Route
           path="/district/clubs/:clubId/members/:memberId/edit"
           element={<ClubMemberFormPage />}
         />

@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import {
   Box,
   Breadcrumbs,
@@ -67,15 +67,14 @@ export const MemberBulkImportPage = ({ orgType = "club" }) => {
   const [rows, setRows] = useState([]);
   const [importing, setImporting] = useState(false);
   const [importProgress, setImportProgress] = useState({ done: 0, total: 0 });
+  const [isDragging, setIsDragging] = useState(false);
+  const inputRef = useRef(null);
 
   const validRows = useMemo(() => rows.filter((r) => r.errors.length === 0), [rows]);
   const invalidCount = rows.length - validRows.length;
 
-  const handleFileChange = async (event) => {
-    const file = event.target.files?.[0];
-    event.target.value = "";
+  const processFile = async (file) => {
     if (!file) return;
-
     try {
       const parsed = await parseMemberSpreadsheet(file);
       if (parsed.length === 0) {
@@ -85,8 +84,34 @@ export const MemberBulkImportPage = ({ orgType = "club" }) => {
       setRows(parsed.map((row, index) => ({ ...row, _rowKey: index })));
       toast.success(`Loaded ${parsed.length} row(s) from file`);
     } catch {
-      toast.error("Could not read Excel file. Use .xlsx, .xls, or .csv");
+      toast.error("Could not read file. Use .xlsx, .xls, or .csv");
     }
+  };
+
+  const handleFileChange = async (event) => {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    await processFile(file);
+  };
+
+  const handleDragOver = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+  };
+
+  const handleDrop = async (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+    const file = e.dataTransfer.files?.[0];
+    await processFile(file);
   };
 
   const createOne = async (row) => {
@@ -182,23 +207,78 @@ export const MemberBulkImportPage = ({ orgType = "club" }) => {
         <Typography variant="h4" sx={{ fontWeight: 800, letterSpacing: "-0.04em", mb: 1 }}>
           Mass add {isClub ? "club" : "district"} members
         </Typography>
-        <Typography sx={{ color: "#8d7f7b", mb: 2.5, maxWidth: 720, lineHeight: 1.7 }}>
+        <Typography sx={{ color: "#8d7f7b", mb: 3, maxWidth: 720, lineHeight: 1.7 }}>
           Upload an Excel or CSV file for <strong>{orgName}</strong>. Preview shows full name,
-          email, phone, address, designation, and gender before you import. Uses your login token
-          for {isClub ? "club" : "district"} permissions.
+          email, phone, address, designation, and gender before you import.
         </Typography>
 
-        <Stack sx={{ flexWrap: "wrap" }} direction={{ xs: "column", sm: "row" }} spacing={1.5}>
-          <Button
-            component="label"
-            variant="contained"
-            startIcon={<Upload size={16} />}
+        {/* Drag and drop zone */}
+        <Box
+          onDragOver={handleDragOver}
+          onDragLeave={handleDragLeave}
+          onDrop={handleDrop}
+          onClick={() => !importing && inputRef.current?.click()}
+          sx={{
+            border: `2px dashed ${isDragging ? "#f6765e" : "#e8d5ce"}`,
+            borderRadius: "20px",
+            p: { xs: 4, md: 5 },
+            textAlign: "center",
+            cursor: importing ? "not-allowed" : "pointer",
+            backgroundColor: isDragging ? "rgba(246,118,94,0.05)" : "#fffaf8",
+            transition: "all 0.2s ease",
+            "&:hover": {
+              borderColor: "#f6765e",
+              backgroundColor: "rgba(246,118,94,0.04)"
+            }
+          }}
+        >
+          <input
+            ref={inputRef}
+            type="file"
+            hidden
+            accept={ACCEPT}
+            onChange={handleFileChange}
             disabled={importing}
-            sx={{ backgroundColor: "#f6765e", "&:hover": { backgroundColor: "#ea6b54" } }}
+          />
+          <Box
+            sx={{
+              width: 56,
+              height: 56,
+              borderRadius: "16px",
+              backgroundColor: isDragging ? "rgba(246,118,94,0.15)" : "#fdf0ec",
+              display: "grid",
+              placeItems: "center",
+              mx: "auto",
+              mb: 2
+            }}
           >
-            Upload Excel / CSV
-            <input type="file" hidden accept={ACCEPT} onChange={handleFileChange} />
+            <Upload size={24} color="#f6765e" />
+          </Box>
+          <Typography sx={{ fontWeight: 700, color: "#2f2829", fontSize: 16, mb: 0.5 }}>
+            {isDragging ? "Drop your file here" : "Drag & drop your file here"}
+          </Typography>
+          <Typography sx={{ color: "#a28f89", fontSize: 13, mb: 2 }}>
+            or click to browse — .xlsx, .xls, .csv supported
+          </Typography>
+          <Button
+            variant="outlined"
+            size="small"
+            disabled={importing}
+            onClick={(e) => {
+              e.stopPropagation();
+              inputRef.current?.click();
+            }}
+            sx={{
+              borderColor: "#f6765e",
+              color: "#f6765e",
+              "&:hover": { borderColor: "#ea6b54", bgcolor: "rgba(246,118,94,0.06)" }
+            }}
+          >
+            Browse file
           </Button>
+        </Box>
+
+        <Stack direction={{ xs: "column", sm: "row" }} spacing={1.5} sx={{ mt: 2 }}>
           <Button
             variant="outlined"
             startIcon={<Download size={16} />}
@@ -224,14 +304,14 @@ export const MemberBulkImportPage = ({ orgType = "club" }) => {
               size="small"
               variant="outlined"
             />
-            {invalidCount > 0 ? (
+            {invalidCount > 0 && (
               <Chip
                 label={`${invalidCount} with errors`}
                 color="error"
                 size="small"
                 variant="outlined"
               />
-            ) : null}
+            )}
           </Stack>
         )}
 
@@ -251,11 +331,7 @@ export const MemberBulkImportPage = ({ orgType = "club" }) => {
       {rows.length > 0 ? (
         <Paper
           elevation={0}
-          sx={{
-            borderRadius: "28px",
-            border: "1px solid #f2dfd7",
-            overflow: "hidden"
-          }}
+          sx={{ borderRadius: "28px", border: "1px solid #f2dfd7", overflow: "hidden" }}
         >
           <TableContainer sx={{ maxHeight: 520 }}>
             <Table stickyHeader size="small">
@@ -323,21 +399,7 @@ export const MemberBulkImportPage = ({ orgType = "club" }) => {
             </Button>
           </Stack>
         </Paper>
-      ) : (
-        <Paper
-          elevation={0}
-          sx={{
-            p: 5,
-            textAlign: "center",
-            borderRadius: "28px",
-            border: "1px dashed #e8d5ce",
-            color: "#8d7f7b"
-          }}
-        >
-          <FileSpreadsheet size={40} style={{ margin: "0 auto 12px", opacity: 0.5 }} />
-          <Typography>Upload a spreadsheet to preview members here.</Typography>
-        </Paper>
-      )}
+      ) : null}
     </Box>
   );
 };
