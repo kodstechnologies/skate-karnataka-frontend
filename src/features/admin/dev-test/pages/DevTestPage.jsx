@@ -617,8 +617,10 @@ export const DevTestPage = () => {
                 <Stack
                   direction={{ xs: "column", sm: "row" }}
                   spacing={1.5}
-                  alignItems={{ sm: "center" }}
-                  justifyContent="space-between"
+                  sx={{
+                    alignItems: { sm: "center" },
+                    justifyContent: "space-between"
+                  }}
                 >
                   <Box>
                     <Typography variant="h6" sx={{ fontWeight: 700, letterSpacing: "-0.03em" }}>

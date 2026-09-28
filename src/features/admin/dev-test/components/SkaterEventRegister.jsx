@@ -126,13 +126,33 @@ export const SkaterEventRegister = ({ event, token, onBack, onRegistered }) => {
   const openRazorpay = async (payment) => {
     await loadRazorpay();
     return new Promise((resolve, reject) => {
+      const orderId = payment.orderId || payment.order_id || payment.razorpayOrderId;
+      const key = payment.keyId || payment.key;
+      const amount = payment.amountPaise || payment.amount;
+
+      // Validate before opening — catch bad data early
+      if (!orderId || !String(orderId).startsWith("order_")) {
+        reject(new Error(`Invalid Razorpay order_id: "${orderId}". Expected order_... format.`));
+        return;
+      }
+      if (!key || !String(key).startsWith("rzp_")) {
+        reject(new Error(`Invalid Razorpay key: "${key}"`));
+        return;
+      }
+      if (!amount || Number(amount) <= 0) {
+        reject(new Error(`Invalid amount: ${amount}`));
+        return;
+      }
+
+      console.log("[Razorpay] Opening checkout:", { key, amount, orderId, currency: payment.currency });
+
       const checkout = new window.Razorpay({
-        key: payment.keyId || payment.key,
-        amount: payment.amount || payment.amountPaise,
+        key,
+        amount,
         currency: payment.currency || "INR",
         name: payment.name || "KRSA",
         description: payment.description || form?.eventName || "Event registration",
-        order_id: payment.orderId || payment.order_id || payment.razorpayOrderId,
+        order_id: orderId,
         prefill: payment.prefill || {},
         handler: async (response) => {
           try {
@@ -182,22 +202,26 @@ export const SkaterEventRegister = ({ event, token, onBack, onRegistered }) => {
         categories: selectedLaps
       };
 
-      const isFree = !form?.entryFee || Number(form.entryFee) === 0;
+      // Use event.entryFee as the source of truth — form.entryFee may be missing
+      const entryFee = Number(event?.entryFee || form?.entryFee || 0);
+      const isFree = entryFee === 0;
 
       const response = isFree
         ? await eventsApi.freeRegisterSkaterEvent(body, token)
         : await eventsApi.registerSkaterEvent(body, token);
 
       const result = unwrap(response);
+      const paymentData = result?.payment || null;
+      const orderId = paymentData?.orderId || paymentData?.order_id || paymentData?.razorpayOrderId;
 
-      // Free event or dev bypass — already registered
+      // Already completed (free, bypass, or free-event flag from backend)
       if (
         result?.registrationComplete ||
         result?.registration ||
-        result?.payment?.isDevBypass ||
-        result?.payment?.registrationComplete ||
-        result?.payment?.isFreeEvent ||
-        isFree
+        paymentData?.isFreeEvent ||
+        paymentData?.isDevBypass ||
+        paymentData?.registrationComplete ||
+        (isFree && !orderId)
       ) {
         toast.success(result?.message || "Registered successfully");
         onRegistered();
@@ -205,10 +229,19 @@ export const SkaterEventRegister = ({ event, token, onBack, onRegistered }) => {
       }
 
       // Paid event — open Razorpay
-      if (result?.payment && result.payment.orderId) {
-        await openRazorpay(result.payment);
-        toast.success("Registered successfully");
-        onRegistered();
+      if (orderId) {
+        try {
+          await openRazorpay(paymentData);
+          toast.success("Registered successfully");
+          onRegistered();
+        } catch (payErr) {
+          const msg = payErr?.message || "";
+          if (msg === "Payment cancelled") {
+            toast.error("Payment was cancelled");
+          } else {
+            toast.error(unwrapError(payErr, "Payment failed"));
+          }
+        }
         return;
       }
 
@@ -242,10 +275,10 @@ export const SkaterEventRegister = ({ event, token, onBack, onRegistered }) => {
         <Typography sx={{ color: "#8d7f7b", fontSize: 14, mt: 0.5 }}>
           Select skating type, then age, then category — same as the skater app.
         </Typography>
-        {form?.entryFee ? (
+        {(event?.entryFee || form?.entryFee) ? (
           <Chip
             sx={{ mt: 1.5 }}
-            label={`Entry fee ₹${form.entryFee}`}
+            label={`Entry fee ₹${event?.entryFee || form?.entryFee}`}
             icon={<CreditCard size={14} />}
           />
         ) : null}
