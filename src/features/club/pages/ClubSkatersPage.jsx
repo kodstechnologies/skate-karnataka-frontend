@@ -256,18 +256,21 @@ export const ClubSkatersPage = () => {
     if (!editSkater) return;
     setSaving(true);
     try {
-      await clubPortalApi.editSkater(editSkater.id, editForm);
+      const { phone, email, photoPreview, ...dataToSave } = editForm;
+      const res = await clubPortalApi.editSkater(editSkater.id, dataToSave);
       toast.success("Skater updated successfully");
       setEditDrawerOpen(false);
+      const updated = res?.data?.data ?? res?.data;
       // Refresh table row
       setSkaters((prev) =>
         prev.map((s) =>
           s.id === editSkater.id
             ? {
                 ...s,
-                name: editForm.fullName || s.name,
-                phone: editForm.phone || s.phone,
-                gender: editForm.gender || s.gender
+                name: updated?.name || editForm.fullName || s.name,
+                phone: updated?.phone || s.phone,
+                gender: updated?.gender || editForm.gender || s.gender,
+                img: updated?.photo || (editForm.photo ? editForm.photoPreview : s.img)
               }
             : s
         )

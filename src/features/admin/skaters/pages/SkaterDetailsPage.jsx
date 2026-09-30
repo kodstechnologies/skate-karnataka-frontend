@@ -315,7 +315,7 @@ export const SkaterDetailsPage = () => {
         <SummaryCard
           icon={<PhoneOutlinedIcon sx={{ fontSize: 24 }} />}
           label="Phone"
-          value={skater.phone}
+          value={skater.phone ? `${skater.countryCode || "+91"} ${skater.phone}` : "-"}
           accent="#2aa876"
         />
         <SummaryCard
@@ -478,14 +478,22 @@ export const SkaterDetailsPage = () => {
               <DetailItem label="KRSA ID" value={skater.krsaId} />
               <DetailItem label="RSFI ID" value={skater.rsfiId} />
               <DetailItem label="Full name" value={skater.fullName} />
-              <DetailItem label="Phone" value={skater.phone} />
+              <DetailItem
+                label="Phone"
+                value={skater.phone ? `${skater.countryCode || "+91"} ${skater.phone}` : "-"}
+              />
+              <DetailItem label="Country Code" value={skater.countryCode || "+91"} />
+              <DetailItem label="Date of birth" value={formatSkaterDate(skater.dob)} />
               <DetailItem label="Email" value={skater.email} />
               <DetailItem label="Gender" value={formatGender(skater.gender)} />
-              <DetailItem label="Country Code" value={skater.countryCode} />
-              <DetailItem label="Date of birth" value={formatSkaterDate(skater.dob)} />
               <DetailItem label="Aadhaar number" value={skater.aadharNumber} />
               <DetailItem label="Blood group" value={skater.bloodGroup} />
-              <DetailItem label="Parent / guardian" value={skater.parent} />
+              {Boolean(skater.parent?.trim?.() || skater.SkaterParent?.fullName?.trim?.()) && (
+                <DetailItem
+                  label="Parent / guardian"
+                  value={skater.parent || skater.SkaterParent?.fullName}
+                />
+              )}
               <DetailItem label="School" value={skater.school} />
               <DetailItem label="Grade" value={skater.grade} />
               <DetailItem label="Signature" value={skater.signature} />

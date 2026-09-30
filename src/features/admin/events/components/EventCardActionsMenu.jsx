@@ -144,9 +144,19 @@ export default function EventCardActionsMenu({
         return;
       }
 
+      if (failed > 0 && generated === 0) {
+        toast.error(message || `${failed} certificates failed`);
+        return;
+      }
+
+      if (failed > 0 && generated > 0) {
+        toast(message || `${generated} generated, ${failed} failed`, { icon: "⚠️" });
+        return;
+      }
+
       toast.success(
         message ||
-          `Certificates: ${generated} generated, ${skipped} skipped, ${failed} failed`
+          `Certificates: ${generated} generated, ${skipped} skipped`
       );
     } catch (err) {
       toast.error(err?.response?.data?.message || "Failed to generate certificates");

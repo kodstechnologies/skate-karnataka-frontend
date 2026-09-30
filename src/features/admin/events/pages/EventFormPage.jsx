@@ -166,6 +166,10 @@ export const EventFormPage = () => {
     setSaving(true);
     try {
       const payload = { ...formData };
+      if (payload.feeType === "free") {
+        payload.entryFee = "0";
+      }
+      delete payload.feeType;
 
       // Transform flat categoryIds + disciplineIds into the new nested format:
       // [{ categoryId: "...", disciplines: [{ id: "..." }] }]

@@ -101,7 +101,8 @@ export const initialEventFormValues = {
   eventStartTime: "",
   eventEndTime: "",
   status: "coming_soon",
-  entryFee: "",
+  feeType: "free",
+  entryFee: "0",
   skatingEventCategories: [],
   skatingEventDisciplines: [],
   categoryFormat: "standard",
@@ -195,7 +196,6 @@ export const validateEventForm = (formData) => {
     "eventStartDate",
     "eventEndDate",
     "status",
-    "entryFee",
     "skatingEventCategories"
   ];
 
@@ -206,8 +206,28 @@ export const validateEventForm = (formData) => {
     }
   });
 
-  if (formData.entryFee && Number(formData.entryFee) < 0) {
-    errors.entryFee = "Entry fee cannot be negative";
+  const feeType =
+    formData.feeType ??
+    (formData.entryFee !== "" &&
+    formData.entryFee !== "0" &&
+    Number(formData.entryFee || 0) > 0
+      ? "paid"
+      : "free");
+
+  if (feeType === "paid") {
+    const feeStr = String(formData.entryFee ?? "").trim();
+    if (!feeStr || feeStr === "0") {
+      errors.entryFee = "Please enter the entry fee amount";
+    } else {
+      const feeNum = Number(feeStr);
+      if (Number.isNaN(feeNum)) {
+        errors.entryFee = "Please enter a valid numeric amount";
+      } else if (feeNum <= 0) {
+        errors.entryFee = "Entry fee for paid events must be greater than 0";
+      }
+    }
+  } else {
+    delete errors.entryFee;
   }
   if (!Array.isArray(formData.skatingEventCategories) || formData.skatingEventCategories.length < 1) {
     errors.skatingEventCategories = "Select at least one category";
@@ -281,6 +301,10 @@ export const createEventFormValues = (event = {}) => {
     if (!disciplineIds.includes(id)) disciplineIds.push(id);
   }
 
+  const rawFee = event.entryFee;
+  const numFee = Number(rawFee);
+  const isPaid = Number.isFinite(numFee) && numFee > 0;
+
   return {
     header: event.header ?? "",
     about: event.about ?? "",
@@ -292,7 +316,8 @@ export const createEventFormValues = (event = {}) => {
     eventStartTime: formatTimeForInput(event.eventStartTime),
     eventEndTime: formatTimeForInput(event.eventEndTime),
     status: event.status ?? "coming_soon",
-    entryFee: event.entryFee ?? "",
+    feeType: isPaid ? "paid" : "free",
+    entryFee: isPaid ? String(rawFee) : "0",
     skatingEventCategories: categoryIds,
     skatingEventDisciplines: disciplineIds,
     categoryFormat: event.categoryFormat ?? event.categorySource ?? "standard",

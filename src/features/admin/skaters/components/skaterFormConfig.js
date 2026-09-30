@@ -13,6 +13,7 @@ const formatDateInput = (value) => {
 export const initialSkaterFormValues = {
   fullName: "",
   phone: "",
+  countryCode: "+91",
   email: "",
   rsfiId: "",
   dob: "",
@@ -51,6 +52,7 @@ export const bloodGroupOptions = ["A+", "A-", "B+", "B-", "O+", "O-", "AB+", "AB
 export const skaterFieldLabels = {
   fullName: "Full name",
   phone: "Phone",
+  countryCode: "Country Code",
   email: "Email",
   rsfiId: "RSFI ID",
   dob: "Date of birth",
@@ -70,6 +72,7 @@ export const skaterFieldLabels = {
 export const createSkaterFormValues = (skater = {}) => ({
   fullName: skater.fullName ?? "",
   phone: skater.phone ?? "",
+  countryCode: skater.countryCode || "+91",
   email: skater.email ?? "",
   rsfiId: skater.rsfiId ?? "",
   dob: formatDateInput(skater.dob),
@@ -91,12 +94,12 @@ export const createSkaterFormValues = (skater = {}) => ({
   clubDistrictName:
     skater.club?.districtName ?? skater.club?.district?.name ?? "",
   clubStatus: skater.clubStatus ?? "",
-  categoryId: String(skater.category?._id ?? skater.category ?? ""),
-  categoryName: skater.category?.name ?? skater.category?.typeName ?? skater.categoryName ?? "",
+  categoryId: String(skater.category?._id ?? skater.category ?? skater.eventCategory?._id ?? skater.eventCategory ?? ""),
+  categoryName: skater.category?.name ?? skater.category?.typeName ?? skater.categoryName ?? skater.eventCategory?.name ?? "",
   eventCategoryId: String(skater.eventCategory?._id ?? skater.eventCategory ?? ""),
   eventCategoryName: skater.eventCategory?.name ?? "",
   disciplineId: String(skater.discipline?._id ?? skater.discipline ?? ""),
-  disciplineName: skater.discipline?.name ?? "",
+  disciplineName: skater.disciplineName ?? skater.discipline?.name ?? "",
   photoPreview: getSkaterProfileImage(skater),
   photoFile: null,
   existingDocuments: getSkaterDocuments(skater),
@@ -116,6 +119,7 @@ export const buildSkaterUpdateFormData = (formData) => {
 
   appendIfPresent(fd, "fullName", formData.fullName.trim());
   appendIfPresent(fd, "phone", formData.phone.trim());
+  appendIfPresent(fd, "countryCode", (formData.countryCode || "+91").trim());
   appendIfPresent(fd, "email", formData.email.trim());
   appendIfPresent(fd, "rsfiId", formData.rsfiId.trim());
   appendIfPresent(fd, "gender", formData.gender.trim());

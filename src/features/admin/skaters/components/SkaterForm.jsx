@@ -207,15 +207,23 @@ export const SkaterForm = ({
           fullWidth
           required
         />
-        <TextField
-          label="Phone"
-          value={formData.phone}
-          onChange={onFieldChange("phone")}
-          error={Boolean(errors.phone)}
-          helperText={errors.phone}
-          fullWidth
-          required
-        />
+        <Box sx={{ display: "flex", gap: 1.5 }}>
+          <TextField
+            label="Country Code"
+            value={formData.countryCode || "+91"}
+            onChange={onFieldChange("countryCode")}
+            sx={{ width: 120, flexShrink: 0 }}
+          />
+          <TextField
+            label="Phone"
+            value={formData.phone}
+            onChange={onFieldChange("phone")}
+            error={Boolean(errors.phone)}
+            helperText={errors.phone}
+            fullWidth
+            required
+          />
+        </Box>
         <TextField
           label="Email"
           type="email"

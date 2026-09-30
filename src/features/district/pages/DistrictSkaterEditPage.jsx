@@ -78,14 +78,19 @@ export const DistrictSkaterEditPage = () => {
         setEventCategories(catList);
 
         // resolve eventCategory from discipline if not set directly
-        const savedEventCatId = data.eventCategory?._id || String(data.eventCategory || "");
+        const savedEventCatId = data.eventCategory?._id || data.category?._id || String(data.eventCategory || data.category || "");
         const savedDisciplineId = data.discipline?._id || String(data.discipline || "");
         let resolvedCatId = savedEventCatId;
-        if (!resolvedCatId && savedDisciplineId) {
-          const ownerCat = catList.find((c) =>
-            (c.disciplines || []).some((d) => String(d._id) === savedDisciplineId)
-          );
-          if (ownerCat) resolvedCatId = String(ownerCat._id);
+        let finalDisciplineId = savedDisciplineId;
+        if (resolvedCatId && !finalDisciplineId) {
+          const cat = catList.find((c) => String(c._id) === String(resolvedCatId));
+          const catDisciplines = cat?.disciplines || [];
+          if (catDisciplines.length === 1) {
+            finalDisciplineId = String(catDisciplines[0]._id);
+          } else if (catDisciplines.length > 1) {
+            const match = catDisciplines.find((d) => d.name?.trim().toLowerCase() === cat.name?.trim().toLowerCase());
+            if (match) finalDisciplineId = String(match._id);
+          }
         }
 
         setForm({
@@ -103,7 +108,7 @@ export const DistrictSkaterEditPage = () => {
           rsfiId: data.rsfiId || "",
           signature: data.signature || "",
           eventCategory: resolvedCatId,
-          discipline: savedDisciplineId,
+          discipline: finalDisciplineId,
           photo: null,
           photoPreview: data.photo || data.img || "",
         });
@@ -124,7 +129,8 @@ export const DistrictSkaterEditPage = () => {
     if (!form.fullName.trim()) { toast.error("Full name is required"); return; }
     setSaving(true);
     try {
-      await districtPortalApi.editSkater(skaterId, form);
+      const { phone, email, photoPreview, ...dataToSave } = form;
+      await districtPortalApi.editSkater(skaterId, dataToSave);
       toast.success("Skater updated");
       navigate(`/district/skaters/${skaterId}`);
     } catch (err) {

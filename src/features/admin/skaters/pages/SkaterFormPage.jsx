@@ -196,9 +196,36 @@ export const SkaterFormPage = () => {
       (c) => String(c._id || c.id) === String(categoryId)
     );
     const list = Array.isArray(matched?.disciplines) ? matched.disciplines : [];
-    setDisciplines(
-      list.map((d) => ({ id: String(d._id || d.id), name: d.name || "" }))
-    );
+    const mapped = list.map((d) => ({ id: String(d._id || d.id), name: d.name || "" }));
+    setDisciplines(mapped);
+
+    setFormData((prev) => {
+      if (!prev) return prev;
+      const currentValid = mapped.some((d) => d.id === prev.disciplineId);
+      if (!currentValid) {
+        if (mapped.length === 1) {
+          return {
+            ...prev,
+            disciplineId: mapped[0].id,
+            disciplineName: mapped[0].name
+          };
+        }
+        const nameMatch = mapped.find(
+          (d) => d.name.trim().toLowerCase() === (prev.categoryName || "").trim().toLowerCase()
+        );
+        if (nameMatch) {
+          return {
+            ...prev,
+            disciplineId: nameMatch.id,
+            disciplineName: nameMatch.name
+          };
+        }
+        if (prev.disciplineId) {
+          return { ...prev, disciplineId: "", disciplineName: "" };
+        }
+      }
+      return prev;
+    });
   }, [formData?.categoryId, rawCategories]);
 
   const handleFieldChange = useCallback(
@@ -225,9 +252,15 @@ export const SkaterFormPage = () => {
         if (field === "categoryId") {
           const selectedCategory = categories.find((category) => category.id === value);
           next.categoryName = selectedCategory?.name || "";
-          // clear discipline when category changes
-          next.disciplineId = "";
-          next.disciplineName = "";
+          const matchedDoc = rawCategories.find((c) => String(c._id || c.id) === String(value));
+          const catDisciplines = Array.isArray(matchedDoc?.disciplines) ? matchedDoc.disciplines : [];
+          if (catDisciplines.length === 1) {
+            next.disciplineId = String(catDisciplines[0]._id || catDisciplines[0].id);
+            next.disciplineName = catDisciplines[0].name || "";
+          } else {
+            next.disciplineId = "";
+            next.disciplineName = "";
+          }
         }
 
         if (field === "disciplineId") {
@@ -239,7 +272,7 @@ export const SkaterFormPage = () => {
       });
       setErrors((current) => ({ ...current, [field]: "" }));
     },
-    [clubs, categories, disciplines]
+    [clubs, categories, disciplines, rawCategories]
   );
 
   const handlePhotoChange = useCallback((event) => {

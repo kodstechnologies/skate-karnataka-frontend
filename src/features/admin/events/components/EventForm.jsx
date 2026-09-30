@@ -158,6 +158,27 @@ export const EventForm = ({
   onCategoryFormatChange
 }) => {
   const categoryFormat = formData.categoryFormat ?? "standard";
+  const feeType =
+    formData.feeType ??
+    (formData.entryFee !== "" &&
+    formData.entryFee !== "0" &&
+    Number(formData.entryFee || 0) > 0
+      ? "paid"
+      : "free");
+
+  const handleFeeTypeChange = (event) => {
+    const nextType = event.target.value;
+    onFieldChange("feeType")({ target: { value: nextType } });
+    if (nextType === "free") {
+      onFieldChange("entryFee")({ target: { value: "0" } });
+    } else {
+      const current = Number(formData.entryFee);
+      onFieldChange("entryFee")({
+        target: { value: current > 0 ? String(formData.entryFee) : "" }
+      });
+    }
+  };
+
   const selectedCategoryIds = normalizeSkatingEventCategoryIds(formData.skatingEventCategories);
   const selectedDisciplineIds = normalizeSkatingEventCategoryIds(formData.skatingEventDisciplines);
   const categoriesForOptions = [
@@ -257,17 +278,99 @@ export const EventForm = ({
               </MenuItem>
             ))}
           </TextField>
-          <TextField
-            label="Entry Fee (₹)"
-            type="number"
-            value={formData.entryFee}
-            onChange={onFieldChange("entryFee")}
-            error={Boolean(errors.entryFee)}
-            helperText={errors.entryFee}
-            fullWidth
-            disabled={disabled}
-            sx={inputStyles}
-          />
+          <Box
+            sx={{
+              p: 1.5,
+              px: 2,
+              borderRadius: "18px",
+              border: "1px solid",
+              borderColor: errors.entryFee && feeType === "paid" ? "#d32f2f" : "rgba(244, 228, 221, 0.95)",
+              backgroundColor: "rgba(255,255,255,0.92)",
+              display: "flex",
+              flexDirection: "column",
+              justifyContent: "center",
+              minHeight: 56
+            }}
+          >
+            <Typography
+              variant="caption"
+              sx={{
+                color: "#8d7f7b",
+                fontWeight: 600,
+                fontSize: 11,
+                textTransform: "uppercase",
+                letterSpacing: "0.06em",
+                mb: 0.25
+              }}
+            >
+              Entry Fee
+            </Typography>
+            <RadioGroup
+              row
+              value={feeType}
+              onChange={handleFeeTypeChange}
+            >
+              <FormControlLabel
+                value="free"
+                disabled={disabled}
+                control={
+                  <Radio
+                    size="small"
+                    sx={{ color: "#f6765e", "&.Mui-checked": { color: "#f6765e" } }}
+                  />
+                }
+                label={
+                  <Typography sx={{ fontSize: 14, fontWeight: feeType === "free" ? 700 : 500, color: "#2f2829" }}>
+                    Free (₹0)
+                  </Typography>
+                }
+              />
+              <FormControlLabel
+                value="paid"
+                disabled={disabled}
+                control={
+                  <Radio
+                    size="small"
+                    sx={{ color: "#f6765e", "&.Mui-checked": { color: "#f6765e" } }}
+                  />
+                }
+                label={
+                  <Typography sx={{ fontSize: 14, fontWeight: feeType === "paid" ? 700 : 500, color: "#2f2829" }}>
+                    Paid
+                  </Typography>
+                }
+              />
+            </RadioGroup>
+          </Box>
+
+          {feeType === "paid" && (
+            <TextField
+              label="Entry Fee Amount (₹)"
+              type="number"
+              placeholder="e.g. 500"
+              value={formData.entryFee === "0" || formData.entryFee === 0 ? "" : formData.entryFee}
+              onChange={onFieldChange("entryFee")}
+              error={Boolean(errors.entryFee)}
+              helperText={errors.entryFee || "Enter entry fee amount per participant in rupees"}
+              fullWidth
+              required
+              disabled={disabled}
+              sx={{
+                ...inputStyles,
+                gridColumn: { md: "span 2" }
+              }}
+              inputProps={{ min: 1, step: "any" }}
+              slotProps={{
+                input: {
+                  startAdornment: (
+                    <Typography sx={{ color: "#8d7f7b", mr: 1, fontWeight: 700, fontSize: 16 }}>
+                      ₹
+                    </Typography>
+                  )
+                }
+              }}
+            />
+          )}
         </Box>
       </SectionCard>
 

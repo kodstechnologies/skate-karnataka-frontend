@@ -123,6 +123,10 @@ export const DistrictEventFormPage = () => {
     setSaving(true);
     try {
       const payload = { ...formData };
+      if (payload.feeType === "free") {
+        payload.entryFee = "0";
+      }
+      delete payload.feeType;
 
       // Transform flat categoryIds + disciplineIds into nested format expected by backend:
       // [{ categoryId: "...", disciplines: [{ id: "..." }] }]
