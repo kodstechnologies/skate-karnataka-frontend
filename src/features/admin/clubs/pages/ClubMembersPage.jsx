@@ -567,7 +567,7 @@ export const ClubMembersPage = () => {
                             </IconButton>
                           </Tooltip>
                         )}
-                        <Tooltip title="Edit member">
+                        {/* <Tooltip title="Edit member">
                           <IconButton
                             onClick={() => navigate(editMemberPath(member.id))}
                             sx={{ border: "1px solid #efe2dc", backgroundColor: "#fff8f4" }}
@@ -575,7 +575,7 @@ export const ClubMembersPage = () => {
                           >
                             <PencilLine size={16} />
                           </IconButton>
-                        </Tooltip>
+                        </Tooltip> */}
                         {!isClubPortal && !member.isMain && (
                           <Tooltip title="Set as main member">
                             <IconButton

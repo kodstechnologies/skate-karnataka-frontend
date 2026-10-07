@@ -5,6 +5,7 @@ import toast from "react-hot-toast";
 const mapToFrontend = (d) => ({
   id: d._id,
   img: d.img || "",
+  document: d.document || "",
   heading: d.heading || "",
   text: d.text || "",
   date: d.date || null,
@@ -19,9 +20,14 @@ const mapToBackend = (payload) => {
   if (payload.text?.trim()) fd.append("text", payload.text.trim());
   if (payload.date) fd.append("date", payload.date);
   if (payload.img instanceof File) fd.append("img", payload.img);
+  if (payload.document instanceof File) fd.append("document", payload.document);
   if (Array.isArray(payload.relatedInformationImages)) {
-    payload.relatedInformationImages.forEach((file) => {
-      if (file instanceof File) fd.append("relatedInformationImages", file);
+    payload.relatedInformationImages.forEach((item) => {
+      if (item instanceof File) {
+        fd.append("relatedInformationImages", item);
+      } else if (typeof item === "string" && item.trim()) {
+        fd.append("relatedInformationImages", item.trim());
+      }
     });
   }
   return fd;

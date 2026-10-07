@@ -9,11 +9,39 @@ const parentIdKey = (parentId) => {
  * Build nested nav items from a flat API sidebar list (sorted by order).
  * @param {import('@/types/sidebar.types').SidebarItem[]} items
  */
-const HIDDEN_ROUTES = new Set(["/dev/test", "/discipline"]);
+const HIDDEN_ROUTES = new Set(["/dev/test", "/dev-test", "/discipline"]);
+
+const isHiddenSidebarItem = (item) => {
+  if (!item) return false;
+  const route = String(item.route || "").toLowerCase().trim();
+  const slug = String(item.slug || "").toLowerCase().trim();
+  const title = String(item.title || item.label || "").toLowerCase().trim();
+
+  if (HIDDEN_ROUTES.has(item.route) || HIDDEN_ROUTES.has(route)) return true;
+  if (
+    route === "/dev/test" ||
+    route === "/dev-test" ||
+    route.startsWith("/dev/") ||
+    route.startsWith("/dev-")
+  )
+    return true;
+  if (slug === "dev-test" || slug === "dev/test" || slug === "dev_test" || slug === "dev")
+    return true;
+  if (
+    title === "dev / test" ||
+    title === "dev/test" ||
+    title === "dev test" ||
+    title.includes("dev / test") ||
+    title.includes("dev/test")
+  )
+    return true;
+
+  return false;
+};
 
 export const buildNavigationFromSidebarItems = (items = []) => {
   const sorted = [...items]
-    .filter((item) => !HIDDEN_ROUTES.has(item.route))
+    .filter((item) => !isHiddenSidebarItem(item))
     .sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
   const byParent = new Map();
 

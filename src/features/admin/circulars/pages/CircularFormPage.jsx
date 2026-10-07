@@ -34,18 +34,50 @@ const isImageFile = (file) =>
   (String(file.type || "").startsWith("image/") || IMAGE_EXTENSIONS.test(file.name || ""));
 
 const useObjectUrl = (file) => {
-  const url = useMemo(() => (file instanceof File ? URL.createObjectURL(file) : ""), [file]);
+  const [previewUrl, setPreviewUrl] = useState("");
 
   useEffect(() => {
-    if (!url) return undefined;
-    return () => URL.revokeObjectURL(url);
-  }, [url]);
+    if (!file) {
+      setPreviewUrl("");
+      return;
+    }
+    if (typeof file === "string") {
+      setPreviewUrl(file);
+      return;
+    }
 
-  return url;
+    let createdUrl = "";
+    if (
+      file instanceof Blob ||
+      file instanceof File ||
+      (file && typeof file === "object" && ("stream" in file || "arrayBuffer" in file || file.name))
+    ) {
+      try {
+        createdUrl = URL.createObjectURL(file);
+        setPreviewUrl(createdUrl);
+      } catch (err) {
+        console.error("Failed to create Object URL:", err);
+        setPreviewUrl("");
+      }
+    } else {
+      setPreviewUrl("");
+    }
+
+    return () => {
+      if (createdUrl) {
+        try {
+          URL.revokeObjectURL(createdUrl);
+        } catch {}
+      }
+    };
+  }, [file]);
+
+  return previewUrl;
 };
 
 const RelatedImagePreview = ({ file, onRemove }) => {
   const previewUrl = useObjectUrl(file);
+  const displayName = typeof file === "string" ? file.split("/").pop() : (file?.name || "Image");
 
   return (
     <Box
@@ -60,7 +92,7 @@ const RelatedImagePreview = ({ file, onRemove }) => {
       <Box
         component="img"
         src={previewUrl}
-        alt={file.name}
+        alt={displayName}
         sx={{
           width: "100%",
           height: 120,
@@ -80,7 +112,7 @@ const RelatedImagePreview = ({ file, onRemove }) => {
             whiteSpace: "nowrap"
           }}
         >
-          {file.name}
+          {displayName}
         </Typography>
       </Box>
       <Button
@@ -119,6 +151,7 @@ export const CircularFormPage = () => {
 
   const [formData, setFormData] = useState({
     img: null,
+    document: null,
     heading: "",
     text: "",
     date: "",
@@ -137,10 +170,13 @@ export const CircularFormPage = () => {
       // eslint-disable-next-line react-hooks/set-state-in-effect
       setFormData({
         img: null,
+        document: null,
         heading: existing.heading ?? "",
         text: existing.text ?? "",
         date: existing.date ? existing.date.split("T")[0] : "",
-        relatedInformationImages: []
+        relatedInformationImages: Array.isArray(existing.relatedInformationImages)
+          ? [...existing.relatedInformationImages]
+          : []
       });
     }
   }, [existing]);
@@ -165,6 +201,15 @@ export const CircularFormPage = () => {
   };
 
   const handleRemoveImg = () => setFormData((p) => ({ ...p, img: null }));
+
+  const handleDocument = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setFormData((p) => ({ ...p, document: file }));
+    setErrors((p) => ({ ...p, document: "" }));
+  };
+
+  const handleRemoveDocument = () => setFormData((p) => ({ ...p, document: null }));
 
   const handleRelatedImages = (e) => {
     const files = Array.from(e.target.files || []);
@@ -436,6 +481,89 @@ export const CircularFormPage = () => {
             )}
           </Box>
 
+          {/* ── Document ───────────────────────────────────────── */}
+          <Box
+            sx={{
+              p: 2.25,
+              borderRadius: "22px",
+              border: "1px solid #f4e5de",
+              backgroundColor: "#fffaf8"
+            }}
+          >
+            <Typography
+              sx={{
+                mb: 1,
+                fontSize: 13,
+                fontWeight: 700,
+                color: "#7f706c",
+                textTransform: "uppercase",
+                letterSpacing: "0.08em"
+              }}
+            >
+              Circular Document (Optional)
+            </Typography>
+            <Typography sx={{ mb: 1.5, fontSize: 12, color: "#8d7f7b", lineHeight: 1.6 }}>
+              Upload an associated document/PDF file for this circular.
+            </Typography>
+            {existing?.document && !formData.document && (
+              <Box sx={{ mb: 1.5, display: "flex", alignItems: "center", gap: 1.5 }}>
+                <Button
+                  component="a"
+                  href={existing.document}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  size="small"
+                  variant="text"
+                  sx={{ fontSize: 12 }}
+                >
+                  View current document
+                </Button>
+              </Box>
+            )}
+            <Button
+              component="label"
+              variant="outlined"
+              startIcon={<UploadFileOutlinedIcon />}
+              sx={{ borderRadius: "14px" }}
+            >
+              {existing?.document || formData.document ? "Replace Document" : "Choose Document"}
+              <input
+                type="file"
+                accept=".pdf,.doc,.docx,.png,.jpg,.jpeg"
+                hidden
+                onChange={handleDocument}
+              />
+            </Button>
+            {formData.document && (
+              <Box
+                sx={{
+                  mt: 1.5,
+                  p: 1.5,
+                  borderRadius: "14px",
+                  border: "1px solid #efe2dc",
+                  backgroundColor: "white"
+                }}
+              >
+                <Stack direction="row" spacing={1.5} sx={{ alignItems: "center" }}>
+                  <Box sx={{ flex: 1, minWidth: 0 }}>
+                    <Typography sx={{ fontSize: 13, fontWeight: 600, color: "#2f2829" }}>
+                      {formData.document.name}
+                    </Typography>
+                  </Box>
+                  <Button
+                    size="small"
+                    startIcon={<X size={13} />}
+                    color="error"
+                    onClick={handleRemoveDocument}
+                    sx={{ borderRadius: "10px", textTransform: "none", fontSize: 12, flexShrink: 0 }}
+                  >
+                    Remove
+                  </Button>
+                </Stack>
+              </Box>
+            )}
+          </Box>
+
           {/* ── Related Information Images ────────────────────── */}
           <Box
             sx={{
@@ -470,32 +598,6 @@ export const CircularFormPage = () => {
               </Typography>
             </Typography>
 
-            {/* Show existing images in edit mode when no new files are selected */}
-            {isEditing &&
-              existing?.relatedInformationImages?.length > 0 &&
-              formData.relatedInformationImages.length === 0 && (
-                <Box sx={{ mb: 2 }}>
-                  <Typography sx={{ mb: 1, fontSize: 12, color: "#8d7f7b" }}>
-                    Currently attached — will keep unless you add new ones
-                  </Typography>
-                  <Box sx={{ display: "flex", gap: 1, flexWrap: "wrap" }}>
-                    {existing.relatedInformationImages.map((url, idx) => (
-                      <Avatar
-                        key={idx}
-                        src={url}
-                        variant="rounded"
-                        sx={{
-                          width: 56,
-                          height: 56,
-                          borderRadius: "12px",
-                          border: "1px solid #efe2dc"
-                        }}
-                      />
-                    ))}
-                  </Box>
-                </Box>
-              )}
-
             <Button
               component="label"
               variant="outlined"
@@ -511,7 +613,7 @@ export const CircularFormPage = () => {
               page. JPG, PNG, or WebP only.
             </Typography>
 
-            {/* New file previews */}
+            {/* File & URL previews */}
             {formData.relatedInformationImages.length > 0 && (
               <Box
                 sx={{
@@ -527,7 +629,11 @@ export const CircularFormPage = () => {
               >
                 {formData.relatedInformationImages.map((file, idx) => (
                   <RelatedImagePreview
-                    key={`${file.name}-${file.size}-${idx}`}
+                    key={
+                      typeof file === "string"
+                        ? `url-${idx}-${file}`
+                        : `file-${idx}-${file.name || "img"}-${file.size || 0}`
+                    }
                     file={file}
                     onRemove={() => handleRemoveRelatedImage(idx)}
                   />

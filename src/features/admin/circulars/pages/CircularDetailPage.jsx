@@ -194,6 +194,18 @@ export const CircularDetailPage = () => {
                 label={formatDate(item?.date)}
                 sx={{ color: "white", backgroundColor: "rgba(255,255,255,0.14)" }}
               />
+              {item?.document && (
+                <Chip
+                  icon={<FileText size={16} />}
+                  label="View Document"
+                  component="a"
+                  href={item.document}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  clickable
+                  sx={{ color: "white", backgroundColor: "rgba(255,255,255,0.22)" }}
+                />
+              )}
             </Stack>
           </Box>
         </Stack>
@@ -283,6 +295,49 @@ export const CircularDetailPage = () => {
               icon={<CalendarDays size={14} />}
             />
             <DetailField label="Text" value={item?.text} fullWidth />
+
+            {item?.document && (
+              <Box sx={{ gridColumn: { md: "span 2" }, mt: 1 }}>
+                <Stack direction="row" spacing={1} sx={{ mb: 0.75, alignItems: "center" }}>
+                  <Box sx={{ color: "#f6765e" }}>
+                    <FileText size={14} />
+                  </Box>
+                  <Typography
+                    sx={{
+                      fontSize: 11,
+                      fontWeight: 700,
+                      textTransform: "uppercase",
+                      letterSpacing: "0.08em",
+                      color: "#a28f89"
+                    }}
+                  >
+                    Attached Document
+                  </Typography>
+                </Stack>
+                <Button
+                  component="a"
+                  href={item.document}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  variant="outlined"
+                  startIcon={<FileText size={16} />}
+                  sx={{
+                    borderRadius: "14px",
+                    textTransform: "none",
+                    borderColor: "#f6765e",
+                    color: "#f6765e",
+                    fontWeight: 600,
+                    p: "8px 18px",
+                    "&:hover": {
+                      borderColor: "#ea6b54",
+                      backgroundColor: "rgba(246,118,94,0.06)"
+                    }
+                  }}
+                >
+                  View / Download Document
+                </Button>
+              </Box>
+            )}
           </Box>
         </Box>
 
