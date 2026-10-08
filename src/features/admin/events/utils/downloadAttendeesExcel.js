@@ -13,11 +13,14 @@ const KRSA_HEADERS = [
   "Gender",
   "DOB",
   "RSFI NO",
-  "Discipline"
+  "Discipline",
+  "Phone",
+  "Email"
 ];
-const KRSA_WIDTHS = [5, 9, 20, 28, 16, 11, 9, 11, 12, 18];
-const EXTRA_HEADERS = ["Remark", "Status"];
-const EXTRA_WIDTHS = [22, 12];
+const KRSA_WIDTHS = [5, 9, 20, 28, 16, 11, 9, 11, 12, 18, 14, 26];
+const EXTRA_HEADERS = ["Event Category", "Remark", "Status"];
+const EXTRA_WIDTHS = [20, 22, 12];
+
 const DOB_COL_INDEX = 7; // 0-based in values array
 const THIN_BLACK = {
   top: { style: "thin", color: { argb: "FF000000" } },
@@ -73,6 +76,13 @@ const paymentStatusRank = (status) => {
 const cell = (value) => {
   if (value === null || value === undefined) return "";
   return String(value).trim();
+};
+
+/** Format phone or email with "(Parent)" suffix when it's from the parent. */
+const resolveContactCell = (value, isParent) => {
+  const v = cell(value);
+  if (!v) return "";
+  return isParent ? `${v} (Parent)` : v;
 };
 
 const triggerDownload = (buffer, filename) => {
@@ -277,6 +287,12 @@ export const buildMasterEntryRows = (attendees = [], disciplineGroups = []) => {
         gender: row.gender,
         dob: row.dob,
         rsfiId: cell(row.rsfiId),
+        phone: cell(row.phone),
+        phoneIsParent: !!row.phoneIsParent,
+        email: cell(row.email),
+        emailIsParent: !!row.emailIsParent,
+        discipline: cell(row.discipline),
+        eventCategory: cell(row.eventCategory),
         // Master Entry District = club's district association
         district: cell(row.clubDistrict || row.district),
         remarks: resolveRemark(row),
@@ -291,6 +307,16 @@ export const buildMasterEntryRows = (attendees = [], disciplineGroups = []) => {
     if (!group.dob && row.dob) group.dob = row.dob;
     if (!group.rsfiId && row.rsfiId) group.rsfiId = cell(row.rsfiId);
     if (!group.chestNo && row.chestNo) group.chestNo = cell(row.chestNo);
+    if (!group.phone && row.phone) {
+      group.phone = cell(row.phone);
+      group.phoneIsParent = !!row.phoneIsParent;
+    }
+    if (!group.email && row.email) {
+      group.email = cell(row.email);
+      group.emailIsParent = !!row.emailIsParent;
+    }
+    if (!group.discipline && row.discipline) group.discipline = cell(row.discipline);
+    if (!group.eventCategory && row.eventCategory) group.eventCategory = cell(row.eventCategory);
     const clubDistrict = cell(row.clubDistrict || row.district);
     if (!group.district && clubDistrict) group.district = clubDistrict;
     const remark = resolveRemark(row);
@@ -493,7 +519,9 @@ export const downloadAttendeesExcel = async ({
       formatMasterEntryGender(row.gender),
       dob,
       row.rsfiId || "",
-      row.category || "",
+      row.discipline || row.category || "",
+      resolveContactCell(row.phone, row.phoneIsParent),
+      resolveContactCell(row.email, row.emailIsParent),
       ...lapColumns.map((col) => (row.marks?.[col.key] ? "Yes" : ""))
     ];
 
@@ -501,7 +529,7 @@ export const downloadAttendeesExcel = async ({
       values.push("");
     }
 
-    values.push(resolveRemark(row), formatStatus(row));
+    values.push(row.eventCategory || "", resolveRemark(row), formatStatus(row));
 
     values.forEach((value, colIndex) => {
       const excelCell = excelRow.getCell(colIndex + 1);

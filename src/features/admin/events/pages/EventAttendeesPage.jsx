@@ -17,13 +17,14 @@ import {
   Typography,
   Button
 } from "@mui/material";
-import { ChevronRight, Download, Search } from "lucide-react";
+import { ChevronRight, Download, Search, Users } from "lucide-react";
 import { Link as RouterLink, useLocation, useNavigate, useParams } from "react-router-dom";
 import toast from "react-hot-toast";
 import { competitionApi } from "@/api/competition-api";
 import { resolveAttendeesPortalContext } from "@/features/admin/events/utils/eventAttendeesNavigation";
 import { downloadAttendeesExcel } from "@/features/admin/events/utils/downloadAttendeesExcel";
 import { formatGenderLabel } from "@/utils/validationHelper";
+import Tooltip from "@mui/material/Tooltip";
 
 const formatAttendeeStatusLabel = (row) => {
   const value = String(row?.attendanceStatus || "")
@@ -395,10 +396,9 @@ export const EventAttendeesPage = () => {
                 <TableCell sx={{ fontWeight: 700 }}>Gender</TableCell>
                 <TableCell sx={{ fontWeight: 700 }}>Email</TableCell>
                 <TableCell sx={{ fontWeight: 700 }}>Phone no</TableCell>
+                <TableCell sx={{ fontWeight: 700 }}>Event Category</TableCell>
                 <TableCell sx={{ fontWeight: 700 }}>Discipline</TableCell>
                 <TableCell sx={{ fontWeight: 700 }}>Club district</TableCell>
-                {/* <TableCell sx={{ fontWeight: 700 }}>Remark</TableCell>
-                <TableCell sx={{ fontWeight: 700 }}>Status</TableCell> */}
               </TableRow>
             </TableHead>
             <TableBody>
@@ -426,12 +426,53 @@ export const EventAttendeesPage = () => {
                     <TableCell>{row.krsaId || "-"}</TableCell>
                     <TableCell>{row.rsfiId || "-"}</TableCell>
                     <TableCell>{formatGenderLabel(row.gender)}</TableCell>
-                    <TableCell>{row.email || "-"}</TableCell>
-                    <TableCell>{row.phone || "-"}</TableCell>
+                    {/* Email with parent fallback icon */}
+                    <TableCell>
+                      <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
+                        <span>{row.email || "-"}</span>
+                        {row.emailIsParent && row.email && (
+                          <Tooltip title="Parent's email" placement="top" arrow>
+                            <span
+                              style={{
+                                display: "inline-flex",
+                                alignItems: "center",
+                                cursor: "default"
+                              }}
+                            >
+                              <Users
+                                size={13}
+                                style={{ color: "#f6765e", marginLeft: 2, flexShrink: 0 }}
+                              />
+                            </span>
+                          </Tooltip>
+                        )}
+                      </Box>
+                    </TableCell>
+                    {/* Phone with parent fallback icon */}
+                    <TableCell>
+                      <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
+                        <span>{row.phone || "-"}</span>
+                        {row.phoneIsParent && row.phone && (
+                          <Tooltip title="Parent's phone" placement="top" arrow>
+                            <span
+                              style={{
+                                display: "inline-flex",
+                                alignItems: "center",
+                                cursor: "default"
+                              }}
+                            >
+                              <Users
+                                size={13}
+                                style={{ color: "#f6765e", marginLeft: 2, flexShrink: 0 }}
+                              />
+                            </span>
+                          </Tooltip>
+                        )}
+                      </Box>
+                    </TableCell>
+                    <TableCell>{row.eventCategory || "-"}</TableCell>
                     <TableCell>{row.discipline || "-"}</TableCell>
                     <TableCell>{row.clubDistrict || row.district || "-"}</TableCell>
-                    {/* <TableCell>{row.remarks || row.remark || "-"}</TableCell>
-                    <TableCell>{formatAttendeeStatusLabel(row)}</TableCell> */}
                   </TableRow>
                 ))
               )}
