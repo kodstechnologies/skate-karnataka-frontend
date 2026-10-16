@@ -13,22 +13,35 @@ const withRequestMeta = (request) => ({
 
 export const useRequestsStore = create((set) => ({
   schoolRequests: [],
+  schoolPagination: null,
   selectedSchool: null,
+
   officialRequests: [],
+  officialPagination: null,
   selectedOfficial: null,
+
   parentRequests: [],
+  parentPagination: null,
   selectedParent: null,
+
   academyRequests: [],
+  academyPagination: null,
   selectedAcademy: null,
+
   guestRequests: [],
+  guestPagination: null,
   selectedGuest: null,
+
   loading: false,
+
   fetchSchoolRequests: async (params) => {
     try {
       set({ loading: true });
       const response = await schoolApi.getAll(params);
-      const schools = response?.data?.data?.map(withRequestMeta) || [];
-      set({ schoolRequests: schools });
+      const rawData = response?.data?.data || response?.data || [];
+      const schools = Array.isArray(rawData) ? rawData.map(withRequestMeta) : [];
+      const pagination = response?.data?.pagination || null;
+      set({ schoolRequests: schools, schoolPagination: pagination });
     } catch (error) {
       const errorMessage = error?.response?.data?.message || "Failed to fetch school requests";
       console.error(errorMessage, error);
@@ -56,7 +69,13 @@ export const useRequestsStore = create((set) => ({
       const response = await schoolApi.delete(id);
       set((state) => ({
         schoolRequests: state.schoolRequests.filter((school) => school.id !== id),
-        selectedSchool: state.selectedSchool?.id === id ? null : state.selectedSchool
+        selectedSchool: state.selectedSchool?.id === id ? null : state.selectedSchool,
+        schoolPagination: state.schoolPagination
+          ? {
+              ...state.schoolPagination,
+              total: Math.max(0, (state.schoolPagination.total || 1) - 1)
+            }
+          : null
       }));
       toast.success(response?.message || "School deleted successfully");
       return true;
@@ -71,8 +90,10 @@ export const useRequestsStore = create((set) => ({
     try {
       set({ loading: true });
       const response = await officialApi.getAll(params);
-      const officials = response?.data?.data?.map(withRequestMeta) || [];
-      set({ officialRequests: officials });
+      const rawData = response?.data?.data || response?.data || [];
+      const officials = Array.isArray(rawData) ? rawData.map(withRequestMeta) : [];
+      const pagination = response?.data?.pagination || null;
+      set({ officialRequests: officials, officialPagination: pagination });
     } catch (error) {
       const errorMessage = error?.response?.data?.message || "Failed to fetch official requests";
       console.error(errorMessage, error);
@@ -100,7 +121,13 @@ export const useRequestsStore = create((set) => ({
       const response = await officialApi.delete(id);
       set((state) => ({
         officialRequests: state.officialRequests.filter((official) => official.id !== id),
-        selectedOfficial: state.selectedOfficial?.id === id ? null : state.selectedOfficial
+        selectedOfficial: state.selectedOfficial?.id === id ? null : state.selectedOfficial,
+        officialPagination: state.officialPagination
+          ? {
+              ...state.officialPagination,
+              total: Math.max(0, (state.officialPagination.total || 1) - 1)
+            }
+          : null
       }));
       toast.success(response?.message || "Official deleted successfully");
       return true;
@@ -115,8 +142,10 @@ export const useRequestsStore = create((set) => ({
     try {
       set({ loading: true });
       const response = await parentApi.getAll(params);
-      const parents = response?.data?.data?.map(withRequestMeta) || [];
-      set({ parentRequests: parents });
+      const rawData = response?.data?.data || response?.data || [];
+      const parents = Array.isArray(rawData) ? rawData.map(withRequestMeta) : [];
+      const pagination = response?.data?.pagination || null;
+      set({ parentRequests: parents, parentPagination: pagination });
     } catch (error) {
       const errorMessage = error?.response?.data?.message || "Failed to fetch parent requests";
       console.error(errorMessage, error);
@@ -144,7 +173,13 @@ export const useRequestsStore = create((set) => ({
       const response = await parentApi.delete(id);
       set((state) => ({
         parentRequests: state.parentRequests.filter((parent) => parent.id !== id),
-        selectedParent: state.selectedParent?.id === id ? null : state.selectedParent
+        selectedParent: state.selectedParent?.id === id ? null : state.selectedParent,
+        parentPagination: state.parentPagination
+          ? {
+              ...state.parentPagination,
+              total: Math.max(0, (state.parentPagination.total || 1) - 1)
+            }
+          : null
       }));
       toast.success(response?.message || "Parent deleted successfully");
       return true;
@@ -159,8 +194,10 @@ export const useRequestsStore = create((set) => ({
     try {
       set({ loading: true });
       const response = await academyApi.getAll(params);
-      const academies = response?.data?.data?.map(withRequestMeta) || [];
-      set({ academyRequests: academies });
+      const rawData = response?.data?.data || response?.data || [];
+      const academies = Array.isArray(rawData) ? rawData.map(withRequestMeta) : [];
+      const pagination = response?.data?.pagination || null;
+      set({ academyRequests: academies, academyPagination: pagination });
     } catch (error) {
       const errorMessage = error?.response?.data?.message || "Failed to fetch academy requests";
       console.error(errorMessage, error);
@@ -188,7 +225,13 @@ export const useRequestsStore = create((set) => ({
       const response = await academyApi.delete(id);
       set((state) => ({
         academyRequests: state.academyRequests.filter((academy) => academy.id !== id),
-        selectedAcademy: state.selectedAcademy?.id === id ? null : state.selectedAcademy
+        selectedAcademy: state.selectedAcademy?.id === id ? null : state.selectedAcademy,
+        academyPagination: state.academyPagination
+          ? {
+              ...state.academyPagination,
+              total: Math.max(0, (state.academyPagination.total || 1) - 1)
+            }
+          : null
       }));
       toast.success(response?.message || "Academy deleted successfully");
       return true;
@@ -203,8 +246,10 @@ export const useRequestsStore = create((set) => ({
     try {
       set({ loading: true });
       const response = await guestApi.getAll(params);
-      const guests = response?.data?.data?.map(withRequestMeta) || [];
-      set({ guestRequests: guests });
+      const rawData = response?.data?.data || response?.data || [];
+      const guests = Array.isArray(rawData) ? rawData.map(withRequestMeta) : [];
+      const pagination = response?.data?.pagination || null;
+      set({ guestRequests: guests, guestPagination: pagination });
     } catch (error) {
       const errorMessage = error?.response?.data?.message || "Failed to fetch guest reports";
       console.error(errorMessage, error);
@@ -232,7 +277,10 @@ export const useRequestsStore = create((set) => ({
       const response = await guestApi.delete(id);
       set((state) => ({
         guestRequests: state.guestRequests.filter((guest) => guest.id !== id),
-        selectedGuest: state.selectedGuest?.id === id ? null : state.selectedGuest
+        selectedGuest: state.selectedGuest?.id === id ? null : state.selectedGuest,
+        guestPagination: state.guestPagination
+          ? { ...state.guestPagination, total: Math.max(0, (state.guestPagination.total || 1) - 1) }
+          : null
       }));
       toast.success(response?.message || "Guest deleted successfully");
       return true;

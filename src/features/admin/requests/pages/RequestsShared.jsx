@@ -74,31 +74,33 @@ export const RequestListPage = ({ config }) => {
   const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState("");
   const [page, setPage] = useState(0);
-  const [rowsPerPage, setRowsPerPage] = useState(5);
+  const [rowsPerPage, setRowsPerPage] = useState(10);
   const [pendingDelete, setPendingDelete] = useState(null);
-  const isFirstRender = useRef(true);
 
   const debouncedSearchTerm = useDebounce(searchTerm, 500);
 
-  useEffect(() => {
-    if (isFirstRender.current) {
-      isFirstRender.current = false;
-      if (config.onSearch) {
-        config.onSearch("");
-      }
-      return;
-    }
-
-    if (config.onSearch) {
-      config.onSearch(debouncedSearchTerm);
-    }
-  }, [debouncedSearchTerm, config]);
-
   const requests = config.useRequests();
+  const pagination = config.usePagination ? config.usePagination() : null;
+  const isBackendPagination = Boolean(pagination && pagination.total !== undefined);
   const loading = useRequestsStore((state) => state.loading);
   const canDelete = Boolean(config.canDelete && config.onDelete);
 
+  useEffect(() => {
+    if (config.fetchRequests) {
+      config.fetchRequests({
+        search: debouncedSearchTerm,
+        page: page + 1,
+        limit: rowsPerPage
+      });
+    } else if (config.onSearch) {
+      config.onSearch(debouncedSearchTerm);
+    }
+  }, [debouncedSearchTerm, page, rowsPerPage, config]);
+
   const filteredRequests = useMemo(() => {
+    if (isBackendPagination) {
+      return requests;
+    }
     const normalizedSearch = searchTerm.trim().toLowerCase();
     if (!normalizedSearch || config.onSearch) {
       return requests;
@@ -106,12 +108,22 @@ export const RequestListPage = ({ config }) => {
     return requests.filter((item) =>
       findSearchText(item, config.listFields).includes(normalizedSearch)
     );
-  }, [requests, searchTerm, config.listFields, config.onSearch]);
+  }, [requests, searchTerm, config.listFields, config.onSearch, isBackendPagination]);
 
   const paginatedRequests = useMemo(() => {
+    if (isBackendPagination) {
+      return requests;
+    }
     const start = page * rowsPerPage;
     return filteredRequests.slice(start, start + rowsPerPage);
-  }, [filteredRequests, page, rowsPerPage]);
+  }, [requests, filteredRequests, page, rowsPerPage, isBackendPagination]);
+
+  const totalCount = useMemo(() => {
+    if (isBackendPagination) {
+      return pagination.total;
+    }
+    return filteredRequests.length;
+  }, [isBackendPagination, pagination, filteredRequests.length]);
 
   const heroImage = config.heroImage ?? circularHero;
 
@@ -122,6 +134,12 @@ export const RequestListPage = ({ config }) => {
       setPendingDelete(null);
       if (paginatedRequests.length <= 1 && page > 0) {
         setPage((current) => Math.max(0, current - 1));
+      } else if (config.fetchRequests) {
+        config.fetchRequests({
+          search: debouncedSearchTerm,
+          page: page + 1,
+          limit: rowsPerPage
+        });
       }
     }
   };
@@ -290,7 +308,7 @@ export const RequestListPage = ({ config }) => {
         </TableContainer>
         <TablePagination
           component="div"
-          count={filteredRequests.length}
+          count={totalCount}
           page={page}
           onPageChange={(_, nextPage) => setPage(nextPage)}
           rowsPerPage={rowsPerPage}
@@ -298,7 +316,7 @@ export const RequestListPage = ({ config }) => {
             setRowsPerPage(parseInt(event.target.value, 10));
             setPage(0);
           }}
-          rowsPerPageOptions={[5, 10, 25]}
+          rowsPerPageOptions={[5, 10, 25, 50]}
           labelRowsPerPage="Rows:"
           sx={{
             "& .MuiTablePagination-toolbar": {

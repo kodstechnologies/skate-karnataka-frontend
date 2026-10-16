@@ -10,22 +10,18 @@ export const schoolRequestConfig = {
   canDelete: true,
   onDelete: (id) => useRequestsStore.getState().deleteSchool(id),
   useRequests: () => useRequestsStore((state) => state.schoolRequests),
+  usePagination: () => useRequestsStore((state) => state.schoolPagination),
+  fetchRequests: (params) => {
+    const { search = "", ...rest } = params || {};
+    const trimmed = (search || "").trim();
+    const query = { ...rest };
+    if (trimmed) {
+      query.search = trimmed;
+    }
+    return useRequestsStore.getState().fetchSchoolRequests(query);
+  },
   onSearch: (value) => {
-    const params = {};
-    const search = value.trim();
-    if (!search) {
-      return useRequestsStore.getState().fetchSchoolRequests({});
-    }
-    if (search.includes("@")) {
-      params.email = search;
-    } else if (/^\+?\d+$/.test(search)) {
-      params.phone = search;
-    } else if (["male", "female"].includes(search.toLowerCase())) {
-      params.gender = search.toLowerCase();
-    } else {
-      params.fullName = search;
-    }
-    return useRequestsStore.getState().fetchSchoolRequests(params);
+    return schoolRequestConfig.fetchRequests({ search: value, page: 1, limit: 10 });
   },
   listFields: [
     { key: "schoolName", label: "School Name" },
@@ -54,25 +50,18 @@ export const officialRequestConfig = {
   canDelete: true,
   onDelete: (id) => useRequestsStore.getState().deleteOfficial(id),
   useRequests: () => useRequestsStore((state) => state.officialRequests),
+  usePagination: () => useRequestsStore((state) => state.officialPagination),
+  fetchRequests: (params) => {
+    const { search = "", ...rest } = params || {};
+    const trimmed = (search || "").trim();
+    const query = { ...rest };
+    if (trimmed) {
+      query.search = trimmed;
+    }
+    return useRequestsStore.getState().fetchOfficialRequests(query);
+  },
   onSearch: (value) => {
-    const params = {};
-    const search = value.trim();
-
-    if (!search) {
-      return useRequestsStore.getState().fetchOfficialRequests({});
-    }
-
-    if (search.includes("@")) {
-      params.email = search;
-    } else if (/^\+?\d+$/.test(search)) {
-      params.phone = search;
-    } else if (["male", "female"].includes(search.toLowerCase())) {
-      params.gender = search.toLowerCase();
-    } else {
-      params.fullName = search;
-    }
-
-    useRequestsStore.getState().fetchOfficialRequests(params);
+    return officialRequestConfig.fetchRequests({ search: value, page: 1, limit: 10 });
   },
   listFields: [
     { key: "fullName", label: "Full Name" },
@@ -99,25 +88,18 @@ export const parentRequestConfig = {
   canDelete: true,
   onDelete: (id) => useRequestsStore.getState().deleteParent(id),
   useRequests: () => useRequestsStore((state) => state.parentRequests),
+  usePagination: () => useRequestsStore((state) => state.parentPagination),
+  fetchRequests: (params) => {
+    const { search = "", ...rest } = params || {};
+    const trimmed = (search || "").trim();
+    const query = { ...rest };
+    if (trimmed) {
+      query.search = trimmed;
+    }
+    return useRequestsStore.getState().fetchParentRequests(query);
+  },
   onSearch: (value) => {
-    const params = {};
-    const search = value.trim();
-
-    if (!search) {
-      return useRequestsStore.getState().fetchParentRequests({});
-    }
-
-    if (search.includes("@")) {
-      params.email = search;
-    } else if (/^\+?\d+$/.test(search)) {
-      params.phone = search;
-    } else if (["male", "female"].includes(search.toLowerCase())) {
-      params.gender = search.toLowerCase();
-    } else {
-      params.fullName = search;
-    }
-
-    useRequestsStore.getState().fetchParentRequests(params);
+    return parentRequestConfig.fetchRequests({ search: value, page: 1, limit: 10 });
   },
   listFields: [
     { key: "fullName", label: "Full Name" },
@@ -141,25 +123,18 @@ export const guestRequestConfig = {
   canDelete: true,
   onDelete: (id) => useRequestsStore.getState().deleteGuest(id),
   useRequests: () => useRequestsStore((state) => state.guestRequests),
+  usePagination: () => useRequestsStore((state) => state.guestPagination),
+  fetchRequests: (params) => {
+    const { search = "", ...rest } = params || {};
+    const trimmed = (search || "").trim();
+    const query = { ...rest };
+    if (trimmed) {
+      query.search = trimmed;
+    }
+    return useRequestsStore.getState().fetchGuestRequests(query);
+  },
   onSearch: (value) => {
-    const params = {};
-    const search = value.trim();
-
-    if (!search) {
-      return useRequestsStore.getState().fetchGuestRequests({});
-    }
-
-    if (search.includes("@")) {
-      params.email = search;
-    } else if (/^\+?\d+$/.test(search)) {
-      params.phone = search;
-    } else if (["male", "female"].includes(search.toLowerCase())) {
-      params.gender = search.toLowerCase();
-    } else {
-      params.fullName = search;
-    }
-
-    useRequestsStore.getState().fetchGuestRequests(params);
+    return guestRequestConfig.fetchRequests({ search: value, page: 1, limit: 10 });
   },
   listFields: [
     { key: "fullName", label: "Full Name" },
@@ -185,25 +160,18 @@ export const academyRequestConfig = {
   canDelete: true,
   onDelete: (id) => useRequestsStore.getState().deleteAcademy(id),
   useRequests: () => useRequestsStore((state) => state.academyRequests),
+  usePagination: () => useRequestsStore((state) => state.academyPagination),
+  fetchRequests: (params) => {
+    const { search = "", ...rest } = params || {};
+    const trimmed = (search || "").trim();
+    const query = { ...rest };
+    if (trimmed) {
+      query.search = trimmed;
+    }
+    return useRequestsStore.getState().fetchAcademyRequests(query);
+  },
   onSearch: (value) => {
-    const params = {};
-    const search = value.trim();
-
-    if (!search) {
-      return useRequestsStore.getState().fetchAcademyRequests({});
-    }
-
-    if (search.includes("@")) {
-      params.email = search;
-    } else if (/^\+?\d+$/.test(search)) {
-      params.phone = search;
-    } else if (["male", "female"].includes(search.toLowerCase())) {
-      params.gender = search.toLowerCase();
-    } else {
-      params.fullName = search;
-    }
-
-    useRequestsStore.getState().fetchAcademyRequests(params);
+    return academyRequestConfig.fetchRequests({ search: value, page: 1, limit: 10 });
   },
   listFields: [
     { key: "fullName", label: "Representative" },
