@@ -27,8 +27,10 @@ api.interceptors.request.use(
 
     // Let axios/browser set multipart boundary; a bare "multipart/form-data" breaks parsing.
     if (typeof FormData !== "undefined" && config.data instanceof FormData) {
-      if (typeof config.headers?.set === "function") {
-        config.headers.set("Content-Type", null);
+      if (typeof config.headers?.delete === "function") {
+        config.headers.delete("Content-Type");
+      } else if (typeof config.headers?.set === "function") {
+        config.headers.set("Content-Type", undefined);
       } else if (config.headers) {
         delete config.headers["Content-Type"];
       }

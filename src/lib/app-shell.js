@@ -29,7 +29,8 @@ import {
   Tags,
   FunctionSquare,
   Smartphone,
-  CreditCard
+  CreditCard,
+  Timer
 } from "lucide-react";
 
 export const navigationGroups = [
@@ -73,6 +74,7 @@ export const navigationGroups = [
         children: [
           // Hidden for sub-admin panel — see SUB_ADMIN_HIDDEN_EVENT_CHILD_SLUGS in navigation-modules.js
           { slug: "events-category", to: "/events/category", label: "Events-Category", icon: Tags },
+          { slug: "events-manual", to: "/events/manual", label: "Manual Events", icon: Timer },
           { slug: "events-formula", to: "/events/formula", label: "Rules", icon: FunctionSquare },
           { slug: "events", to: "/events/detail", label: "Events", icon: Layers }
         ]

@@ -27,7 +27,9 @@ import {
   FunctionSquare,
   Smartphone,
   CreditCard,
-  Circle
+  Circle,
+  Timer,
+  CalendarCheck
 } from "lucide-react";
 
 /** Maps lucide / MUI icon name strings from the API to React components. */
@@ -45,6 +47,8 @@ export const SIDEBAR_ICON_MAP = {
   Folder,
   Tags,
   FunctionSquare,
+  Timer,
+  CalendarCheck,
   Newspaper,
   Image,
   Headphones,

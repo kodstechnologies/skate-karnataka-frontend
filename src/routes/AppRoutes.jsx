@@ -81,6 +81,9 @@ import EventCategoryPage from "../features/admin/events/pages/EventCategoryPage"
 import EventCategoryFormPage from "../features/admin/events/pages/EventCategoryFormPage";
 import FormulasPage from "../features/admin/events/pages/FormulasPage";
 import FormulaFormPage from "../features/admin/events/pages/FormulaFormPage";
+import ManualEventPage from "../features/admin/events/pages/ManualEventPage";
+import ManualEventFormPage from "../features/admin/events/pages/ManualEventFormPage";
+import ManualEventDetailPage from "../features/admin/events/pages/ManualEventDetailPage";
 import ClubEventCategoriesPage from "../features/admin/events/pages/ClubEventCategoriesPage";
 import DistrictEventCategoriesPage from "../features/admin/events/pages/DistrictEventCategoriesPage";
 import OrgStandardCategoriesPage from "../features/admin/events/pages/OrgStandardCategoriesPage";
@@ -153,6 +156,11 @@ export const AppRoutes = () => {
           path="/club/event-categories/:categoryId/edit"
           element={<EventCategoryFormPage portalMode orgType="club" orgOverrideMode />}
         />
+        <Route path="/club/manual-events" element={<ManualEventPage portalMode="club" />} />
+        <Route
+          path="/club/manual-events/:id"
+          element={<ManualEventDetailPage portalMode="club" />}
+        />
         <Route path="/club/members" element={<ClubMembersPage />} />
         <Route path="/club/members/create" element={<ClubMemberFormPage />} />
         <Route path="/club/members/bulk" element={<MemberBulkImportPage orgType="club" />} />
@@ -179,6 +187,11 @@ export const AppRoutes = () => {
         <Route
           path="/district/event-categories/:categoryId/edit"
           element={<EventCategoryFormPage portalMode orgType="district" orgOverrideMode />}
+        />
+        <Route path="/district/manual-events" element={<ManualEventPage portalMode="district" />} />
+        <Route
+          path="/district/manual-events/:id"
+          element={<ManualEventDetailPage portalMode="district" />}
         />
         <Route path="/district/members" element={<DistrictMembersPage />} />
         <Route path="/district/dashboard" element={<DistrictDashboard />} />
@@ -267,6 +280,10 @@ export const AppRoutes = () => {
         />
         <Route path="/clubs/:clubId/members/:memberId/edit" element={<ClubMemberFormPage />} />
         <Route path="/events/detail" element={<EventsPage />} />
+        <Route path="/events/manual" element={<ManualEventPage />} />
+        <Route path="/events/manual/create" element={<ManualEventFormPage />} />
+        <Route path="/events/manual/:id" element={<ManualEventDetailPage />} />
+        <Route path="/events/manual/:id/edit" element={<ManualEventFormPage />} />
         <Route path="/events/category" element={<EventCategoryPage />} />
         <Route path="/events/category/create" element={<EventCategoryFormPage />} />
         <Route path="/events/category/:categoryId/edit" element={<EventCategoryFormPage />} />

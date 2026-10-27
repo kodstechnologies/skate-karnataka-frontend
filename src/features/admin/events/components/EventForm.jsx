@@ -95,12 +95,14 @@ const ColorPickerField = ({ label, value, onChange, disabled }) => {
         onClose={() => setAnchorEl(null)}
         anchorOrigin={{ vertical: "bottom", horizontal: "left" }}
         transformOrigin={{ vertical: "top", horizontal: "left" }}
-        PaperProps={{
-          sx: {
-            p: 2,
-            borderRadius: "20px",
-            boxShadow: "0 12px 40px rgba(0,0,0,0.12)",
-            border: "1px solid #efe2dc"
+        slotProps={{
+          paper: {
+            sx: {
+              p: 2,
+              borderRadius: "20px",
+              boxShadow: "0 12px 40px rgba(0,0,0,0.12)",
+              border: "1px solid #efe2dc"
+            }
           }
         }}
       >
@@ -359,8 +361,8 @@ export const EventForm = ({
                 ...inputStyles,
                 gridColumn: { md: "span 2" }
               }}
-              inputProps={{ min: 1, step: "any" }}
               slotProps={{
+                htmlInput: { min: 1, step: "any" },
                 input: {
                   startAdornment: (
                     <Typography sx={{ color: "#8d7f7b", mr: 1, fontWeight: 700, fontSize: 16 }}>

@@ -9,7 +9,8 @@ import {
   Layers,
   FunctionSquare,
   Tags,
-  Building2
+  Building2,
+  Timer
 } from "lucide-react";
 
 export const CLUB_NAV_SLUGS = new Set([
@@ -20,6 +21,7 @@ export const CLUB_NAV_SLUGS = new Set([
   "club-event-categories",
   "club-event-categories-home",
   "club-formula",
+  "club-manual-events",
   "club-members",
   "club-members-list",
   "club-members-create",
@@ -34,6 +36,7 @@ export const DISTRICT_NAV_SLUGS = new Set([
   "district-event-categories",
   "district-event-categories-home",
   "district-formula",
+  "district-manual-events",
   "district-members",
   "district-members-list",
   "district-members-create",
@@ -87,6 +90,12 @@ export const clubNavigationGroups = [
             icon: FunctionSquare
           }
         ]
+      },
+      {
+        slug: "club-manual-events",
+        to: "/club/manual-events",
+        label: "Manual Events",
+        icon: Timer
       },
       {
         slug: "club-members",
@@ -173,6 +182,12 @@ export const districtNavigationGroups = [
         ]
       },
       {
+        slug: "district-manual-events",
+        to: "/district/manual-events",
+        label: "Manual Events",
+        icon: Timer
+      },
+      {
         slug: "district-members",
         to: "/district/members",
         label: "District Members",
@@ -208,6 +223,7 @@ const CLUB_PATH_PREFIXES = [
   ["/club/skaters", "club-skaters"],
   ["/club/media", "club-media"],
   ["/club/event-categories", "club-event-categories"],
+  ["/club/manual-events", "club-manual-events"],
   ["/club/formula", "club-formula"],
   ["/club/members/create", "club-members-create"],
   ["/club/members/bulk", "club-members-bulk"],
@@ -222,6 +238,7 @@ const DISTRICT_PATH_PREFIXES = [
   ["/district/events", "district-events"],
   ["/district/media", "district-media"],
   ["/district/event-categories", "district-event-categories"],
+  ["/district/manual-events", "district-manual-events"],
   ["/district/formula", "district-formula"],
   ["/district/members/create", "district-members-create"],
   ["/district/members/bulk", "district-members-bulk"],
