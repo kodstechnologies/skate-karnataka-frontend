@@ -39,7 +39,9 @@ import {
   Upload,
   UploadCloud,
   FileCheck2,
-  Building2
+  Building2,
+  X,
+  File
 } from "lucide-react";
 import { Link as RouterLink, useNavigate, useParams, useLocation } from "react-router-dom";
 import toast from "react-hot-toast";
@@ -83,6 +85,81 @@ const getStatusBadgeProps = (status) => {
     default:
       return { label: "Draft", bg: "#f1f5f9", color: "#475569", border: "#e2e8f0" };
   }
+};
+
+const getFileMeta = (urlOrName = "") => {
+  if (!urlOrName) {
+    return {
+      label: "Document",
+      ext: "DOC",
+      icon: FileText,
+      color: "#64748b",
+      bg: "#f1f5f9",
+      border: "#e2e8f0"
+    };
+  }
+  const clean = String(urlOrName).split("?")[0].toLowerCase();
+  const parts = clean.split(".");
+  const ext = parts.length > 1 ? parts.pop() : "";
+
+  if (["xlsx", "xls", "csv"].includes(ext)) {
+    return {
+      label: "Excel Spreadsheet",
+      ext: ext.toUpperCase(),
+      icon: FileSpreadsheet,
+      color: "#16a34a",
+      bg: "#f0fdf4",
+      border: "#bbf7d0"
+    };
+  }
+  if (["pdf"].includes(ext)) {
+    return {
+      label: "PDF Document",
+      ext: "PDF",
+      icon: FileText,
+      color: "#dc2626",
+      bg: "#fef2f2",
+      border: "#fecaca"
+    };
+  }
+  if (["doc", "docx"].includes(ext)) {
+    return {
+      label: "Word Document",
+      ext: ext.toUpperCase(),
+      icon: FileText,
+      color: "#2563eb",
+      bg: "#eff6ff",
+      border: "#bfdbfe"
+    };
+  }
+  if (["jpg", "jpeg", "png", "webp", "gif"].includes(ext)) {
+    return {
+      label: "Image",
+      ext: ext.toUpperCase(),
+      icon: File,
+      color: "#9333ea",
+      bg: "#faf5ff",
+      border: "#e9d5ff"
+    };
+  }
+  if (["zip", "rar", "7z"].includes(ext)) {
+    return {
+      label: "Archive ZIP",
+      ext: ext.toUpperCase(),
+      icon: File,
+      color: "#d97706",
+      bg: "#fffbeb",
+      border: "#fde68a"
+    };
+  }
+  return {
+    label: "Document",
+    ext: ext ? ext.toUpperCase() : "DOC",
+    icon: FileText,
+    color: "#0284c7",
+    bg: "#f0f9ff",
+    border: "#bae6fd"
+  };
 };
 
 const sectionCardStyles = {
@@ -143,6 +220,29 @@ export const ManualEventDetailPage = ({ portalMode }) => {
   const [uploadFile, setUploadFile] = useState(null);
   const [uploading, setUploading] = useState(false);
   const [isReuploading, setIsReuploading] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
+
+  const handleDragOver = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+  };
+
+  const handleDrop = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+    const files = e.dataTransfer?.files;
+    if (files && files.length > 0) {
+      setUploadFile(files[0]);
+    }
+  };
 
   // If district user, ensure district info is loaded
   useEffect(() => {
@@ -229,7 +329,7 @@ export const ManualEventDetailPage = ({ portalMode }) => {
   const handleUploadAttendance = async (e) => {
     e.preventDefault();
     if (!uploadFile) {
-      toast.error("Please select an Excel file to upload");
+      toast.error("Please select a document (Excel, PDF, Word, etc.) to upload");
       return;
     }
 
@@ -242,6 +342,7 @@ export const ManualEventDetailPage = ({ portalMode }) => {
     try {
       const fd = new FormData();
       fd.append("skaterExcelDocument", uploadFile);
+      fd.append("fileName", uploadFile.name);
       if (activeDistrictId) fd.append("districtId", activeDistrictId);
       if (activeDistrictName) fd.append("districtName", activeDistrictName);
       fd.append("stateName", "Karnataka");
@@ -258,12 +359,12 @@ export const ManualEventDetailPage = ({ portalMode }) => {
       setIsReuploading(false);
       toast.success(
         myAttendance
-          ? `Skater Excel document re-uploaded successfully for ${activeDistrictName}!`
-          : `Skater Excel document uploaded successfully for ${activeDistrictName}!`
+          ? `Skater document re-uploaded successfully for ${activeDistrictName}!`
+          : `Skater document uploaded successfully for ${activeDistrictName}!`
       );
     } catch (err) {
-      console.error("Failed to upload attendance:", err);
-      toast.error(err?.response?.data?.message || err?.message || "Failed to upload Excel file");
+      console.error("Failed to upload skater document:", err);
+      toast.error(err?.response?.data?.message || err?.message || "Failed to upload document");
     } finally {
       setUploading(false);
     }
@@ -424,20 +525,42 @@ export const ManualEventDetailPage = ({ portalMode }) => {
           </Box>
 
           {/* Action buttons */}
-          <Stack direction="row" spacing={1.5} sx={{ flexShrink: 0, alignSelf: { xs: "stretch", sm: "auto" } }}>
+          <Stack
+            direction="row"
+            spacing={1.5}
+            alignItems="center"
+            sx={{
+              flexShrink: 0,
+              alignSelf: { xs: "flex-start", md: "center" },
+              mt: { xs: 2, md: 0 }
+            }}
+          >
             <Button
               variant="outlined"
               startIcon={<ArrowLeft size={16} />}
               onClick={() => navigate(backListPath)}
               sx={{
-                borderColor: "rgba(255,255,255,0.4)",
-                color: "white",
+                height: 42,
+                minHeight: 42,
+                maxHeight: 42,
+                px: 2.5,
                 borderRadius: "14px",
+                borderColor: "rgba(255,255,255,0.35)",
+                color: "white",
+                backgroundColor: "rgba(255,255,255,0.08)",
+                backdropFilter: "blur(12px)",
                 textTransform: "none",
                 fontWeight: 600,
-                px: 2.5,
-                py: 1,
-                "&:hover": { borderColor: "white", backgroundColor: "rgba(255,255,255,0.1)" }
+                fontSize: "0.875rem",
+                display: "inline-flex",
+                alignItems: "center",
+                whiteSpace: "nowrap",
+                transition: "all 0.2s ease",
+                "&:hover": {
+                  borderColor: "white",
+                  backgroundColor: "rgba(255,255,255,0.18)",
+                  transform: "translateY(-1px)"
+                }
               }}
             >
               Back
@@ -448,14 +571,26 @@ export const ManualEventDetailPage = ({ portalMode }) => {
                 startIcon={<PencilLine size={16} />}
                 onClick={() => navigate(`/events/manual/${id}/edit`)}
                 sx={{
-                  backgroundColor: "#f6765e",
+                  height: 42,
+                  minHeight: 42,
+                  maxHeight: 42,
+                  px: 3,
                   borderRadius: "14px",
+                  backgroundColor: "#f6765e",
+                  color: "white",
                   textTransform: "none",
                   fontWeight: 700,
-                  px: 3,
-                  py: 1,
-                  boxShadow: "0 10px 24px rgba(246,118,94,0.4)",
-                  "&:hover": { backgroundColor: "#ea6b54" }
+                  fontSize: "0.875rem",
+                  display: "inline-flex",
+                  alignItems: "center",
+                  whiteSpace: "nowrap",
+                  boxShadow: "0 8px 20px rgba(246,118,94,0.35)",
+                  transition: "all 0.2s ease",
+                  "&:hover": {
+                    backgroundColor: "#ea6b54",
+                    boxShadow: "0 10px 24px rgba(246,118,94,0.45)",
+                    transform: "translateY(-1px)"
+                  }
                 }}
               >
                 Edit Event
@@ -686,6 +821,7 @@ export const ManualEventDetailPage = ({ portalMode }) => {
                   <TableHead sx={{ bgcolor: "#faf7f5" }}>
                     <TableRow>
                       <TableCell sx={{ fontWeight: 700, color: "#2f2829" }}>District Name</TableCell>
+                      <TableCell sx={{ fontWeight: 700, color: "#2f2829" }}>Document</TableCell>
                       <TableCell sx={{ fontWeight: 700, color: "#2f2829" }}>Submitted On</TableCell>
                       <TableCell align="right" sx={{ fontWeight: 700, color: "#2f2829" }}>Action</TableCell>
                     </TableRow>
@@ -698,6 +834,9 @@ export const ManualEventDetailPage = ({ portalMode }) => {
                           att.districtName.toLowerCase().replace(/district/gi, "").trim() ===
                           activeDistrictName.toLowerCase().replace(/district/gi, "").trim()
                         ));
+
+                      const meta = getFileMeta(att.fileName || att.skaterExcelDocument);
+                      const IconComp = meta.icon;
 
                       return (
                         <TableRow key={idx} sx={{ bgcolor: isMyDistrict ? "rgba(246,118,94,0.04)" : "inherit" }}>
@@ -718,6 +857,37 @@ export const ManualEventDetailPage = ({ portalMode }) => {
                               />
                             )}
                           </TableCell>
+                          <TableCell>
+                            <Stack direction="row" spacing={0.75} alignItems="center">
+                              <Chip
+                                icon={<IconComp size={12} color={meta.color} />}
+                                label={meta.ext || "DOC"}
+                                size="small"
+                                sx={{
+                                  height: 22,
+                                  fontSize: "0.7rem",
+                                  fontWeight: 800,
+                                  bgcolor: meta.bg,
+                                  color: meta.color,
+                                  border: `1px solid ${meta.border}`,
+                                  "& .MuiChip-icon": { ml: 0.5 }
+                                }}
+                              />
+                              <Typography
+                                variant="caption"
+                                sx={{
+                                  color: "#64748b",
+                                  maxWidth: 140,
+                                  overflow: "hidden",
+                                  textOverflow: "ellipsis",
+                                  whiteSpace: "nowrap",
+                                  display: { xs: "none", sm: "inline-block" }
+                                }}
+                              >
+                                {att.fileName || meta.label}
+                              </Typography>
+                            </Stack>
+                          </TableCell>
                           <TableCell sx={{ color: "#7f7270", fontSize: "0.8rem" }}>
                             {att.uploadedAt ? fmtDateTime(att.uploadedAt) : "—"}
                           </TableCell>
@@ -736,12 +906,15 @@ export const ManualEventDetailPage = ({ portalMode }) => {
                                 fontSize: "0.75rem",
                                 py: 0.3,
                                 px: 1.2,
-                                borderColor: "#e0d5ce",
-                                color: "#16a34a",
-                                "&:hover": { borderColor: "#16a34a", bgcolor: "#f0fdf4" }
+                                borderColor: meta.border || "#e0d5ce",
+                                color: meta.color || "#16a34a",
+                                "&:hover": {
+                                  borderColor: meta.color,
+                                  bgcolor: meta.bg || "#f0fdf4"
+                                }
                               }}
                             >
-                              Download Excel
+                              Download / View
                             </Button>
                           </TableCell>
                         </TableRow>
@@ -754,14 +927,14 @@ export const ManualEventDetailPage = ({ portalMode }) => {
           </Paper>
         </Box>
 
-        {/* Right Column (4 cols): District Excel Upload & Attendance Submission Card */}
+        {/* Right Column (4 cols): District Document Upload & Attendance Submission Card */}
         <Box sx={{ gridColumn: { xs: "span 12", lg: "span 4" } }} className="space-y-4">
           <Paper elevation={0} sx={sectionCardStyles}>
             <Typography variant="h6" sx={{ fontWeight: 800, color: "#2f2829", mb: 0.5, display: "flex", alignItems: "center", gap: 1 }}>
               <UploadCloud size={20} color="#f6765e" /> District Skater Submission
             </Typography>
             <Typography variant="caption" sx={{ color: "#7f7270", display: "block", mb: 2 }}>
-              Upload your district's filled skater registration Excel sheet for this competition.
+              Upload your district's filled skater registration document (Excel, PDF, Word, etc.) for this competition.
             </Typography>
 
             {/* Admin: District Selector */}
@@ -778,7 +951,7 @@ export const ManualEventDetailPage = ({ portalMode }) => {
                     setIsReuploading(false);
                     setUploadFile(null);
                   }}
-                  helperText="Choose which district this sheet belongs to"
+                  helperText="Choose which district this submission belongs to"
                   sx={{
                     "& .MuiOutlinedInput-root": {
                       borderRadius: "14px",
@@ -824,69 +997,103 @@ export const ManualEventDetailPage = ({ portalMode }) => {
 
             {/* Existing District Submission Status */}
             {myAttendance && !isReuploading ? (
-              <Box
-                sx={{
-                  p: 2.5,
-                  borderRadius: "20px",
-                  bgcolor: "#f0fdf4",
-                  border: "1px solid #bbf7d0",
-                  mb: 2.5
-                }}
-              >
-                <Stack direction="row" spacing={1.5} alignItems="flex-start">
-                  <CheckCircle2 size={24} color="#16a34a" style={{ flexShrink: 0, marginTop: 2 }} />
-                  <Box sx={{ flex: 1 }}>
-                    <Typography variant="subtitle2" sx={{ fontWeight: 800, color: "#15803d" }}>
-                      Excel Document Submitted
-                    </Typography>
-                    <Typography variant="caption" sx={{ color: "#166534", display: "block", mt: 0.25 }}>
-                      District: <strong>{myAttendance.districtName || activeDistrictName}</strong>
-                    </Typography>
-                    <Typography variant="caption" sx={{ color: "#166534", display: "block" }}>
-                      Uploaded: {fmtDateTime(myAttendance.uploadedAt)}
-                    </Typography>
+              (() => {
+                const attMeta = getFileMeta(myAttendance.fileName || myAttendance.skaterExcelDocument);
+                const attDocName = myAttendance.fileName || (myAttendance.skaterExcelDocument ? myAttendance.skaterExcelDocument.split("/").pop() : "Skater Registration Document");
 
-                    <Stack direction="row" spacing={1} sx={{ mt: 2 }}>
-                      <Button
-                        component="a"
-                        href={myAttendance.skaterExcelDocument}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        size="small"
-                        variant="contained"
-                        startIcon={<Download size={13} />}
-                        sx={{
-                          bgcolor: "#16a34a",
-                          borderRadius: "10px",
-                          textTransform: "none",
-                          fontSize: "0.78rem",
-                          fontWeight: 700,
-                          "&:hover": { bgcolor: "#15803d" }
-                        }}
-                      >
-                        Download File
-                      </Button>
-                      <Button
-                        size="small"
-                        variant="outlined"
-                        startIcon={<RefreshCw size={13} />}
-                        onClick={() => setIsReuploading(true)}
-                        sx={{
-                          borderColor: "#16a34a",
-                          color: "#16a34a",
-                          borderRadius: "10px",
-                          textTransform: "none",
-                          fontSize: "0.78rem",
-                          fontWeight: 700,
-                          "&:hover": { bgcolor: "#dcfce7" }
-                        }}
-                      >
-                        Re-upload Excel
-                      </Button>
+                return (
+                  <Box
+                    sx={{
+                      p: 2.5,
+                      borderRadius: "20px",
+                      bgcolor: "#f0fdf4",
+                      border: "1px solid #bbf7d0",
+                      mb: 2.5
+                    }}
+                  >
+                    <Stack direction="row" spacing={1.5} alignItems="flex-start">
+                      <CheckCircle2 size={24} color="#16a34a" style={{ flexShrink: 0, marginTop: 2 }} />
+                      <Box sx={{ flex: 1 }}>
+                        <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 0.5, flexWrap: "wrap" }}>
+                          <Typography variant="subtitle2" sx={{ fontWeight: 800, color: "#15803d" }}>
+                            Document Submitted
+                          </Typography>
+                          <Chip
+                            size="small"
+                            label={attMeta.ext || "FILE"}
+                            sx={{
+                              height: 20,
+                              fontSize: "0.68rem",
+                              fontWeight: 800,
+                              bgcolor: attMeta.bg,
+                              color: attMeta.color,
+                              border: `1px solid ${attMeta.border}`
+                            }}
+                          />
+                        </Stack>
+
+                        <Typography
+                          variant="body2"
+                          sx={{
+                            fontWeight: 700,
+                            color: "#166534",
+                            wordBreak: "break-all",
+                            mb: 0.5
+                          }}
+                        >
+                          {attDocName}
+                        </Typography>
+
+                        <Typography variant="caption" sx={{ color: "#166534", display: "block" }}>
+                          District: <strong>{myAttendance.districtName || activeDistrictName}</strong>
+                        </Typography>
+                        <Typography variant="caption" sx={{ color: "#166534", display: "block" }}>
+                          Uploaded: {fmtDateTime(myAttendance.uploadedAt)}
+                        </Typography>
+
+                        <Stack direction="row" spacing={1} sx={{ mt: 2, flexWrap: "wrap", gap: 1 }}>
+                          <Button
+                            component="a"
+                            href={myAttendance.skaterExcelDocument}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            size="small"
+                            variant="contained"
+                            startIcon={<Download size={13} />}
+                            sx={{
+                              bgcolor: "#16a34a",
+                              borderRadius: "10px",
+                              textTransform: "none",
+                              fontSize: "0.78rem",
+                              fontWeight: 700,
+                              "&:hover": { bgcolor: "#15803d" }
+                            }}
+                          >
+                            Download / View
+                          </Button>
+                          <Button
+                            size="small"
+                            variant="outlined"
+                            startIcon={<RefreshCw size={13} />}
+                            onClick={() => setIsReuploading(true)}
+                            sx={{
+                              borderColor: "#16a34a",
+                              color: "#16a34a",
+                              borderRadius: "10px",
+                              textTransform: "none",
+                              fontSize: "0.78rem",
+                              fontWeight: 700,
+                              "&:hover": { bgcolor: "#dcfce7" }
+                            }}
+                          >
+                            Replace File
+                          </Button>
+                        </Stack>
+                      </Box>
                     </Stack>
                   </Box>
-                </Stack>
-              </Box>
+                );
+              })()
             ) : null}
 
             {/* Upload Form (Shown if not submitted yet or if re-uploading) */}
@@ -895,7 +1102,7 @@ export const ManualEventDetailPage = ({ portalMode }) => {
                 {isReuploading && (
                   <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 1 }}>
                     <Typography variant="caption" sx={{ fontWeight: 700, color: "#c2410c" }}>
-                      Overwriting previous submission
+                      Replacing previous submission
                     </Typography>
                     <Button
                       size="small"
@@ -905,30 +1112,41 @@ export const ManualEventDetailPage = ({ portalMode }) => {
                       }}
                       sx={{ fontSize: "0.72rem", textTransform: "none", color: "#7f7270" }}
                     >
-                      Cancel Re-upload
+                      Cancel
                     </Button>
                   </Stack>
                 )}
 
                 {/* File Dropzone / Select */}
                 <Box
+                  onDragOver={handleDragOver}
+                  onDragLeave={handleDragLeave}
+                  onDrop={handleDrop}
                   sx={{
-                    border: "2px dashed #ebdcd5",
+                    border: "2px dashed",
+                    borderColor: isDragging
+                      ? "#f6765e"
+                      : uploadFile
+                        ? "#16a34a"
+                        : "#ebdcd5",
                     borderRadius: "20px",
                     p: 3,
                     textAlign: "center",
-                    bgcolor: uploadFile ? "#f0fdf4" : "#ffffff",
-                    borderColor: uploadFile ? "#16a34a" : "#ebdcd5",
+                    bgcolor: isDragging
+                      ? "rgba(246,118,94,0.08)"
+                      : uploadFile
+                        ? "#f0fdf4"
+                        : "#ffffff",
                     transition: "all 0.2s ease",
                     cursor: "pointer",
                     "&:hover": { borderColor: "#f6765e", backgroundColor: "#fffcfb" }
                   }}
-                  onClick={() => document.getElementById("attendance-excel-input")?.click()}
+                  onClick={() => document.getElementById("attendance-document-input")?.click()}
                 >
                   <input
-                    id="attendance-excel-input"
+                    id="attendance-document-input"
                     type="file"
-                    accept=".xlsx,.xls,.csv"
+                    accept=".xlsx,.xls,.csv,.pdf,.doc,.docx,.png,.jpg,.jpeg,.zip,application/pdf,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel,text/csv,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,image/*"
                     style={{ display: "none" }}
                     onChange={(e) => {
                       if (e.target.files && e.target.files[0]) {
@@ -937,40 +1155,101 @@ export const ManualEventDetailPage = ({ portalMode }) => {
                     }}
                   />
 
-                  <Box
-                    sx={{
-                      width: 44,
-                      height: 44,
-                      borderRadius: "14px",
-                      bgcolor: uploadFile ? "rgba(22,163,74,0.12)" : "rgba(246,118,94,0.12)",
-                      color: uploadFile ? "#16a34a" : "#f6765e",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      mx: "auto",
-                      mb: 1
-                    }}
-                  >
-                    {uploadFile ? <FileSpreadsheet size={22} /> : <Upload size={22} />}
-                  </Box>
-
                   {uploadFile ? (
-                    <>
-                      <Typography variant="body2" sx={{ fontWeight: 700, color: "#166534" }}>
-                        {uploadFile.name}
-                      </Typography>
-                      <Typography variant="caption" sx={{ color: "#7f7270", display: "block", mt: 0.5 }}>
-                        {(uploadFile.size / 1024).toFixed(1)} KB — Click to change file
-                      </Typography>
-                    </>
+                    (() => {
+                      const selMeta = getFileMeta(uploadFile.name);
+                      const SelIcon = selMeta.icon;
+                      return (
+                        <Box>
+                          <Box
+                            sx={{
+                              width: 48,
+                              height: 48,
+                              borderRadius: "14px",
+                              bgcolor: selMeta.bg || "rgba(22,163,74,0.12)",
+                              color: selMeta.color || "#16a34a",
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "center",
+                              mx: "auto",
+                              mb: 1.5
+                            }}
+                          >
+                            <SelIcon size={24} />
+                          </Box>
+                          <Stack direction="row" spacing={0.75} justifyContent="center" alignItems="center" sx={{ mb: 0.5 }}>
+                            <Chip
+                              label={selMeta.ext}
+                              size="small"
+                              sx={{
+                                height: 20,
+                                fontSize: "0.68rem",
+                                fontWeight: 800,
+                                bgcolor: selMeta.bg,
+                                color: selMeta.color,
+                                border: `1px solid ${selMeta.border}`
+                              }}
+                            />
+                            <Typography
+                              variant="body2"
+                              sx={{
+                                fontWeight: 700,
+                                color: "#1e293b",
+                                maxWidth: 220,
+                                overflow: "hidden",
+                                textOverflow: "ellipsis",
+                                whiteSpace: "nowrap"
+                              }}
+                            >
+                              {uploadFile.name}
+                            </Typography>
+                          </Stack>
+                          <Typography variant="caption" sx={{ color: "#7f7270", display: "block" }}>
+                            {(uploadFile.size / 1024).toFixed(1)} KB — Click to change file
+                          </Typography>
+                        </Box>
+                      );
+                    })()
                   ) : (
                     <>
+                      <Box
+                        sx={{
+                          width: 48,
+                          height: 48,
+                          borderRadius: "14px",
+                          bgcolor: "rgba(246,118,94,0.12)",
+                          color: "#f6765e",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          mx: "auto",
+                          mb: 1.5
+                        }}
+                      >
+                        <UploadCloud size={24} />
+                      </Box>
                       <Typography variant="body2" sx={{ fontWeight: 700, color: "#2f2829" }}>
-                        Choose Skater Excel Document
+                        Choose Skater Document
                       </Typography>
-                      <Typography variant="caption" sx={{ color: "#9c8a85", display: "block", mt: 0.5 }}>
-                        Supports .xlsx, .xls, .csv up to 25MB
+                      <Typography variant="caption" sx={{ color: "#9c8a85", display: "block", mt: 0.5, mb: 1 }}>
+                        Click or drag & drop file here
                       </Typography>
+                      <Stack direction="row" spacing={0.5} justifyContent="center" sx={{ flexWrap: "wrap", gap: 0.5 }}>
+                        {["XLSX", "PDF"].map((fmt) => (
+                          <Chip
+                            key={fmt}
+                            label={fmt}
+                            size="small"
+                            sx={{
+                              height: 18,
+                              fontSize: "0.62rem",
+                              fontWeight: 700,
+                              bgcolor: "#f1f5f9",
+                              color: "#64748b"
+                            }}
+                          />
+                        ))}
+                      </Stack>
                     </>
                   )}
                 </Box>
@@ -992,10 +1271,10 @@ export const ManualEventDetailPage = ({ portalMode }) => {
                   }}
                 >
                   {uploading
-                    ? "Uploading Excel..."
+                    ? "Uploading Document..."
                     : isReuploading
-                      ? "Submit Revised Excel"
-                      : "Upload District Skaters Excel"}
+                      ? "Submit Revised Document"
+                      : "Upload District Skaters Document"}
                 </Button>
               </Box>
             )}
@@ -1003,7 +1282,7 @@ export const ManualEventDetailPage = ({ portalMode }) => {
             {/* Helpful Guide */}
             <Divider sx={{ my: 2.5, borderColor: "rgba(246,228,221,0.7)" }} />
             <Typography variant="caption" sx={{ color: "#9c8a85", lineHeight: 1.5, display: "block" }}>
-              💡 <strong>Step-by-step:</strong> First download the <strong>Skater Excel Template</strong> from the documents section, fill in all participant skater details for your district, and upload it here before the registration deadline.
+              💡 <strong>Flexible formats:</strong> You can upload an Excel spreadsheet, PDF document, Word document, or scanned entry form containing your district's skater entries before the registration deadline.
             </Typography>
           </Paper>
         </Box>

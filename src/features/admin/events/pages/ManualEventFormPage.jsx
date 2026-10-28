@@ -23,6 +23,7 @@ import PlaceOutlinedIcon from "@mui/icons-material/PlaceOutlined";
 import CategoryOutlinedIcon from "@mui/icons-material/CategoryOutlined";
 import DescriptionOutlinedIcon from "@mui/icons-material/DescriptionOutlined";
 import {
+  ArrowLeft,
   ChevronRight,
   ExternalLink,
   FileSpreadsheet,
@@ -685,11 +686,12 @@ export const ManualEventFormPage = () => {
       if (isEditing && id) {
         await manualEventsApi.update(id, payload);
         toast.success("Manual event updated successfully");
+        navigate(`/events/manual/${id}`);
       } else {
         await manualEventsApi.create(payload);
         toast.success("Manual event created successfully");
+        navigate("/events/manual");
       }
-      navigate("/events/manual");
     } catch (err) {
       console.error("Failed to save manual event:", err);
       toast.error(err?.response?.data?.message || err?.message || "Failed to save manual event");
@@ -728,53 +730,125 @@ export const ManualEventFormPage = () => {
           boxShadow: "0 28px 90px rgba(28, 18, 16, 0.22)"
         }}
       >
-        <Stack sx={{ position: "relative", zIndex: 1 }}>
-          <Breadcrumbs
-            separator={<ChevronRight size={14} />}
-            sx={{
-              mb: 2,
-              "& .MuiBreadcrumbs-separator": { color: "rgba(255,255,255,0.6)" },
-              "& .MuiBreadcrumbs-li": {
-                color: "rgba(255,255,255,0.86)",
-                fontSize: { xs: 14, md: 16 }
-              }
-            }}
+        <Stack
+          direction={{ xs: "column", sm: "row" }}
+          spacing={{ xs: 2.5, sm: 3 }}
+          alignItems={{ xs: "flex-start", sm: "center" }}
+          justifyContent="space-between"
+          gap={2}
+          sx={{ position: "relative", zIndex: 1 }}
+        >
+          <Box sx={{ maxWidth: 760 }}>
+            <Breadcrumbs
+              separator={<ChevronRight size={14} />}
+              sx={{
+                mb: 2,
+                "& .MuiBreadcrumbs-separator": { color: "rgba(255,255,255,0.6)" },
+                "& .MuiBreadcrumbs-li": {
+                  color: "rgba(255,255,255,0.86)",
+                  fontSize: { xs: 13, md: 15 }
+                }
+              }}
+            >
+              <Typography
+                component={RouterLink}
+                to="/dashboard"
+                sx={{ color: "inherit", textDecoration: "none", fontWeight: 600, "&:hover": { color: "white" } }}
+              >
+                Dashboard
+              </Typography>
+              <Typography
+                component={RouterLink}
+                to="/events/manual"
+                sx={{ color: "inherit", textDecoration: "none", fontWeight: 600, "&:hover": { color: "white" } }}
+              >
+                Manual Events
+              </Typography>
+              {isEditing && id && (
+                <Typography
+                  component={RouterLink}
+                  to={`/events/manual/${id}`}
+                  sx={{ color: "inherit", textDecoration: "none", fontWeight: 600, "&:hover": { color: "white" } }}
+                >
+                  {existingData?.title || "Event Details"}
+                </Typography>
+              )}
+              <Typography sx={{ color: "white", fontWeight: 700 }}>
+                {isEditing ? "Edit Manual Event" : "Create Manual Event"}
+              </Typography>
+            </Breadcrumbs>
+
+            <Stack direction="row" spacing={1} sx={{ mb: 1, alignItems: "center", flexWrap: "wrap" }}>
+              <Chip
+                size="small"
+                label="Manual Event"
+                sx={{ bgcolor: "rgba(255,255,255,0.2)", color: "white", fontWeight: 700 }}
+              />
+              {isEditing && existingData?.status && (
+                <Chip
+                  size="small"
+                  label={existingData.status.toUpperCase()}
+                  sx={{ bgcolor: "rgba(246,118,94,0.3)", color: "#ffedd5", fontWeight: 700 }}
+                />
+              )}
+            </Stack>
+
+            <Typography
+              variant="h3"
+              sx={{
+                fontWeight: 800,
+                fontSize: { xs: "1.75rem", sm: "2.25rem", md: "2.5rem" },
+                letterSpacing: "-0.04em",
+                lineHeight: 1.2,
+                mb: 1
+              }}
+            >
+              {isEditing ? "Edit Manual Event" : "Create Manual Event"}
+            </Typography>
+            <Typography sx={{ color: "rgba(255,255,255,0.86)", maxWidth: 700, lineHeight: 1.6 }}>
+              {isEditing
+                ? "Modify event title, dates, registration parameters, venue address, styling, or attached circulars."
+                : "Create and publish event schedules for state, district, and club level participation."}
+            </Typography>
+          </Box>
+
+          <Stack
+            direction="row"
+            spacing={1.5}
+            alignItems="center"
+            sx={{ flexShrink: 0, alignSelf: { xs: "flex-start", sm: "center" }, mt: { xs: 2, sm: 0 } }}
           >
-            <Typography
-              component={RouterLink}
-              to="/dashboard"
-              sx={{ color: "inherit", textDecoration: "none", fontWeight: 600 }}
+            <Button
+              variant="outlined"
+              startIcon={<ArrowLeft size={16} />}
+              onClick={() => navigate(isEditing && id ? `/events/manual/${id}` : "/events/manual")}
+              sx={{
+                height: 42,
+                minHeight: 42,
+                maxHeight: 42,
+                px: 2.5,
+                borderRadius: "14px",
+                borderColor: "rgba(255,255,255,0.35)",
+                color: "white",
+                backgroundColor: "rgba(255,255,255,0.08)",
+                backdropFilter: "blur(12px)",
+                textTransform: "none",
+                fontWeight: 600,
+                fontSize: "0.875rem",
+                display: "inline-flex",
+                alignItems: "center",
+                whiteSpace: "nowrap",
+                transition: "all 0.2s ease",
+                "&:hover": {
+                  borderColor: "white",
+                  backgroundColor: "rgba(255,255,255,0.18)",
+                  transform: "translateY(-1px)"
+                }
+              }}
             >
-              Dashboard
-            </Typography>
-            <Typography
-              component={RouterLink}
-              to="/events/manual"
-              sx={{ color: "inherit", textDecoration: "none", fontWeight: 600 }}
-            >
-              Events
-            </Typography>
-            <Typography sx={{ color: "white", fontWeight: 700 }}>
-              {isEditing ? "Edit Manual Event" : "Create"}
-            </Typography>
-          </Breadcrumbs>
-
-          <Stack direction="row" spacing={1} sx={{ mb: 1, alignItems: "center", flexWrap: "wrap" }}>
-            <Chip
-              size="small"
-              label="Manual Event"
-              sx={{ bgcolor: "rgba(255,255,255,0.2)", color: "white", fontWeight: 700 }}
-            />
+              {isEditing && id ? "Back to Event Details" : "Back to Events"}
+            </Button>
           </Stack>
-
-          <Typography variant="h3" sx={{ fontWeight: 800, letterSpacing: "-0.06em", mb: 1.5 }}>
-            {isEditing ? "Update Manual Event" : "Create Event"}
-          </Typography>
-          <Typography sx={{ color: "rgba(255,255,255,0.86)", maxWidth: 700, lineHeight: 1.7 }}>
-            {isEditing
-              ? "Modify event title, dates, registration parameters, venue address, styling, or attached circulars."
-              : "Create and publish event schedules for state, district, and club level participation."}
-          </Typography>
         </Stack>
       </Paper>
 
@@ -1260,7 +1334,7 @@ export const ManualEventFormPage = () => {
         >
           <Button
             variant="outlined"
-            onClick={() => navigate("/events/manual")}
+            onClick={() => navigate(isEditing && id ? `/events/manual/${id}` : "/events/manual")}
             disabled={saving}
             sx={{
               borderRadius: "14px",
