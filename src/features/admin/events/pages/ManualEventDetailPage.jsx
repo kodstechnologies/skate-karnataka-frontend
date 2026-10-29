@@ -790,141 +790,143 @@ export const ManualEventDetailPage = ({ portalMode }) => {
             </Stack>
           </Paper>
 
-          {/* Section: All District Attendance Submissions (For Admin or Overview) */}
-          <Paper elevation={0} sx={sectionCardStyles}>
-            <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 2 }}>
-              <Box>
-                <Typography variant="h6" sx={{ fontWeight: 800, color: "#2f2829", display: "flex", alignItems: "center", gap: 1 }}>
-                  <FileCheck2 size={20} color="#f6765e" /> District Skater Submissions
-                </Typography>
-                <Typography variant="caption" sx={{ color: "#7f7270" }}>
-                  {event.attendance?.length || 0} district{event.attendance?.length !== 1 ? "s" : ""} submitted registration sheets
-                </Typography>
-              </Box>
+          {/* Section: All District Attendance Submissions (For Admin only) */}
+          {isAdmin && (
+            <Paper elevation={0} sx={sectionCardStyles}>
+              <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 2 }}>
+                <Box>
+                  <Typography variant="h6" sx={{ fontWeight: 800, color: "#2f2829", display: "flex", alignItems: "center", gap: 1 }}>
+                    <FileCheck2 size={20} color="#f6765e" /> District Skater Submissions
+                  </Typography>
+                  <Typography variant="caption" sx={{ color: "#7f7270" }}>
+                    {event.attendance?.length || 0} district{event.attendance?.length !== 1 ? "s" : ""} submitted registration sheets
+                  </Typography>
+                </Box>
 
-              <Chip
-                label={`${event.attendance?.length || 0} Submissions`}
-                size="small"
-                sx={{ bgcolor: "#f1f5f9", fontWeight: 700 }}
-              />
-            </Stack>
+                <Chip
+                  label={`${event.attendance?.length || 0} Submissions`}
+                  size="small"
+                  sx={{ bgcolor: "#f1f5f9", fontWeight: 700 }}
+                />
+              </Stack>
 
-            {!event.attendance || event.attendance.length === 0 ? (
-              <Box sx={{ textAlign: "center", py: 4, px: 2, borderRadius: "18px", bgcolor: "#fdfbfa" }}>
-                <Typography variant="body2" sx={{ color: "#9c8a85", fontWeight: 600 }}>
-                  No district has uploaded skater attendance documents yet.
-                </Typography>
-              </Box>
-            ) : (
-              <TableContainer sx={{ borderRadius: "16px", border: "1px solid #f2e7e1" }}>
-                <Table size="small">
-                  <TableHead sx={{ bgcolor: "#faf7f5" }}>
-                    <TableRow>
-                      <TableCell sx={{ fontWeight: 700, color: "#2f2829" }}>District Name</TableCell>
-                      <TableCell sx={{ fontWeight: 700, color: "#2f2829" }}>Document</TableCell>
-                      <TableCell sx={{ fontWeight: 700, color: "#2f2829" }}>Submitted On</TableCell>
-                      <TableCell align="right" sx={{ fontWeight: 700, color: "#2f2829" }}>Action</TableCell>
-                    </TableRow>
-                  </TableHead>
-                  <TableBody>
-                    {event.attendance.map((att, idx) => {
-                      const isMyDistrict =
-                        (activeDistrictId && att.districtId && String(att.districtId) === String(activeDistrictId)) ||
-                        (activeDistrictName && att.districtName && (
-                          att.districtName.toLowerCase().replace(/district/gi, "").trim() ===
-                          activeDistrictName.toLowerCase().replace(/district/gi, "").trim()
-                        ));
+              {!event.attendance || event.attendance.length === 0 ? (
+                <Box sx={{ textAlign: "center", py: 4, px: 2, borderRadius: "18px", bgcolor: "#fdfbfa" }}>
+                  <Typography variant="body2" sx={{ color: "#9c8a85", fontWeight: 600 }}>
+                    No district has uploaded skater attendance documents yet.
+                  </Typography>
+                </Box>
+              ) : (
+                <TableContainer sx={{ borderRadius: "16px", border: "1px solid #f2e7e1" }}>
+                  <Table size="small">
+                    <TableHead sx={{ bgcolor: "#faf7f5" }}>
+                      <TableRow>
+                        <TableCell sx={{ fontWeight: 700, color: "#2f2829" }}>District Name</TableCell>
+                        <TableCell sx={{ fontWeight: 700, color: "#2f2829" }}>Document</TableCell>
+                        <TableCell sx={{ fontWeight: 700, color: "#2f2829" }}>Submitted On</TableCell>
+                        <TableCell align="right" sx={{ fontWeight: 700, color: "#2f2829" }}>Action</TableCell>
+                      </TableRow>
+                    </TableHead>
+                    <TableBody>
+                      {event.attendance.map((att, idx) => {
+                        const isMyDistrict =
+                          (activeDistrictId && att.districtId && String(att.districtId) === String(activeDistrictId)) ||
+                          (activeDistrictName && att.districtName && (
+                            att.districtName.toLowerCase().replace(/district/gi, "").trim() ===
+                            activeDistrictName.toLowerCase().replace(/district/gi, "").trim()
+                          ));
 
-                      const meta = getFileMeta(att.fileName || att.skaterExcelDocument);
-                      const IconComp = meta.icon;
+                        const meta = getFileMeta(att.fileName || att.skaterExcelDocument);
+                        const IconComp = meta.icon;
 
-                      return (
-                        <TableRow key={idx} sx={{ bgcolor: isMyDistrict ? "rgba(246,118,94,0.04)" : "inherit" }}>
-                          <TableCell sx={{ fontWeight: 600 }}>
-                            {att.districtName || att.stateName || "District Submission"}
-                            {isMyDistrict && (
-                              <Chip
-                                label={isDistrict ? "Your District" : "Selected District"}
+                        return (
+                          <TableRow key={idx} sx={{ bgcolor: isMyDistrict ? "rgba(246,118,94,0.04)" : "inherit" }}>
+                            <TableCell sx={{ fontWeight: 600 }}>
+                              {att.districtName || att.stateName || "District Submission"}
+                              {isMyDistrict && (
+                                <Chip
+                                  label={isDistrict ? "Your District" : "Selected District"}
+                                  size="small"
+                                  sx={{
+                                    ml: 1,
+                                    height: 20,
+                                    fontSize: "0.65rem",
+                                    bgcolor: "#ffedd5",
+                                    color: "#c2410c",
+                                    fontWeight: 700
+                                  }}
+                                />
+                              )}
+                            </TableCell>
+                            <TableCell>
+                              <Stack direction="row" spacing={0.75} alignItems="center">
+                                <Chip
+                                  icon={<IconComp size={12} color={meta.color} />}
+                                  label={meta.ext || "DOC"}
+                                  size="small"
+                                  sx={{
+                                    height: 22,
+                                    fontSize: "0.7rem",
+                                    fontWeight: 800,
+                                    bgcolor: meta.bg,
+                                    color: meta.color,
+                                    border: `1px solid ${meta.border}`,
+                                    "& .MuiChip-icon": { ml: 0.5 }
+                                  }}
+                                />
+                                <Typography
+                                  variant="caption"
+                                  sx={{
+                                    color: "#64748b",
+                                    maxWidth: 140,
+                                    overflow: "hidden",
+                                    textOverflow: "ellipsis",
+                                    whiteSpace: "nowrap",
+                                    display: { xs: "none", sm: "inline-block" }
+                                  }}
+                                >
+                                  {att.fileName || meta.label}
+                                </Typography>
+                              </Stack>
+                            </TableCell>
+                            <TableCell sx={{ color: "#7f7270", fontSize: "0.8rem" }}>
+                              {att.uploadedAt ? fmtDateTime(att.uploadedAt) : "—"}
+                            </TableCell>
+                            <TableCell align="right">
+                              <Button
+                                component="a"
+                                href={att.skaterExcelDocument}
+                                target="_blank"
+                                rel="noopener noreferrer"
                                 size="small"
+                                variant="outlined"
+                                startIcon={<Download size={13} />}
                                 sx={{
-                                  ml: 1,
-                                  height: 20,
-                                  fontSize: "0.65rem",
-                                  bgcolor: "#ffedd5",
-                                  color: "#c2410c",
-                                  fontWeight: 700
-                                }}
-                              />
-                            )}
-                          </TableCell>
-                          <TableCell>
-                            <Stack direction="row" spacing={0.75} alignItems="center">
-                              <Chip
-                                icon={<IconComp size={12} color={meta.color} />}
-                                label={meta.ext || "DOC"}
-                                size="small"
-                                sx={{
-                                  height: 22,
-                                  fontSize: "0.7rem",
-                                  fontWeight: 800,
-                                  bgcolor: meta.bg,
-                                  color: meta.color,
-                                  border: `1px solid ${meta.border}`,
-                                  "& .MuiChip-icon": { ml: 0.5 }
-                                }}
-                              />
-                              <Typography
-                                variant="caption"
-                                sx={{
-                                  color: "#64748b",
-                                  maxWidth: 140,
-                                  overflow: "hidden",
-                                  textOverflow: "ellipsis",
-                                  whiteSpace: "nowrap",
-                                  display: { xs: "none", sm: "inline-block" }
+                                  borderRadius: "8px",
+                                  textTransform: "none",
+                                  fontSize: "0.75rem",
+                                  py: 0.3,
+                                  px: 1.2,
+                                  borderColor: meta.border || "#e0d5ce",
+                                  color: meta.color || "#16a34a",
+                                  "&:hover": {
+                                    borderColor: meta.color,
+                                    bgcolor: meta.bg || "#f0fdf4"
+                                  }
                                 }}
                               >
-                                {att.fileName || meta.label}
-                              </Typography>
-                            </Stack>
-                          </TableCell>
-                          <TableCell sx={{ color: "#7f7270", fontSize: "0.8rem" }}>
-                            {att.uploadedAt ? fmtDateTime(att.uploadedAt) : "—"}
-                          </TableCell>
-                          <TableCell align="right">
-                            <Button
-                              component="a"
-                              href={att.skaterExcelDocument}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              size="small"
-                              variant="outlined"
-                              startIcon={<Download size={13} />}
-                              sx={{
-                                borderRadius: "8px",
-                                textTransform: "none",
-                                fontSize: "0.75rem",
-                                py: 0.3,
-                                px: 1.2,
-                                borderColor: meta.border || "#e0d5ce",
-                                color: meta.color || "#16a34a",
-                                "&:hover": {
-                                  borderColor: meta.color,
-                                  bgcolor: meta.bg || "#f0fdf4"
-                                }
-                              }}
-                            >
-                              Download / View
-                            </Button>
-                          </TableCell>
-                        </TableRow>
-                      );
-                    })}
-                  </TableBody>
-                </Table>
-              </TableContainer>
-            )}
-          </Paper>
+                                Download / View
+                              </Button>
+                            </TableCell>
+                          </TableRow>
+                        );
+                      })}
+                    </TableBody>
+                  </Table>
+                </TableContainer>
+              )}
+            </Paper>
+          )}
         </Box>
 
         {/* Right Column (4 cols): District Document Upload & Attendance Submission Card */}
