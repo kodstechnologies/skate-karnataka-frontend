@@ -41,7 +41,9 @@ import {
   FileCheck2,
   Building2,
   X,
-  File
+  File,
+  Lock,
+  AlertCircle
 } from "lucide-react";
 import { Link as RouterLink, useNavigate, useParams, useLocation } from "react-router-dom";
 import toast from "react-hot-toast";
@@ -168,6 +170,14 @@ const sectionCardStyles = {
   border: "1px solid rgba(246, 228, 221, 0.95)",
   background: "linear-gradient(180deg, rgba(255,255,255,0.99) 0%, rgba(255,249,246,0.99) 100%)",
   boxShadow: "0 20px 60px rgba(48, 30, 24, 0.05)"
+};
+
+const disabledSectionCardStyles = {
+  p: { xs: 2.5, md: 3.5 },
+  borderRadius: "28px",
+  border: "1px solid #cbd5e1",
+  background: "linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%)",
+  boxShadow: "0 14px 40px rgba(15, 23, 42, 0.04)"
 };
 
 export const ManualEventDetailPage = ({ portalMode }) => {
@@ -326,8 +336,61 @@ export const ManualEventDetailPage = ({ portalMode }) => {
     });
   }, [event?.attendance, activeDistrictId, activeDistrictName]);
 
+  // Determine if registration deadline has passed (e.g. today is 29 and register event date was 28)
+  const isRegistrationClosed = useMemo(() => {
+    if (!event) return false;
+    if (event.status === "completed" || event.status === "cancelled") {
+      return true;
+    }
+
+    const deadlineStr =
+      event.registrationEndDate ||
+      event.registrationEndDateTime ||
+      event.endDate ||
+      event.startDate;
+
+    if (!deadlineStr) return false;
+
+    try {
+      let deadlineEndOfDay;
+      const dStr =
+        typeof deadlineStr === "string"
+          ? deadlineStr
+          : deadlineStr.toISOString?.() || String(deadlineStr);
+
+      if (dStr.includes("T00:00:00")) {
+        const [y, m, d] = dStr.split("T")[0].split("-").map(Number);
+        deadlineEndOfDay = new Date(y, m - 1, d, 23, 59, 59, 999);
+      } else if (typeof deadlineStr === "string" && /^\d{4}-\d{2}-\d{2}$/.test(deadlineStr.trim())) {
+        const [y, m, d] = deadlineStr.trim().split("-").map(Number);
+        deadlineEndOfDay = new Date(y, m - 1, d, 23, 59, 59, 999);
+      } else {
+        const d = new Date(deadlineStr);
+        if (Number.isNaN(d.getTime())) return false;
+        if (d.getHours() === 0 && d.getMinutes() === 0 && d.getSeconds() === 0) {
+          deadlineEndOfDay = new Date(d.getFullYear(), d.getMonth(), d.getDate(), 23, 59, 59, 999);
+        } else {
+          deadlineEndOfDay = d;
+        }
+      }
+      return new Date() > deadlineEndOfDay;
+    } catch {
+      return false;
+    }
+  }, [
+    event?.registrationEndDate,
+    event?.registrationEndDateTime,
+    event?.endDate,
+    event?.startDate,
+    event?.status
+  ]);
+
   const handleUploadAttendance = async (e) => {
     e.preventDefault();
+    if (isRegistrationClosed && !isAdmin) {
+      toast.error("Registration deadline has passed. Submissions are closed.");
+      return;
+    }
     if (!uploadFile) {
       toast.error("Please select a document (Excel, PDF, Word, etc.) to upload");
       return;
@@ -658,9 +721,38 @@ export const ManualEventDetailPage = ({ portalMode }) => {
                   border: "1px solid rgba(246,118,94,0.12)"
                 }}
               >
-                <Typography variant="caption" sx={{ color: "#9c8a85", fontWeight: 700, textTransform: "uppercase", display: "block", mb: 0.5 }}>
-                  Registration Window
-                </Typography>
+                <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 0.5 }}>
+                  <Typography variant="caption" sx={{ color: "#9c8a85", fontWeight: 700, textTransform: "uppercase", display: "block" }}>
+                    Registration Window
+                  </Typography>
+                  {isRegistrationClosed ? (
+                    <Chip
+                      size="small"
+                      label="Closed"
+                      sx={{
+                        height: 20,
+                        fontSize: "0.68rem",
+                        fontWeight: 800,
+                        bgcolor: "#fee2e2",
+                        color: "#b91c1c",
+                        border: "1px solid #fecaca"
+                      }}
+                    />
+                  ) : (
+                    <Chip
+                      size="small"
+                      label="Open"
+                      sx={{
+                        height: 20,
+                        fontSize: "0.68rem",
+                        fontWeight: 800,
+                        bgcolor: "#dcfce7",
+                        color: "#15803d",
+                        border: "1px solid #bbf7d0"
+                      }}
+                    />
+                  )}
+                </Stack>
                 <Typography variant="body1" sx={{ fontWeight: 800, color: "#2f2829" }}>
                   {event.registrationStartDate ? fmtDate(event.registrationStartDate) : "Open"}
                   {event.registrationEndDate ? ` to ${fmtDate(event.registrationEndDate)}` : ""}
@@ -931,13 +1023,75 @@ export const ManualEventDetailPage = ({ portalMode }) => {
 
         {/* Right Column (4 cols): District Document Upload & Attendance Submission Card */}
         <Box sx={{ gridColumn: { xs: "span 12", lg: "span 4" } }} className="space-y-4">
-          <Paper elevation={0} sx={sectionCardStyles}>
-            <Typography variant="h6" sx={{ fontWeight: 800, color: "#2f2829", mb: 0.5, display: "flex", alignItems: "center", gap: 1 }}>
-              <UploadCloud size={20} color="#f6765e" /> District Skater Submission
+          <Paper elevation={0} sx={isRegistrationClosed ? disabledSectionCardStyles : sectionCardStyles}>
+            <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mb: 0.5 }} flexWrap="wrap" gap={1}>
+              <Typography
+                variant="h6"
+                sx={{
+                  fontWeight: 800,
+                  color: isRegistrationClosed ? "#64748b" : "#2f2829",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 1
+                }}
+              >
+                <UploadCloud size={20} color={isRegistrationClosed ? "#94a3b8" : "#f6765e"} /> District Skater Submission
+              </Typography>
+              {isRegistrationClosed && (
+                <Chip
+                  size="small"
+                  icon={<Lock size={12} color="#64748b" />}
+                  label="Closed"
+                  sx={{
+                    height: 22,
+                    fontSize: "0.7rem",
+                    fontWeight: 800,
+                    bgcolor: "#e2e8f0",
+                    color: "#475569",
+                    border: "1px solid #cbd5e1"
+                  }}
+                />
+              )}
+            </Stack>
+
+            <Typography
+              variant="caption"
+              sx={{ color: isRegistrationClosed ? "#94a3b8" : "#7f7270", display: "block", mb: 2 }}
+            >
+              {isRegistrationClosed
+                ? "The registration deadline has passed. Submissions and revisions are closed."
+                : "Upload your district's filled skater registration document (Excel, PDF, Word, etc.) for this competition."}
             </Typography>
-            <Typography variant="caption" sx={{ color: "#7f7270", display: "block", mb: 2 }}>
-              Upload your district's filled skater registration document (Excel, PDF, Word, etc.) for this competition.
-            </Typography>
+
+            {/* Registration Deadline Alert Banner */}
+            {isRegistrationClosed && (
+              <Box
+                sx={{
+                  p: 1.5,
+                  mb: 2,
+                  borderRadius: "14px",
+                  bgcolor: "#ffffff",
+                  border: "1px solid #e2e8f0",
+                  display: "flex",
+                  alignItems: "flex-start",
+                  gap: 1.2
+                }}
+              >
+                <Clock size={18} color="#64748b" style={{ flexShrink: 0, marginTop: 2 }} />
+                <Box>
+                  <Typography variant="body2" sx={{ fontWeight: 700, color: "#475569", fontSize: "0.82rem" }}>
+                    Registration Closed
+                  </Typography>
+                  <Typography variant="caption" sx={{ color: "#64748b", display: "block", fontSize: "0.75rem", lineHeight: 1.4 }}>
+                    Deadline ended on{" "}
+                    <strong>
+                      {fmtDate(event.registrationEndDate || event.registrationEndDateTime || event.endDate || event.startDate) || "deadline"}
+                    </strong>
+                    . District skater submissions are disabled.
+                  </Typography>
+                </Box>
+              </Box>
+            )}
 
             {/* Admin: District Selector */}
             {isAdmin && (
@@ -953,7 +1107,11 @@ export const ManualEventDetailPage = ({ portalMode }) => {
                     setIsReuploading(false);
                     setUploadFile(null);
                   }}
-                  helperText="Choose which district this submission belongs to"
+                  helperText={
+                    isRegistrationClosed
+                      ? "Viewing district submissions (Registration window closed)"
+                      : "Choose which district this submission belongs to"
+                  }
                   sx={{
                     "& .MuiOutlinedInput-root": {
                       borderRadius: "14px",
@@ -978,19 +1136,29 @@ export const ManualEventDetailPage = ({ portalMode }) => {
                   p: 1.5,
                   mb: 2,
                   borderRadius: "14px",
-                  bgcolor: "rgba(246,118,94,0.06)",
-                  border: "1px solid rgba(246,118,94,0.18)",
+                  bgcolor: isRegistrationClosed ? "#ffffff" : "rgba(246,118,94,0.06)",
+                  border: isRegistrationClosed ? "1px solid #e2e8f0" : "1px solid rgba(246,118,94,0.18)",
                   display: "flex",
                   alignItems: "center",
                   gap: 1.2
                 }}
               >
-                <Building2 size={18} color="#f6765e" />
+                <Building2 size={18} color={isRegistrationClosed ? "#94a3b8" : "#f6765e"} />
                 <Box>
-                  <Typography variant="caption" sx={{ color: "#9c8a85", display: "block", fontSize: "0.72rem" }}>
-                    Submitting for District
+                  <Typography
+                    variant="caption"
+                    sx={{
+                      color: isRegistrationClosed ? "#94a3b8" : "#9c8a85",
+                      display: "block",
+                      fontSize: "0.72rem"
+                    }}
+                  >
+                    {isRegistrationClosed ? "Registered District" : "Submitting for District"}
                   </Typography>
-                  <Typography variant="body2" sx={{ fontWeight: 800, color: "#2f2829" }}>
+                  <Typography
+                    variant="body2"
+                    sx={{ fontWeight: 800, color: isRegistrationClosed ? "#475569" : "#2f2829" }}
+                  >
                     {activeDistrictName || "Your District"}
                   </Typography>
                 </Box>
@@ -1008,17 +1176,27 @@ export const ManualEventDetailPage = ({ portalMode }) => {
                     sx={{
                       p: 2.5,
                       borderRadius: "20px",
-                      bgcolor: "#f0fdf4",
-                      border: "1px solid #bbf7d0",
+                      bgcolor: isRegistrationClosed ? "#ffffff" : "#f0fdf4",
+                      border: isRegistrationClosed ? "1px solid #cbd5e1" : "1px solid #bbf7d0",
                       mb: 2.5
                     }}
                   >
                     <Stack direction="row" spacing={1.5} alignItems="flex-start">
-                      <CheckCircle2 size={24} color="#16a34a" style={{ flexShrink: 0, marginTop: 2 }} />
+                      <CheckCircle2
+                        size={24}
+                        color={isRegistrationClosed ? "#94a3b8" : "#16a34a"}
+                        style={{ flexShrink: 0, marginTop: 2 }}
+                      />
                       <Box sx={{ flex: 1 }}>
                         <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 0.5, flexWrap: "wrap" }}>
-                          <Typography variant="subtitle2" sx={{ fontWeight: 800, color: "#15803d" }}>
-                            Document Submitted
+                          <Typography
+                            variant="subtitle2"
+                            sx={{
+                              fontWeight: 800,
+                              color: isRegistrationClosed ? "#475569" : "#15803d"
+                            }}
+                          >
+                            {isRegistrationClosed ? "Document Submitted (Locked)" : "Document Submitted"}
                           </Typography>
                           <Chip
                             size="small"
@@ -1027,9 +1205,9 @@ export const ManualEventDetailPage = ({ portalMode }) => {
                               height: 20,
                               fontSize: "0.68rem",
                               fontWeight: 800,
-                              bgcolor: attMeta.bg,
-                              color: attMeta.color,
-                              border: `1px solid ${attMeta.border}`
+                              bgcolor: isRegistrationClosed ? "#f1f5f9" : attMeta.bg,
+                              color: isRegistrationClosed ? "#64748b" : attMeta.color,
+                              border: `1px solid ${isRegistrationClosed ? "#e2e8f0" : attMeta.border}`
                             }}
                           />
                         </Stack>
@@ -1038,7 +1216,7 @@ export const ManualEventDetailPage = ({ portalMode }) => {
                           variant="body2"
                           sx={{
                             fontWeight: 700,
-                            color: "#166534",
+                            color: isRegistrationClosed ? "#334155" : "#166534",
                             wordBreak: "break-all",
                             mb: 0.5
                           }}
@@ -1046,10 +1224,16 @@ export const ManualEventDetailPage = ({ portalMode }) => {
                           {attDocName}
                         </Typography>
 
-                        <Typography variant="caption" sx={{ color: "#166534", display: "block" }}>
+                        <Typography
+                          variant="caption"
+                          sx={{ color: isRegistrationClosed ? "#64748b" : "#166534", display: "block" }}
+                        >
                           District: <strong>{myAttendance.districtName || activeDistrictName}</strong>
                         </Typography>
-                        <Typography variant="caption" sx={{ color: "#166534", display: "block" }}>
+                        <Typography
+                          variant="caption"
+                          sx={{ color: isRegistrationClosed ? "#64748b" : "#166534", display: "block" }}
+                        >
                           Uploaded: {fmtDateTime(myAttendance.uploadedAt)}
                         </Typography>
 
@@ -1063,33 +1247,60 @@ export const ManualEventDetailPage = ({ portalMode }) => {
                             variant="contained"
                             startIcon={<Download size={13} />}
                             sx={{
-                              bgcolor: "#16a34a",
+                              bgcolor: isRegistrationClosed ? "#64748b" : "#16a34a",
+                              color: "white",
                               borderRadius: "10px",
                               textTransform: "none",
                               fontSize: "0.78rem",
                               fontWeight: 700,
-                              "&:hover": { bgcolor: "#15803d" }
+                              "&:hover": {
+                                bgcolor: isRegistrationClosed ? "#475569" : "#15803d"
+                              }
                             }}
                           >
                             Download / View
                           </Button>
-                          <Button
-                            size="small"
-                            variant="outlined"
-                            startIcon={<RefreshCw size={13} />}
-                            onClick={() => setIsReuploading(true)}
-                            sx={{
-                              borderColor: "#16a34a",
-                              color: "#16a34a",
-                              borderRadius: "10px",
-                              textTransform: "none",
-                              fontSize: "0.78rem",
-                              fontWeight: 700,
-                              "&:hover": { bgcolor: "#dcfce7" }
-                            }}
-                          >
-                            Replace File
-                          </Button>
+                          {isRegistrationClosed ? (
+                            <Tooltip title="Registration closed. Submissions can no longer be replaced.">
+                              <span>
+                                <Button
+                                  size="small"
+                                  variant="outlined"
+                                  disabled
+                                  startIcon={<RefreshCw size={13} />}
+                                  sx={{
+                                    borderColor: "#e2e8f0 !important",
+                                    color: "#94a3b8 !important",
+                                    bgcolor: "#f8fafc",
+                                    borderRadius: "10px",
+                                    textTransform: "none",
+                                    fontSize: "0.78rem",
+                                    fontWeight: 700
+                                  }}
+                                >
+                                  Replace File (Locked)
+                                </Button>
+                              </span>
+                            </Tooltip>
+                          ) : (
+                            <Button
+                              size="small"
+                              variant="outlined"
+                              startIcon={<RefreshCw size={13} />}
+                              onClick={() => setIsReuploading(true)}
+                              sx={{
+                                borderColor: "#16a34a",
+                                color: "#16a34a",
+                                borderRadius: "10px",
+                                textTransform: "none",
+                                fontSize: "0.78rem",
+                                fontWeight: 700,
+                                "&:hover": { bgcolor: "#dcfce7" }
+                              }}
+                            >
+                              Replace File
+                            </Button>
+                          )}
                         </Stack>
                       </Box>
                     </Stack>
@@ -1098,8 +1309,65 @@ export const ManualEventDetailPage = ({ portalMode }) => {
               })()
             ) : null}
 
-            {/* Upload Form (Shown if not submitted yet or if re-uploading) */}
-            {(!myAttendance || isReuploading) && (
+            {/* When registration is closed and no document was submitted */}
+            {isRegistrationClosed && !myAttendance && (
+              <Box
+                sx={{
+                  border: "2px dashed #cbd5e1",
+                  borderRadius: "20px",
+                  p: 3.5,
+                  textAlign: "center",
+                  bgcolor: "#ffffff",
+                  cursor: "not-allowed"
+                }}
+              >
+                <Box
+                  sx={{
+                    width: 48,
+                    height: 48,
+                    borderRadius: "14px",
+                    bgcolor: "#f1f5f9",
+                    color: "#94a3b8",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    mx: "auto",
+                    mb: 1.5
+                  }}
+                >
+                  <Lock size={24} />
+                </Box>
+                <Typography variant="body2" sx={{ fontWeight: 700, color: "#64748b" }}>
+                  Submission Window Closed
+                </Typography>
+                <Typography variant="caption" sx={{ color: "#94a3b8", display: "block", mt: 0.5, mb: 2 }}>
+                  Registration ended on{" "}
+                  <strong>
+                    {fmtDate(event.registrationEndDate || event.registrationEndDateTime || event.endDate || event.startDate) || "deadline"}
+                  </strong>
+                  . Skater submissions are no longer accepted.
+                </Typography>
+                <Button
+                  fullWidth
+                  disabled
+                  variant="contained"
+                  sx={{
+                    borderRadius: "14px",
+                    textTransform: "none",
+                    fontWeight: 700,
+                    py: 1.2,
+                    bgcolor: "#e2e8f0 !important",
+                    color: "#94a3b8 !important",
+                    boxShadow: "none"
+                  }}
+                >
+                  Submissions Disabled
+                </Button>
+              </Box>
+            )}
+
+            {/* Upload Form (Shown only if registration is open AND (not submitted yet OR isReuploading)) */}
+            {!isRegistrationClosed && (!myAttendance || isReuploading) && (
               <Box component="form" onSubmit={handleUploadAttendance} className="space-y-3">
                 {isReuploading && (
                   <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 1 }}>
@@ -1282,9 +1550,24 @@ export const ManualEventDetailPage = ({ portalMode }) => {
             )}
 
             {/* Helpful Guide */}
-            <Divider sx={{ my: 2.5, borderColor: "rgba(246,228,221,0.7)" }} />
-            <Typography variant="caption" sx={{ color: "#9c8a85", lineHeight: 1.5, display: "block" }}>
-              💡 <strong>Flexible formats:</strong> You can upload an Excel spreadsheet, PDF document, Word document, or scanned entry form containing your district's skater entries before the registration deadline.
+            <Divider sx={{ my: 2.5, borderColor: isRegistrationClosed ? "#e2e8f0" : "rgba(246,228,221,0.7)" }} />
+            <Typography
+              variant="caption"
+              sx={{
+                color: isRegistrationClosed ? "#94a3b8" : "#9c8a85",
+                lineHeight: 1.5,
+                display: "block"
+              }}
+            >
+              {isRegistrationClosed ? (
+                <>
+                  🔒 <strong>Registration Closed:</strong> The deadline for district skater entries has passed. File uploads and replacements are disabled.
+                </>
+              ) : (
+                <>
+                  💡 <strong>Flexible formats:</strong> You can upload an Excel spreadsheet, PDF document, Word document, or scanned entry form containing your district's skater entries before the registration deadline.
+                </>
+              )}
             </Typography>
           </Paper>
         </Box>
